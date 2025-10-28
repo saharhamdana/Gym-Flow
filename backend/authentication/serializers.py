@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
+from authentication.models import GymCenter
 
 User = get_user_model()
 
@@ -18,3 +19,14 @@ class RegisterSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         user = User.objects.create_user(**validated_data)
         return user
+
+class GymCenterSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = GymCenter
+        fields = '__all__'
+        read_only_fields = ['owner']  # owner sera assigné automatiquement
+
+    def create(self, validated_data):
+        # Assigner l'utilisateur connecté comme owner
+        validated_data['owner'] = self.context['request'].user
+        return super().create(validated_data)

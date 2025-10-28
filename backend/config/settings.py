@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'corsheaders',
     'authentication',
+    'subscriptions',
 
 ]
 AUTH_USER_MODEL = 'authentication.User'
@@ -91,6 +92,8 @@ DATABASES = {
 }
 
 AUTH_USER_MODEL = 'authentication.User'
+
+APPEND_SLASH = True
 
 
 
