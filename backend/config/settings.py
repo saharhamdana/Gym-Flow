@@ -38,12 +38,12 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-     'rest_framework',
+    'rest_framework',
     'corsheaders',
-    'core',
+    'authentication',
 
 ]
-AUTH_USER_MODEL = 'core.User'
+AUTH_USER_MODEL = 'authentication.User'
 
 MIDDLEWARE = [
      'corsheaders.middleware.CorsMiddleware',
@@ -83,12 +83,16 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'gymflow_db',
-        'USER': 'mon_user',
-        'PASSWORD': 'mon_mdp',
+        'USER': 'gymflow_user',
+        'PASSWORD': '123456',
         'HOST': 'localhost',
         'PORT': '5432',
     }
 }
+
+AUTH_USER_MODEL = 'authentication.User'
+
+
 
 
 # Password validation
@@ -132,6 +136,8 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+CORS_ALLOW_ALL_ORIGINS = False
+
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
@@ -141,3 +147,4 @@ REST_FRAMEWORK = {
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
 }
+
