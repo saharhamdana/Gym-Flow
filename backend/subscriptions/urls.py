@@ -7,8 +7,7 @@ router = DefaultRouter()
 router.register(r'plans', views.SubscriptionPlanViewSet, basename='plan')
 router.register(r'subscriptions', views.MemberSubscriptionViewSet, basename='subscription')
 
-
 urlpatterns = [
     path('', include(router.urls)),
-    path('dashboard/', views.dashboard, name='dashboard'),
+    path('dashboard/', dashboard, name='dashboard'),
 ]
