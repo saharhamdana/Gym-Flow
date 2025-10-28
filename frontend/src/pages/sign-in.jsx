@@ -1,22 +1,17 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-// Imports Material Tailwind
 import {
     Input,
     Button,
     Typography,
-    // La Checkbox est conservée uniquement pour le style si nécessaire, 
-    // mais la logique "I agree" est retirée car non pertinente pour la connexion.
-    Checkbox, 
+    Checkbox,
 } from "@material-tailwind/react";
-// Import de votre instance axios
 import api from "../api/axiosInstance";
 
-// Renommage en SignIn pour correspondre au fichier pages/sign-in.jsx
 export function SignIn() {
     const navigate = useNavigate();
-    // Utilisation de 'username' et 'password' pour la connexion JWT (backend)
-    const [form, setForm] = useState({ username: "", password: "" });
+    // ✅ Utilisation de 'email' au lieu de 'username'
+    const [form, setForm] = useState({ email: "", password: "" });
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
 
@@ -27,35 +22,33 @@ export function SignIn() {
         setError("");
         setLoading(true);
 
-        // 1. Appel pour obtenir les tokens
+        // 1. Appel pour obtenir les tokens avec email/password
         api.post("/token/", form)
             .then((res) => {
                 // 🔑 Stockage des tokens
                 localStorage.setItem("access_token", res.data.access);
                 localStorage.setItem("refresh_token", res.data.refresh);
 
-                // 2. Récupère le profil courant (pour obtenir le rôle)
-                // L'intercepteur d'Axios devrait maintenant ajouter le token à cette requête /me/
+                // 2. Récupère le profil courant
                 api.get("/me/")
                     .then((r) => {
                         const userProfile = r.data;
                         localStorage.setItem("user", JSON.stringify(userProfile));
                         setLoading(false);
 
-                        // 🚀 LOGIQUE DE REDIRECTION BASÉE SUR LE RÔLE
-                        const userRole = userProfile.role;
+                        // 🚀 Redirection basée sur le rôle
+                        const userRole = userProfile.role.toLowerCase();
                         let redirectTo;
 
                         if (userRole === "admin" || userRole === "coach") {
-                            redirectTo = "/admin/members"; // Admin/Coach Dashboard
+                            redirectTo = "/admin/members";
                         } else {
-                            redirectTo = "/profile"; // Member Profile Page
+                            redirectTo = "/profile";
                         }
 
                         navigate(redirectTo);
                     })
                     .catch(() => {
-                        // Si /me échoue, on nettoie tout
                         localStorage.removeItem("access_token");
                         localStorage.removeItem("refresh_token");
                         localStorage.removeItem("user");
@@ -64,8 +57,11 @@ export function SignIn() {
                     });
             })
             .catch((err) => {
-                // Erreur d'authentification initiale (mauvais identifiants)
-                setError("Identifiants invalides ou erreur de connexion.");
+                console.error("Erreur de connexion:", err.response?.data);
+                setError(
+                    err.response?.data?.detail || 
+                    "Identifiants invalides ou erreur de connexion."
+                );
                 setLoading(false);
             });
     };
@@ -78,7 +74,7 @@ export function SignIn() {
                         Connexion
                     </Typography>
                     <Typography variant="paragraph" color="blue-gray" className="text-lg font-normal">
-                        Entrez votre nom d'utilisateur et votre mot de passe.
+                        Entrez votre email et votre mot de passe.
                     </Typography>
                     {error && (
                         <Typography variant="small" color="red" className="mt-4 font-medium">
@@ -87,22 +83,22 @@ export function SignIn() {
                     )}
                 </div>
 
-                {/* Début du formulaire avec la logique handleSubmit */}
                 <form className="mt-8 mb-2 mx-auto w-80 max-w-screen-lg lg:w-1/2" onSubmit={handleSubmit}>
                     <div className="mb-1 flex flex-col gap-6">
 
-                        {/* Champ Nom d'utilisateur (au lieu d'email) */}
+                        {/* ✅ Champ Email */}
                         <Typography variant="small" color="blue-gray" className="-mb-3 font-medium">
-                            Nom d'utilisateur
+                            Email
                         </Typography>
                         <Input
-                            name="username"
+                            name="email"
+                            type="email"
                             size="lg"
-                            placeholder="votre_nom_utilisateur"
+                            placeholder="nom@exemple.com"
                             className=" !border-t-blue-gray-200 focus:!border-t-gray-900"
                             labelProps={{ className: "before:content-none after:content-none" }}
                             onChange={handleChange}
-                            value={form.username}
+                            value={form.email}
                             required
                         />
 
@@ -123,13 +119,14 @@ export function SignIn() {
                         />
                     </div>
                     
-                    {/* Le bloc Checkbox et Forgot Password est conservé pour le style */}
                     <div className="flex items-center justify-between gap-2 mt-6">
-                        {/* Checkbox "Subscribe me to newsletter" ou à modifier */}
                         <Checkbox
-                            label={<Typography variant="small" color="gray" className="flex items-center justify-start font-medium">Se souvenir de moi</Typography>}
+                            label={
+                                <Typography variant="small" color="gray" className="flex items-center justify-start font-medium">
+                                    Se souvenir de moi
+                                </Typography>
+                            }
                             containerProps={{ className: "-ml-2.5" }}
-                            // Note: Pas de logique de mémorisation implémentée ici
                         />
                         <Typography variant="small" className="font-medium text-gray-900">
                             <a href="#">Mot de passe oublié</a>
@@ -139,8 +136,6 @@ export function SignIn() {
                     <Button className="mt-6" fullWidth type="submit" disabled={loading}>
                         {loading ? "Connexion..." : "Se Connecter"}
                     </Button>
-
-                    {/* Bloc Sign-in with Google/Twitter retiré pour se concentrer sur l'authentification standard */}
                     
                     <Typography variant="paragraph" className="text-center text-blue-gray-500 font-medium mt-4">
                         Pas encore inscrit ?
@@ -152,10 +147,9 @@ export function SignIn() {
 
             </div>
 
-            {/* Image de fond (côté droit) */}
             <div className="w-2/5 h-full hidden lg:block">
                 <img
-                    src="/img/pattern.jpg" // Assurez-vous que ce chemin est correct
+                    src="/img/pattern.jpg"
                     className="h-full w-full object-cover rounded-3xl"
                     alt="Image de fond"
                 />

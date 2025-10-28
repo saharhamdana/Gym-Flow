@@ -3,13 +3,13 @@ import PropTypes from "prop-types";
 import { Link } from "react-router-dom";
 import {
   Navbar as MTNavbar,
-  MobileNav,
+  Collapse,
   Typography,
   IconButton,
 } from "@material-tailwind/react";
 import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline";
 
-export function Navbar({ routes }) { // Suppression de brandName des props
+export function Navbar({ routes }) {
   const [openNav, setOpenNav] = React.useState(false);
 
   React.useEffect(() => {
@@ -66,11 +66,11 @@ export function Navbar({ routes }) { // Suppression de brandName des props
         
         {/* LOGO positionné à gauche */}
         <Link to="/" className="absolute left-0 py-1.5 ml-2">
-            <img 
-              src="/img/logoclaire.png" // Chemin public (à partir du dossier 'public')
-              alt="Logo Claire"
-              className="h-8 w-auto" // Ajustez la taille selon vos besoins (h-8 = 2rem par défaut en Tailwind)
-            />
+          <img 
+            src="/img/logoclaire.png"
+            alt="Logo Claire"
+            className="h-8 w-auto"
+          />
         </Link>
         
         {/* navList centré sur les grands écrans (lg:justify-center) */}
@@ -98,21 +98,20 @@ export function Navbar({ routes }) { // Suppression de brandName des props
           )}
         </IconButton>
       </div>
-      <MobileNav
-        className="rounded-xl bg-white px-4 pt-2 pb-4 text-blue-gray-900"
-        open={openNav}
-      >
+      
+      {/* ✅ Remplacement de MobileNav par Collapse */}
+      <Collapse open={openNav}>
         <div className="container mx-auto">
-          {navList}
+          <div className="rounded-xl bg-white px-4 pt-2 pb-4 text-blue-gray-900">
+            {navList}
+          </div>
         </div>
-      </MobileNav>
+      </Collapse>
     </MTNavbar>
   );
 }
 
-// Mise à jour de PropTypes
 Navbar.propTypes = {
-  // brandName: PropTypes.string, // Supprimé car nous utilisons un logo
   routes: PropTypes.arrayOf(PropTypes.object).isRequired,
 };
 
