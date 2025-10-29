@@ -1,179 +1,168 @@
-import React, { useEffect, useState, useCallback } from "react";
-import api from "../../api/axiosInstance"; 
-import { useNavigate } from "react-router-dom"; 
+// Fichier: frontend/src/pages/admin/MemberList.jsx
 
-export default function MemberList() {
-  const navigate = useNavigate();
-  const [members, setMembers] = useState([]);
-  const [form, setForm] = useState({
-    username: "",
-    email: "",
-    role: "member",
-    first_name: "",
-    last_name: "",
-    password: "",
-  });
-  const [userInfo, setUserInfo] = useState(null);
-  const [editingMember, setEditingMember] = useState(null);
-  const [loading, setLoading] = useState(false); 
-  const [error, setError] = useState(null);
+import React, { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import {
+    Card,
+    CardHeader,
+    CardBody,
+    Typography,
+    Button,
+    Chip,
+    Avatar,
+    Input,
+} from "@material-tailwind/react";
+import { MagnifyingGlassIcon, UserPlusIcon } from "@heroicons/react/24/solid";
+import api from "../../api/axiosInstance";
 
-  const isAdmin = () => {
-    if (!userInfo) return false;
-    return userInfo.is_superuser === true || userInfo.role === "admin";
-  };
+// ----------------------------------------------------
+// 💡 Composant pour la liste des membres (rôles Admin/Coach/Réceptionniste)
+// ----------------------------------------------------
+export function MemberList() {
+    const navigate = useNavigate();
+    const [members, setMembers] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [searchTerm, setSearchTerm] = useState("");
 
-  const initData = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    let fetchedUserInfo = null;
-    
-    // 1. VÉRIFICATION DU STATUT DE L'UTILISATEUR (/me/)
-    try {
-        const userRes = await api.get("/me/");
-        fetchedUserInfo = userRes.data;
-        setUserInfo(fetchedUserInfo);
-        
-        // Si l'utilisateur est connecté mais non admin, on arrête ici
-        if (!fetchedUserInfo.is_superuser && fetchedUserInfo.role !== "admin") {
-             setError("Accès non autorisé. Vous n'êtes pas un administrateur.");
-             setLoading(false);
-             return;
-        }
-    } catch (err) {
-        setUserInfo(null); 
-        setMembers([]);
-        setLoading(false);
-        // Si l'appel /me/ échoue avec 401, on considère la session expirée
-        if (err.response && err.response.status === 401) {
-            // L'alerte que vous avez vue
-            alert("Session expirée. Veuillez vous reconnecter.");
-            navigate('/login');
-        }
-        return; 
+    useEffect(() => {
+        const fetchMembers = async () => {
+            try {
+                // 🔑 CORRECTION N°1: Utiliser 'members/profiles/' pour correspondre au routage Django
+                // L'URL complète devient : http://127.0.0.1:8000/api/members/profiles/
+                const response = await api.get("members/profiles/"); 
+                
+                // Filtrer uniquement les utilisateurs avec le rôle 'MEMBER'
+                const memberData = response.data.filter(user => user.role === 'MEMBER');
+
+                setMembers(memberData);
+                setLoading(false);
+            } catch (err) {
+                console.error("Erreur de récupération des membres:", err);
+                // Si l'erreur est un 404 ou 403, cela sera affiché
+                setError("Échec de la récupération des données de l'API. (Erreur de connexion ou d'autorisation)");
+                setLoading(false);
+            }
+        };
+
+        fetchMembers();
+    }, []);
+
+    const filteredMembers = members.filter(member =>
+        member.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        member.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        member.email.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    const getStatusChip = (status) => {
+        // Logique simplifiée pour les statuts d'abonnement (à connecter à l'API)
+        const color = status ? "green" : "red";
+        const text = status ? "Actif" : "Inactif";
+        return <Chip value={text} color={color} className="text-xs font-bold" />;
+    };
+
+    if (loading) {
+        return <Typography>Chargement des membres...</Typography>;
     }
 
-    // 2. TENTATIVE DE CHARGEMENT DE LA LISTE DES MEMBRES (si admin)
-    try {
-        const membersRes = await api.get("/members/");
-        setMembers(membersRes.data);
-    } catch (err) {
-        setMembers([]);
-        // Si l'erreur est 403, le token est valide, mais la permission IsAdmin est refusée
-        setError("Erreur de chargement des membres. Problème de permission côté Django.");
-        console.error("Erreur de l'API /members/", err);
+    if (error) {
+        return <Typography color="red">Erreur: {error}</Typography>;
     }
-    setLoading(false);
-  }, [navigate]);
 
-  useEffect(() => {
-    initData(); 
-  }, [initData]);
+    return (
+        <div className="mt-12 mb-8 flex flex-col gap-12">
+            <Card>
+                <CardHeader variant="gradient" color="blue" className="mb-8 p-6 flex justify-between items-center">
+                    <Typography variant="h6" color="white">
+                        Liste des Membres
+                    </Typography>
+                    
+                    {/* 🔑 CORRECTION N°2: Lien du bouton "Créer Membre" pour la navigation */}
+                    <Link to="/admin/members/create">
+                        <Button className="flex items-center gap-3" color="white">
+                            <UserPlusIcon strokeWidth={2} className="h-4 w-4" /> Créer Membre
+                        </Button>
+                    </Link>
+                </CardHeader>
 
+                <CardBody className="overflow-x-scroll px-0 pt-0 pb-2">
+                    <div className="w-full md:w-72 p-4">
+                        <Input
+                            label="Rechercher un membre..."
+                            icon={<MagnifyingGlassIcon className="h-5 w-5" />}
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </div>
 
-  // --- Fonctions CRUD (à conserver ou à compléter) ---
-  const handleChange = e => setForm({ ...form, [e.target.name]: e.target.value });
-  const handleEditChange = e => { setEditingMember({ ...editingMember, [e.target.name]: e.target.value }); };
-  
-  const handleSubmit = e => {
-    e.preventDefault();
-    if (!form.password) { alert("Le mot de passe est obligatoire."); return; }
-    api.post("/members/", form)
-      .then(res => { setMembers([...members, res.data]); setForm({ username: "", email: "", role: "member", first_name: "", last_name: "", password: "" }); })
-      .catch(err => { alert("Erreur lors de l'ajout : " + JSON.stringify(err.response?.data || err.message)); });
-  };
+                    <table className="w-full min-w-[640px] table-auto">
+                        <thead>
+                            <tr>
+                                {["Membre", "Email", "Statut", "Date Adhésion", "Actions"].map((el) => (
+                                    <th key={el} className="border-b border-blue-gray-50 py-3 px-5 text-left">
+                                        <Typography variant="small" className="text-[11px] font-bold uppercase text-blue-gray-400">
+                                            {el}
+                                        </Typography>
+                                    </th>
+                                ))}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {filteredMembers.map(({ id, profile_picture_url, first_name, last_name, email, created_at, is_active }, key) => {
+                                const className = `py-3 px-5 ${key === filteredMembers.length - 1 ? "" : "border-b border-blue-gray-50"}`;
 
-  const handleUpdate = e => {
-    e.preventDefault();
-    const dataToUpdate = { ...editingMember };
-    if (!dataToUpdate.password) { delete dataToUpdate.password; }
-    delete dataToUpdate.id;
-    api.patch(`/members/${editingMember.id}/`, dataToUpdate)
-      .then(res => { setMembers(members.map(m => (m.id === res.data.id ? res.data : m))); setEditingMember(null); alert(`Membre ${res.data.username} mis à jour.`); })
-      .catch(err => { alert("Erreur lors de la mise à jour : " + JSON.stringify(err.response?.data || err.message)); });
-  };
-  
-  const handleDelete = id => {
-    if (!window.confirm("Êtes-vous sûr de vouloir supprimer ce membre ?")) return;
-    api.delete(`/members/${id}/`)
-      .then(() => setMembers(members.filter(m => m.id !== id)))
-      .catch(err => { alert("Erreur suppression : " + (err.response?.data || err.message)); });
-  };
+                                return (
+                                    <tr key={id}>
+                                        <td className={className}>
+                                            <div className="flex items-center gap-4">
+                                                <Avatar src={profile_picture_url || "/img/profile.png"} alt={`${first_name} ${last_name}`} size="sm" variant="rounded" />
+                                                <div>
+                                                    <Typography variant="small" color="blue-gray" className="font-semibold">
+                                                        {`${first_name} ${last_name}`}
+                                                    </Typography>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className={className}>
+                                            <Typography variant="small" className="text-xs font-medium text-blue-gray-600">
+                                                {email}
+                                            </Typography>
+                                        </td>
+                                        <td className={className}>
+                                            {getStatusChip(is_active)}
+                                        </td>
+                                        <td className={className}>
+                                            <Typography variant="small" className="text-xs font-medium text-blue-gray-600">
+                                                {new Date(created_at).toLocaleDateString()}
+                                            </Typography>
+                                        </td>
+                                        <td className={className}>
+                                            <Button 
+                                                variant="text" 
+                                                color="blue-gray" 
+                                                className="font-medium text-xs"
+                                                onClick={() => navigate(`/admin/members/${id}`)}
+                                            >
+                                                Voir
+                                            </Button>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
 
-  const handleEditClick = member => {
-    setEditingMember({ ...member, password: '' }); 
-    setForm({ username: "", email: "", role: "member", first_name: "", last_name: "", password: "" });
-  };
-
-  // AFFICHAGE
-  return (
-    <div style={{ padding: '20px', fontFamily: "sans-serif" }}>
-      <h2>Gestion des Membres</h2>
-      <div>Rôle : <b>{userInfo ? (userInfo.role + (userInfo.is_superuser ? " (superuser)" : "")) : "non authentifié"}</b></div>
-      
-      {loading && <div style={{ color: 'blue' }}>Chargement en cours...</div>}
-      {error && <div style={{ color: 'red', fontWeight: 'bold' }}>ERREUR : {error}</div>}
-      
-      {/* 1. Formulaire d'AJOUT */}
-      {isAdmin() && !editingMember && !loading && (
-        <>
-          <h3>Ajouter un Membre</h3>
-          <form onSubmit={handleSubmit} style={{ marginBottom: '20px', border: '1px solid #ccc', padding: '15px', display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-            <input name="username" placeholder="Nom d'utilisateur" value={form.username} onChange={handleChange} required />
-            <input name="email" type="email" placeholder="Email" value={form.email} onChange={handleChange} />
-            <input name="password" type="password" placeholder="Mot de passe" value={form.password} onChange={handleChange} required />
-            <input name="first_name" placeholder="Prénom" value={form.first_name} onChange={handleChange} />
-            <input name="last_name" placeholder="Nom" value={form.last_name} onChange={handleChange} />
-            <select name="role" value={form.role} onChange={handleChange}>
-              <option value="admin">Admin</option>
-              <option value="coach">Coach</option>
-              <option value="member">Membre</option>
-            </select>
-            <button type="submit">Ajouter</button>
-          </form>
-        </>
-      )}
-
-      {/* 2. Formulaire de MODIFICATION */}
-      {editingMember && isAdmin() && (
-        <>
-          <h3>Modifier Membre : {editingMember.username} (ID: {editingMember.id})</h3>
-          <form onSubmit={handleUpdate} style={{ marginBottom: '20px', border: '1px solid #4CAF50', padding: '15px', display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-            <input name="username" placeholder="Nom d'utilisateur" value={editingMember.username} onChange={handleEditChange} required />
-            <input name="email" type="email" placeholder="Email" value={editingMember.email} onChange={handleEditChange} />
-            <input name="password" type="password" placeholder="Nouveau Mot de passe (Laisser vide pour ne pas changer)" value={editingMember.password} onChange={handleEditChange} />
-            <input name="first_name" placeholder="Prénom" value={editingMember.first_name} onChange={handleEditChange} />
-            <input name="last_name" placeholder="Nom" value={editingMember.last_name} onChange={handleEditChange} />
-            <select name="role" value={editingMember.role} onChange={handleEditChange}>
-              <option value="admin">Admin</option>
-              <option value="coach">Coach</option>
-              <option value="member">Membre</option>
-            </select>
-            <button type="submit">Sauvegarder</button>
-            <button type="button" onClick={() => setEditingMember(null)} style={{ marginLeft: '10px' }}>Annuler</button>
-          </form>
-        </>
-      )}
-
-      {/* 3. LISTE DES MEMBRES */}
-      <h3>Liste des Membres ({members.length})</h3>
-      {!isAdmin() && userInfo && !loading && !error && <div style={{ color: "red" }}>Seul un administrateur peut voir et gérer la liste.</div>}
-      
-      <ul style={{ listStyleType: 'none', padding: 0 }}>
-        {members.map(m => (
-          <li key={m.id} style={{ borderBottom: '1px dotted #eee', padding: '10px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ flexGrow: 1 }}>
-                **{m.username}** ({m.role}) - *{m.first_name} {m.last_name}*
-            </span>
-            {isAdmin() && (
-                <span style={{ flexShrink: 0 }}>
-                    <button onClick={() => handleEditClick(m)} disabled={editingMember != null} style={{ marginLeft: '10px' }}>Modifier</button>
-                    <button onClick={() => handleDelete(m.id)} style={{ marginLeft: '10px', color: 'red' }}>Supprimer</button>
-                </span>
-            )}
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
+                    {filteredMembers.length === 0 && (
+                        <div className="p-4 text-center">
+                            <Typography color="gray">
+                                Aucun membre trouvé.
+                            </Typography>
+                        </div>
+                    )}
+                </CardBody>
+            </Card>
+        </div>
+    );
 }
+
+export default MemberList;
