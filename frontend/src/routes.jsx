@@ -1,14 +1,19 @@
+// Fichier: frontend/src/routes.jsx
+
 import { Home, Profile, SignIn, SignUp } from "@/pages";
 import MyPrograms from "./pages/MyPrograms";
 // 💡 Composants à créer pour les routes Admin/Coach
 import ProgramBuilder from "./pages/admin/ProgramBuilder"; 
 import ExerciseList from "./pages/admin/ExerciseList"; 
+// 🌟 NOUVEAUX IMPORTS POUR MEMBERS
+import MemberList from "./pages/admin/MemberList";
+import MemberDetail from "./pages/admin/MemberDetail"; 
 
 
 export const routes = [
   {
     name: "home",
-    path: "/", // Changement de /home à / pour être l'accueil principal
+    path: "/", 
     element: <Home />,
   },
   {
@@ -26,13 +31,25 @@ export const routes = [
     path: "/sign-up",
     element: <SignUp />,
   },
-  // 💡 NOUVELLE ROUTE MEMBRE SPRINT 3
   { 
     name: "Mes Programmes",
     path: "/my-programs",
     element: <MyPrograms />,
   },
-  // 💡 NOUVELLES ROUTES ADMIN/COACH SPRINT 3
+  // 🌟 NOUVELLES ROUTES ADMIN/COACH/RÉCEPTIONNISTE POUR LA GESTION DES MEMBRES
+  { 
+    name: "Gestion Membres",
+    path: "/admin/members",
+    element: <MemberList />,
+  },
+  { 
+    name: "Détails Membre",
+    // Route dynamique : le paramètre correspond à MemberProfile.user.pk
+    path: "/admin/members/:userId", 
+    element: <MemberDetail />,
+    hidden: true 
+  },
+  // AUTRES ROUTES ADMIN/COACH (existantes)
   { 
     name: "Créer Programme",
     path: "/admin/programs/create",
