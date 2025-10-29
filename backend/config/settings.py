@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'authentication',
     'subscriptions',
+    'members',
 
 ]
 AUTH_USER_MODEL = 'authentication.User'
