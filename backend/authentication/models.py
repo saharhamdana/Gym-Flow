@@ -3,12 +3,12 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils.translation import gettext_lazy as _
+from django.core.validators import RegexValidator
 
 
 class User(AbstractUser):
     """
     Modèle utilisateur personnalisé avec rôles
-    IMPORTANT: Le nom de la classe doit être 'User' exactement
     """
     class Role(models.TextChoices):
         ADMIN = 'ADMIN', _('Administrateur')
@@ -76,19 +76,35 @@ class User(AbstractUser):
 
 class GymCenter(models.Model):
     """
-    Modèle pour les centres de fitness/salles de sport
+    Modèle pour les centres de fitness/salles de sport avec système de sous-domaines
     """
+    # Validateur pour le sous-domaine (alphanumerique et tirets uniquement)
+    subdomain_validator = RegexValidator(
+        regex=r'^[a-z0-9]([a-z0-9-]*[a-z0-9])?$',
+        message='Le sous-domaine doit contenir uniquement des lettres minuscules, chiffres et tirets. '
+                'Il ne peut pas commencer ou finir par un tiret.'
+    )
+    
     name = models.CharField(_('nom'), max_length=200)
     description = models.TextField(_('description'), blank=True)
+    
+    # Sous-domaine unique pour chaque salle
+    subdomain = models.CharField(
+        _('sous-domaine'),
+        max_length=63,  # Limite DNS standard
+        unique=True,
+        validators=[subdomain_validator],
+        help_text='Sous-domaine unique (ex: powerfit pour powerfit.gymflow.com)'
+    )
     
     # Contact
     email = models.EmailField(_('email'))
     phone = models.CharField(_('téléphone'), max_length=20)
     address = models.TextField(_('adresse'))
     
-    # Owner - IMPORTANT: utiliser 'authentication.User' comme string
+    # Owner
     owner = models.ForeignKey(
-        'authentication.User',  # String reference au lieu de User directement
+        'authentication.User',
         on_delete=models.CASCADE,
         related_name='owned_centers',
         limit_choices_to={'role': 'ADMIN'}
@@ -96,7 +112,7 @@ class GymCenter(models.Model):
     
     # Configuration
     logo = models.ImageField(_('logo'), upload_to='centers/logos/', blank=True, null=True)
-    tenant_id = models.CharField(_('tenant ID'), max_length=100, unique=True)
+    tenant_id = models.CharField(_('tenant ID'), max_length=100, unique=True, blank=True)
     
     # Métadonnées
     is_active = models.BooleanField(_('actif'), default=True)
@@ -109,4 +125,27 @@ class GymCenter(models.Model):
         ordering = ['-created_at']
     
     def __str__(self):
-        return self.name
+        return f"{self.name} ({self.subdomain})"
+    
+    def save(self, *args, **kwargs):
+        # Générer automatiquement tenant_id à partir du sous-domaine si non fourni
+        if not self.tenant_id:
+            self.tenant_id = self.subdomain
+        
+        # Forcer le sous-domaine en minuscules
+        if self.subdomain:
+            self.subdomain = self.subdomain.lower()
+        
+        super().save(*args, **kwargs)
+    
+    @property
+    def full_url(self):
+        """Retourne l'URL complète du sous-domaine"""
+        return f"https://{self.subdomain}.gymflow.com"
+    
+    @property
+    def is_subdomain_available(self):
+        """Vérifie si le sous-domaine est disponible"""
+        if not self.pk:
+            return not GymCenter.objects.filter(subdomain=self.subdomain).exists()
+        return not GymCenter.objects.filter(subdomain=self.subdomain).exclude(pk=self.pk).exists()

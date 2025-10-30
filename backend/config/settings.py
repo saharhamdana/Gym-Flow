@@ -12,8 +12,6 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 from pathlib import Path
 import os
-from datetime import timedelta
-
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -28,7 +26,12 @@ SECRET_KEY = 'django-insecure-j9f@fp$#g%c8m&j1x(nbxxm6tevy)onkt4=*09(s2o6u5!2t(s
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    'localhost',
+    '127.0.0.1',
+    '.gymflow.com',  # Accepte tous les sous-domaines de gymflow.com
+    '*.gymflow.com',
+]
 
 
 # Application definition
@@ -40,28 +43,17 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-  
-    
-    # Third-party apps
     'rest_framework',
-    'rest_framework_simplejwt',  # ✅ AJOUTÉ
-    'rest_framework_simplejwt.token_blacklist',  # ✅ AJOUTÉ (optionnel mais recommandé)
     'corsheaders',
-    'django_filters',  # ✅ AJOUTÉ (pour les filtres dans MemberViewSet)
-    
-    # Local apps
     'authentication',
     'subscriptions',
     'members',
-    'coaching',
-   
 
 ]
-
 AUTH_USER_MODEL = 'authentication.User'
 
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',  # ✅ Doit être en premier
+     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -69,6 +61,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'authentication.middleware.SubdomainMiddleware',  # Nouveau
+    'authentication.middleware.TenantMiddleware', 
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -80,7 +74,6 @@ TEMPLATES = [
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
-                'django.template.context_processors.debug',
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
@@ -106,7 +99,11 @@ DATABASES = {
     }
 }
 
+AUTH_USER_MODEL = 'authentication.User'
+
 APPEND_SLASH = True
+
+
 
 
 # Password validation
@@ -131,9 +128,12 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
-LANGUAGE_CODE = 'fr-fr'  # ✅ Changé en français (optionnel)
-TIME_ZONE = 'Africa/Tunis'  # ✅ Changé pour la Tunisie
+LANGUAGE_CODE = 'en-us'
+
+TIME_ZONE = 'UTC'
+
 USE_I18N = True
+
 USE_TZ = True
 
 
@@ -141,42 +141,28 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')  # ✅ AJOUTÉ
-
-# Media files (uploads)
-MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-MEDIA_ROOT = BASE_DIR / 'media'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-
-# ========================================
-# ✅ CORS CONFIGURATION
-# ========================================
 CORS_ALLOW_ALL_ORIGINS = False
+
 CORS_ALLOWED_ORIGINS = [
-    # "http://localhost:3000",
     "http://localhost:5173",
-    # "http://127.0.0.1:3000",
     "http://127.0.0.1:5173",
 ]
 
-CORS_ALLOW_CREDENTIALS = True  # ✅ AJOUTÉ
-
-CORS_ALLOW_METHODS = [  # ✅ AJOUTÉ
-    'DELETE',
-    'GET',
-    'OPTIONS',
-    'PATCH',
-    'POST',
-    'PUT',
+# Pour accepter tous les sous-domaines en développement
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^https://\w+\.gymflow\.com$",  # Tous les sous-domaines HTTPS
+    r"^http://localhost:\d+$",        # Localhost avec n'importe quel port
 ]
 
-CORS_ALLOW_HEADERS = [  # ✅ AJOUTÉ
+# CORS Headers
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_HEADERS = [
     'accept',
     'accept-encoding',
     'authorization',
@@ -186,93 +172,31 @@ CORS_ALLOW_HEADERS = [  # ✅ AJOUTÉ
     'user-agent',
     'x-csrftoken',
     'x-requested-with',
+    'x-tenant-subdomain',  # Header personnalisé pour le tenant
+]
+
+# Configuration du domaine principal pour les sous-domaines
+PARENT_DOMAIN = 'gymflow.com'
+
+# SESSION COOKIE - Permettre le partage entre sous-domaines
+SESSION_COOKIE_DOMAIN = '.gymflow.com'  # Note le point au début
+SESSION_COOKIE_SAMESITE = 'Lax'
+
+# CSRF COOKIE - Permettre le partage entre sous-domaines
+CSRF_COOKIE_DOMAIN = '.gymflow.com'
+CSRF_TRUSTED_ORIGINS = [
+    'https://*.gymflow.com',
+    'http://localhost:5173',
 ]
 
 
-# ========================================
-# ✅ REST FRAMEWORK CONFIGURATION
-# ========================================
+
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
-    'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.IsAuthenticated',
-    ],
-    'DEFAULT_FILTER_BACKENDS': [  # ✅ AJOUTÉ
-        'django_filters.rest_framework.DjangoFilterBackend',
-        'rest_framework.filters.SearchFilter',
-        'rest_framework.filters.OrderingFilter',
-    ],
-    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',  # ✅ AJOUTÉ
-    'PAGE_SIZE': 10,  # ✅ AJOUTÉ
 }
 
-
-# ========================================
-# ✅ SIMPLE JWT CONFIGURATION
-# ========================================
-SIMPLE_JWT = {
-    # Durée de vie des tokens
-    'ACCESS_TOKEN_LIFETIME': timedelta(hours=1),  # Token d'accès valide 1 heure
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),  # Refresh token valide 7 jours
-    
-    # Rotation des tokens
-    'ROTATE_REFRESH_TOKENS': True,  # Générer un nouveau refresh token à chaque utilisation
-    'BLACKLIST_AFTER_ROTATION': True,  # Mettre en blacklist l'ancien refresh token
-    'UPDATE_LAST_LOGIN': True,  # Mettre à jour last_login à chaque connexion
-    
-    # Algorithme de chiffrement
-    'ALGORITHM': 'HS256',
-    'SIGNING_KEY': SECRET_KEY,
-    'VERIFYING_KEY': None,
-    'AUDIENCE': None,
-    'ISSUER': None,
-    'JWK_URL': None,
-    'LEEWAY': 0,
-    
-    # Configuration des en-têtes
-    'AUTH_HEADER_TYPES': ('Bearer',),
-    'AUTH_HEADER_NAME': 'HTTP_AUTHORIZATION',
-    'USER_ID_FIELD': 'id',
-    'USER_ID_CLAIM': 'user_id',
-    'USER_AUTHENTICATION_RULE': 'rest_framework_simplejwt.authentication.default_user_authentication_rule',
-    
-    # Classes de tokens
-    'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
-    'TOKEN_TYPE_CLAIM': 'token_type',
-    'TOKEN_USER_CLASS': 'rest_framework_simplejwt.models.TokenUser',
-    
-    # Claims JWT
-    'JTI_CLAIM': 'jti',
-    
-    # Tokens glissants (sliding tokens - optionnel)
-    'SLIDING_TOKEN_REFRESH_EXP_CLAIM': 'refresh_exp',
-    'SLIDING_TOKEN_LIFETIME': timedelta(minutes=5),
-    'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=1),
-}
-
-
-# ========================================
-# ✅ LOGGING CONFIGURATION (Optionnel mais recommandé)
-# ========================================
-LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'handlers': {
-        'console': {
-            'class': 'logging.StreamHandler',
-        },
-    },
-    'root': {
-        'handlers': ['console'],
-        'level': 'INFO',
-    },
-    'loggers': {
-        'django': {
-            'handlers': ['console'],
-            'level': 'INFO',
-            'propagate': False,
-        },
-    },
-}
+# Media files (uploads)
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
