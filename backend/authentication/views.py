@@ -1,9 +1,14 @@
 from rest_framework import status, viewsets
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, parser_classes
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
-from .serializers import RegisterSerializer, UserSerializer
-from subscriptions.serializers import GymCenterSerializer
+from rest_framework.parsers import MultiPartParser, FormParser
+from .serializers import (
+    RegisterSerializer, 
+    UserSerializer, 
+    UpdateProfileSerializer,
+    GymCenterSerializer
+)
 from authentication.models import GymCenter
 
 
@@ -22,8 +27,78 @@ def register(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def get_user_profile(request):
-    serializer = UserSerializer(request.user)
+    serializer = UserSerializer(request.user, context={'request': request})
     return Response(serializer.data)
+
+
+@api_view(['PUT', 'PATCH'])
+@permission_classes([IsAuthenticated])
+@parser_classes([MultiPartParser, FormParser])
+def update_user_profile(request):
+    """
+    Mettre à jour le profil de l'utilisateur connecté
+    Supporte l'upload de photo de profil
+    """
+    user = request.user
+    serializer = UpdateProfileSerializer(
+        user, 
+        data=request.data, 
+        partial=True,
+        context={'request': request}
+    )
+    
+    if serializer.is_valid():
+        serializer.save()
+        # Retourner le profil complet mis à jour
+        user_serializer = UserSerializer(user, context={'request': request})
+        return Response(user_serializer.data, status=status.HTTP_200_OK)
+    
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+@parser_classes([MultiPartParser, FormParser])
+def upload_profile_picture(request):
+    """
+    Endpoint dédié pour l'upload de photo de profil
+    """
+    user = request.user
+    
+    if 'profile_picture' not in request.FILES:
+        return Response(
+            {"error": "Aucune image fournie"}, 
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    user.profile_picture = request.FILES['profile_picture']
+    user.save()
+    
+    serializer = UserSerializer(user, context={'request': request})
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def delete_profile_picture(request):
+    """
+    Supprimer la photo de profil de l'utilisateur connecté
+    """
+    user = request.user
+    
+    if not user.profile_picture:
+        return Response(
+            {"detail": "Aucune photo de profil à supprimer"}, 
+            status=status.HTTP_404_NOT_FOUND
+        )
+    
+    # Supprimer le fichier physique et le champ de la base de données
+    user.profile_picture.delete(save=False)
+    user.profile_picture = None
+    user.save()
+    
+    serializer = UserSerializer(user, context={'request': request})
+    return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 # ---------- GymCenter ViewSet ----------
@@ -34,5 +109,4 @@ class GymCenterViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def perform_create(self, serializer):
-        # si tu veux assigner automatiquement l'utilisateur connecté comme owner
         serializer.save(owner=self.request.user)

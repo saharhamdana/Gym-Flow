@@ -26,6 +26,14 @@ class User(AbstractUser):
         default=Role.MEMBER
     )
     
+    # Photo de profil
+    profile_picture = models.ImageField(
+        _('photo de profil'), 
+        upload_to='profiles/', 
+        blank=True, 
+        null=True
+    )
+    
     # Informations supplémentaires
     date_of_birth = models.DateField(_('date de naissance'), null=True, blank=True)
     address = models.TextField(_('adresse'), blank=True)
