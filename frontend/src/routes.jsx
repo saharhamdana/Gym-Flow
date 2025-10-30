@@ -2,13 +2,14 @@
 
 import { Home, Profile, SignIn, SignUp } from "@/pages";
 import MyPrograms from "./pages/MyPrograms";
-// 💡 Composants à créer pour les routes Admin/Coach
 import ProgramBuilder from "./pages/admin/ProgramBuilder"; 
 import ExerciseList from "./pages/admin/ExerciseList"; 
-// 🌟 NOUVEAUX IMPORTS POUR MEMBERS
-import MemberList from "./pages/admin/MemberList";
-import MemberDetail from "./pages/admin/MemberDetail"; 
 
+// Imports pour les Membres
+import MemberCreate from "@/pages/admin/MemberCreate";
+import MemberDetail from "@/pages/admin/MemberDetail";
+import MemberEdit from "@/pages/admin/MemberEdit";
+import MemberList from "@/pages/admin/MemberList";
 
 export const routes = [
   {
@@ -36,20 +37,7 @@ export const routes = [
     path: "/my-programs",
     element: <MyPrograms />,
   },
-  // 🌟 NOUVELLES ROUTES ADMIN/COACH/RÉCEPTIONNISTE POUR LA GESTION DES MEMBRES
-  { 
-    name: "Gestion Membres",
-    path: "/admin/members",
-    element: <MemberList />,
-  },
-  { 
-    name: "Détails Membre",
-    // Route dynamique : le paramètre correspond à MemberProfile.user.pk
-    path: "/admin/members/:userId", 
-    element: <MemberDetail />,
-    hidden: true 
-  },
-  // AUTRES ROUTES ADMIN/COACH (existantes)
+  // Routes Admin/Coach
   { 
     name: "Créer Programme",
     path: "/admin/programs/create",
@@ -60,12 +48,34 @@ export const routes = [
     path: "/admin/exercises",
     element: <ExerciseList />,
   },
+  // Routes Membres
+  {
+    path: "/admin/members",
+    element: <MemberList />,
+    hidden: true
+  },
+  {
+    path: "/admin/members/create", 
+    element: <MemberCreate />,
+    hidden: true
+  },
+  {
+    path: "/admin/members/:userId",
+    element: <MemberDetail />,
+    hidden: true
+  },
+  {
+    path: "/admin/members/:userId/edit",
+    element: <MemberEdit />,
+    hidden: true
+  },
+  // Docs
   {
     name: "Docs",
     href: "https://www.material-tailwind.com/docs/react/installation",
     target: "_blank",
     element: "",
-  },
+  }
 ];
 
 export default routes;
