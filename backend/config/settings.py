@@ -26,7 +26,12 @@ SECRET_KEY = 'django-insecure-j9f@fp$#g%c8m&j1x(nbxxm6tevy)onkt4=*09(s2o6u5!2t(s
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    'localhost',
+    '127.0.0.1',
+    '.gymflow.com',  # Accepte tous les sous-domaines de gymflow.com
+    '*.gymflow.com',
+]
 
 
 # Application definition
@@ -56,6 +61,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'authentication.middleware.SubdomainMiddleware',  # Nouveau
+    'authentication.middleware.TenantMiddleware', 
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -146,6 +153,44 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
 ]
+
+# Pour accepter tous les sous-domaines en développement
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^https://\w+\.gymflow\.com$",  # Tous les sous-domaines HTTPS
+    r"^http://localhost:\d+$",        # Localhost avec n'importe quel port
+]
+
+# CORS Headers
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+    'x-tenant-subdomain',  # Header personnalisé pour le tenant
+]
+
+# Configuration du domaine principal pour les sous-domaines
+PARENT_DOMAIN = 'gymflow.com'
+
+# SESSION COOKIE - Permettre le partage entre sous-domaines
+SESSION_COOKIE_DOMAIN = '.gymflow.com'  # Note le point au début
+SESSION_COOKIE_SAMESITE = 'Lax'
+
+# CSRF COOKIE - Permettre le partage entre sous-domaines
+CSRF_COOKIE_DOMAIN = '.gymflow.com'
+CSRF_TRUSTED_ORIGINS = [
+    'https://*.gymflow.com',
+    'http://localhost:5173',
+]
+
+
+
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
