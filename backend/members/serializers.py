@@ -1,44 +1,55 @@
-# Fichier: members/serializers.py
+# members/serializers.py
 from rest_framework import serializers
-from .models import MemberProfile, PerformanceMetric
-from subscriptions.serializers import MemberSubscriptionSerializer # Réutilisation du serializer
+from .models import Member, MemberMeasurement
 
-class PerformanceMetricSerializer(serializers.ModelSerializer):
+class MemberMeasurementSerializer(serializers.ModelSerializer):
     class Meta:
-        model = PerformanceMetric
-        fields = [
-            'id', 'date', 'weight_kg', 'height_cm', 
-            'body_fat_percentage', 'notes'
-        ]
-        read_only_fields = ['member'] # Le membre sera défini dans la vue
+        model = MemberMeasurement
+        fields = '__all__'
+        read_only_fields = ['date']
 
-class MemberProfileSerializer(serializers.ModelSerializer):
-    # Champs du modèle User liés via OneToOneField
-    email = serializers.EmailField(source='user.email', read_only=True)
-    full_name = serializers.CharField(source='user.get_full_name', read_only=True)
-    phone_number = serializers.CharField(source='user.phone', read_only=True)
+class MemberListSerializer(serializers.ModelSerializer):
+    """Serializer léger pour les listes"""
+    full_name = serializers.SerializerMethodField()
+    age = serializers.SerializerMethodField()
     
-    # Champs pour le suivi de performance (lecture seule pour la liste/détail)
-    latest_metrics = PerformanceMetricSerializer(
-        source='performance_metrics', 
-        many=True, 
-        read_only=True
-    )
-    
-    # Abonnements actifs du membre
-    active_subscriptions = serializers.SerializerMethodField()
-
     class Meta:
-        model = MemberProfile
-        fields = [
-            'user', 'email', 'full_name', 'phone_number', 
-            'join_date', 'current_status', 'goals', 
-            'latest_metrics', 'active_subscriptions', 'last_activity'
-        ]
-        read_only_fields = ['user', 'join_date']
+        model = Member
+        fields = ['id', 'member_id', 'full_name', 'email', 'phone', 'status', 'age', 'photo']
+    
+    def get_full_name(self, obj):
+        return f"{obj.first_name} {obj.last_name}"
+    
+    def get_age(self, obj):
+        from datetime import date
+        today = date.today()
+        return today.year - obj.date_of_birth.year - ((today.month, today.day) < (obj.date_of_birth.month, obj.date_of_birth.day))
 
-    def get_active_subscriptions(self, obj):
-        # Récupérer les abonnements actifs depuis le module subscriptions
-        active_subs = obj.user.membersubscription_set.filter(is_active=True).order_by('-start_date')
-        # Utilisez le serializer du module subscriptions pour un affichage propre
-        return MemberSubscriptionSerializer(active_subs, many=True).data
+class MemberDetailSerializer(serializers.ModelSerializer):
+    """Serializer détaillé pour les vues individuelles"""
+    measurements = MemberMeasurementSerializer(many=True, read_only=True)
+    latest_measurement = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Member
+        fields = '__all__'
+        read_only_fields = ['member_id', 'join_date', 'created_at', 'updated_at']
+    
+    def get_latest_measurement(self, obj):
+        measurement = obj.measurements.first()
+        if measurement:
+            return MemberMeasurementSerializer(measurement).data
+        return None
+
+class MemberCreateUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Member
+        exclude = ['member_id', 'created_at', 'updated_at']
+    
+    def validate_email(self, value):
+        instance = self.instance
+        if instance and Member.objects.exclude(pk=instance.pk).filter(email=value).exists():
+            raise serializers.ValidationError("Un membre avec cet email existe déjà.")
+        elif not instance and Member.objects.filter(email=value).exists():
+            raise serializers.ValidationError("Un membre avec cet email existe déjà.")
+        return value
