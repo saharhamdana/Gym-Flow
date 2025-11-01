@@ -9,9 +9,11 @@ from .views import (
     delete_profile_picture,
     GymCenterViewSet
 )
+from .viewsets import UserViewSet
 
 router = DefaultRouter()
 router.register(r'centers', GymCenterViewSet, basename='gymcenter')
+router.register(r'users', UserViewSet, basename='user')
 
 urlpatterns = [
     path('register/', register, name='register'),

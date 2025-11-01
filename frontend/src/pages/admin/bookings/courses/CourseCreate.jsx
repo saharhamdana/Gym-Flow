@@ -54,7 +54,7 @@ const CourseCreate = () => {
             const [typesData, roomsData, coachesData] = await Promise.all([
                 courseTypeService.getAll({ is_active: true }),
                 roomService.getAll({ is_active: true }),
-                api.get('/auth/users/?role=COACH'),
+                api.get('/auth/users/?role=COACH'),  // New endpoint for fetching coaches
             ]);
 
             setCourseTypes(Array.isArray(typesData) ? typesData : typesData.results || []);

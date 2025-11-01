@@ -89,7 +89,7 @@ const CourseTypeList = () => {
                 <Button
                     className="flex items-center gap-2"
                     color="blue"
-                    onClick={() => navigate('/admin/bookings/course-types/create')}
+                    onClick={() => navigate('/admin/course-types/create')}
                 >
                     <PlusIcon className="h-5 w-5" />
                     Nouveau Type

@@ -89,7 +89,7 @@ const RoomList = () => {
                 <Button
                     className="flex items-center gap-2"
                     color="blue"
-                    onClick={() => navigate('/admin/bookings/rooms/create')}
+                    onClick={() => navigate('/admin/rooms/create')}
                 >
                     <PlusIcon className="h-5 w-5" />
                     Nouvelle Salle

@@ -15,7 +15,7 @@ export default function MyPrograms() {
             try {
                 // Cette route est filtrée côté backend pour ne renvoyer que les programmes assignés à l'utilisateur
                 const res = await api.get("training-programs/");
-                setPrograms(res.data);
+                setPrograms(res.data.results || []); // Utiliser res.data.results
                 setLoading(false);
             } catch (err) {
                 console.error("Erreur de chargement des programmes:", err);
