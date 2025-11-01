@@ -6,6 +6,7 @@ import { Navbar } from "@/widgets/layout";
 import routes from "./routes"; 
 // 🌟 Importez les nouvelles gardes de protection
 import { RequireAuth, RequireAdminOrReceptionistOrCoach } from "./utils/AuthGuard"; 
+import ProgramList from "./components/coaching/ProgramList";
 
 function App() {
   const { pathname } = useLocation();
@@ -59,6 +60,7 @@ function App() {
             }
           )}
           <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="/coaching/programs" element={<ProgramList />} />
         </Routes>
       </div>
     </>
