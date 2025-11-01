@@ -23,8 +23,8 @@ function App() {
         </div>
       )}
       
-      {/* Routes avec wrapper pleine largeur */}
-      <div className="w-full min-h-screen">
+      {/* Contenu principal avec padding-top pour l'espace sous la navbar */}
+      <div className={`w-full min-h-screen ${!(pathname === '/sign-in' || pathname === '/sign-up') ? 'pt-24' : ''}`}>
         <Routes>
           {routes.map(
             ({ path, element }, key) => {

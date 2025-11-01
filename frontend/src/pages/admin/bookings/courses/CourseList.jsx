@@ -135,7 +135,7 @@ const CourseList = () => {
                     <Button
                         className="flex items-center gap-2"
                         color="blue"
-                        onClick={() => navigate('/admin/bookings/courses/create')}
+                        onClick={() => navigate('/admin/courses/create')}
                     >
                         <PlusIcon className="h-5 w-5" />
                         Nouveau Cours
