@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+  
     
     # Third-party apps
     'rest_framework',
@@ -53,6 +54,7 @@ INSTALLED_APPS = [
     'subscriptions',
     'members',
     'coaching'
+
 ]
 
 AUTH_USER_MODEL = 'authentication.User'
@@ -156,7 +158,9 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # ========================================
 CORS_ALLOW_ALL_ORIGINS = False
 CORS_ALLOWED_ORIGINS = [
+    # "http://localhost:3000",
     "http://localhost:5173",
+    # "http://127.0.0.1:3000",
     "http://127.0.0.1:5173",
 ]
 
