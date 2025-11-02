@@ -11,8 +11,14 @@ import {
   Input,
   Button,
 } from "@material-tailwind/react";
-import { UserPlusIcon } from "@heroicons/react/24/solid";
+import {
+  UserPlusIcon,
+  PencilIcon,
+  TrashIcon,
+} from "@heroicons/react/24/solid";
 import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
+import { EditStaffModal } from "./EditStaffModal";
+import { DeleteStaffModal } from "./DeleteStaffModal";
 import axiosInstance from "../../api/axiosInstance";
 
 const TABLE_HEAD = ["Utilisateur", "Email", "Rôle", "Actions"];
@@ -21,7 +27,6 @@ const ROLE_COLORS = {
   ADMIN: "blue",
   COACH: "green",
   RECEPTIONIST: "amber",
-  MEMBER: "gray",
 };
 
 export function StaffList() {
@@ -30,6 +35,9 @@ export function StaffList() {
   const [filteredStaff, setFilteredStaff] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [selectedStaff, setSelectedStaff] = useState(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   useEffect(() => {
     fetchStaff();
@@ -59,8 +67,9 @@ export function StaffList() {
       const response = await axiosInstance.get("auth/users/");
       console.log("Staff list response:", response.data);
       
-      // Check if the response is paginated
-      const staffData = response.data.results || response.data;
+      // Check if the response is paginated and filter out members
+      const allData = response.data.results || response.data;
+      const staffData = allData.filter(user => user.role !== "MEMBER");
       setStaff(staffData);
       setFilteredStaff(staffData);
     } catch (error) {
@@ -90,7 +99,7 @@ export function StaffList() {
   };
 
   const getRoleOptions = (currentRole) => {
-    const roles = ["ADMIN", "COACH", "RECEPTIONIST", "MEMBER"];
+    const roles = ["ADMIN", "COACH", "RECEPTIONIST"];
     return roles.filter(role => role !== currentRole);
   };
 
@@ -194,6 +203,30 @@ export function StaffList() {
                     </td>
                     <td className={classes}>
                       <div className="flex gap-2">
+                        <Tooltip content="Modifier">
+                          <IconButton
+                            variant="text"
+                            color="blue"
+                            onClick={() => {
+                              setSelectedStaff({ id, first_name, last_name, email, role, profile_picture });
+                              setIsEditModalOpen(true);
+                            }}
+                          >
+                            <PencilIcon className="h-4 w-4" />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip content="Supprimer">
+                          <IconButton
+                            variant="text"
+                            color="red"
+                            onClick={() => {
+                              setSelectedStaff({ id, first_name, last_name, email, role, profile_picture });
+                              setIsDeleteModalOpen(true);
+                            }}
+                          >
+                            <TrashIcon className="h-4 w-4" />
+                          </IconButton>
+                        </Tooltip>
                         {getRoleOptions(role).map((newRole) => (
                           <Tooltip key={newRole} content={`Changer en ${newRole}`}>
                             <IconButton
@@ -219,6 +252,42 @@ export function StaffList() {
           </tbody>
         </table>
       </CardBody>
+      
+      {/* Edit Modal */}
+      {selectedStaff && (
+        <EditStaffModal
+          open={isEditModalOpen}
+          handleOpen={() => {
+            setIsEditModalOpen(false);
+            setSelectedStaff(null);
+          }}
+          staff={selectedStaff}
+          onUpdate={(updatedStaff) => {
+            setStaff((prevStaff) =>
+              prevStaff.map((s) =>
+                s.id === updatedStaff.id ? updatedStaff : s
+              )
+            );
+          }}
+        />
+      )}
+
+      {/* Delete Modal */}
+      {selectedStaff && (
+        <DeleteStaffModal
+          open={isDeleteModalOpen}
+          handleOpen={() => {
+            setIsDeleteModalOpen(false);
+            setSelectedStaff(null);
+          }}
+          staff={selectedStaff}
+          onDelete={(deletedId) => {
+            setStaff((prevStaff) =>
+              prevStaff.filter((s) => s.id !== deletedId)
+            );
+          }}
+        />
+      )}
     </div>
   );
 }
