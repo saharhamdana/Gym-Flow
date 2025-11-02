@@ -28,6 +28,7 @@ const MemberCreate = () => {
         first_name: '',
         last_name: '',
         email: '',
+        password: '',  // Nouveau champ pour le mot de passe
         phone: '',
         date_of_birth: '',
         gender: 'M',
@@ -66,7 +67,25 @@ const MemberCreate = () => {
 
         try {
             // Créer un FormData pour supporter l'upload de fichier
+            // Créer d'abord l'utilisateur
+            const userData = {
+                email: formData.email,
+                password: formData.password,
+                username: formData.email.split('@')[0], // Générer un nom d'utilisateur à partir de l'email
+                first_name: formData.first_name,
+                last_name: formData.last_name,
+                role: 'MEMBER' // Définir le rôle comme MEMBER
+            };
+
+            // Créer l'utilisateur
+            const userResponse = await api.post('auth/register/', userData);
+            const userId = userResponse.data.id;
+
+            // Créer le membre avec l'ID de l'utilisateur
             const formDataToSend = new FormData();
+            
+            // Ajouter l'ID de l'utilisateur
+            formDataToSend.append('user', userId);
             
             // Ajouter les champs obligatoires
             formDataToSend.append('first_name', formData.first_name);
@@ -190,6 +209,15 @@ const MemberCreate = () => {
                                 type="email"
                                 name="email"
                                 value={formData.email}
+                                onChange={handleChange}
+                                required
+                            />
+
+                            <Input
+                                label="Mot de passe *"
+                                type="password"
+                                name="password"
+                                value={formData.password}
                                 onChange={handleChange}
                                 required
                             />

@@ -1,4 +1,4 @@
-// Fichier: frontend/src/routes.jsx
+// File: frontend/src/routes.jsx
 
 import Home from "@/pages/home";
 import SignIn from "@/pages/auth/SignIn";
@@ -41,6 +41,15 @@ import BookingCreate from "./pages/admin/bookings/bookings/BookingCreate";
 import BookingList from "./pages/admin/bookings/bookings/BookingList";
 import BookingDetail from "./pages/admin/bookings/bookings/BookingDetail";
 import BookingEdit from "./pages/admin/bookings/bookings/BookingEdit";
+
+// Imports Subscriptions
+import {
+  SubscriptionPlanList,
+  SubscriptionPlanForm,
+  SubscriptionList,
+  SubscriptionCreate,
+  SubscriptionDetail,
+} from "./pages/subscriptions";
 
 export const routes = [
   // ==========================================
@@ -105,19 +114,6 @@ export const routes = [
     path: "/admin/members",
     element: <MemberList />,
   },
-  // ==========================================
-  // ROUTES ADMIN - STAFF
-  // ==========================================
-  {
-    name: "Gestion Personnel",
-    path: "/admin/staff",
-    element: <Staff />,
-  },
-  {
-    path: "/admin/users/create",
-    element: <UserCreate />,
-    hidden: true,
-  },
   {
     path: "/admin/members/create", 
     element: <MemberCreate />,
@@ -131,6 +127,54 @@ export const routes = [
   {
     path: "/admin/members/:userId/edit",
     element: <MemberEdit />,
+    hidden: true
+  },
+
+  // ==========================================
+  // ROUTES ADMIN - STAFF
+  // ==========================================
+  {
+    name: "Gestion Personnel",
+    path: "/admin/staff",
+    element: <Staff />,
+  },
+  {
+    path: "/admin/users/create",
+    element: <UserCreate />,
+    hidden: true,
+  },
+
+  // ==========================================
+  // ROUTES ADMIN - ABONNEMENTS
+  // ==========================================
+  {
+    name: "Plans d'Abonnement",
+    path: "/admin/subscription-plans",
+    element: <SubscriptionPlanList />,
+  },
+  {
+    path: "/admin/subscription-plans/create",
+    element: <SubscriptionPlanForm />,
+    hidden: true
+  },
+  {
+    path: "/admin/subscription-plans/:planId/edit",
+    element: <SubscriptionPlanForm />,
+    hidden: true
+  },
+  {
+    name: "Abonnements",
+    path: "/admin/subscriptions",
+    element: <SubscriptionList />,
+  },
+  {
+    path: "/admin/subscriptions/create",
+    element: <SubscriptionCreate />,
+    hidden: true
+  },
+  {
+    path: "/admin/subscriptions/:subscriptionId",
+    element: <SubscriptionDetail />,
     hidden: true
   },
 
