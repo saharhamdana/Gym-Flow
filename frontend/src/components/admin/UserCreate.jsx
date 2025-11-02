@@ -13,9 +13,9 @@ import { useNavigate } from "react-router-dom";
 export function UserCreate() {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    username: "",
     email: "",
     password: "",
+    username: "",  // Will be generated from email
     first_name: "",
     last_name: "",
     role: "MEMBER",
@@ -40,36 +40,72 @@ export function UserCreate() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    console.log("Submitting data:", formData);
 
-    try {
-      // First register the user
-      const registerResponse = await axiosInstance.post("/api/auth/register/", {
-        username: formData.username,
-        email: formData.email,
-        password: formData.password,
-        first_name: formData.first_name,
-        last_name: formData.last_name,
-      });
+    // Basic validation
+    if (!formData.email || !formData.password) {
+      setError("L'email et le mot de passe sont requis.");
+      return;
+    }
+    if (formData.password.length < 6) {
+      setError("Le mot de passe doit contenir au moins 6 caractères.");
+      return;
+    }
+    if (!formData.email.includes('@')) {
+      setError("Veuillez entrer une adresse email valide.");
+      return;
+    }
 
-      // If registration successful, update the role
+    // Prepare registration data
+    const registrationData = {
+      email: formData.email,
+      username: formData.email.split('@')[0],  // Default username from email
+      password: formData.password,
+      first_name: formData.first_name || '',
+      last_name: formData.last_name || '',
+    };    try {
+      console.log("Sending registration data:", registrationData);
+      const registerResponse = await axiosInstance.post("auth/register/", registrationData);
+      console.log("Registration response:", registerResponse.data);
+
       if (registerResponse.status === 201) {
         const userId = registerResponse.data.id;
-        // Update the user's role if it's not MEMBER
-        if (formData.role !== "MEMBER") {
-          await axiosInstance.patch(`/api/auth/users/${userId}/`, {
-            role: formData.role,
-          });
+
+        // Update user role in a separate request
+        if (formData.role && formData.role !== "MEMBER") {
+          try {
+            console.log("Updating role for user:", userId);
+            const roleResponse = await axiosInstance.put(`auth/users/${userId}/`, {
+              ...registerResponse.data,  // Include existing user data
+              role: formData.role
+            });
+            console.log("Role update response:", roleResponse.data);
+          } catch (roleError) {
+            console.error("Error updating role:", roleError.response?.data);
+            setError("L'utilisateur a été créé mais la mise à jour du rôle a échoué.");
+            return;
+          }
         }
+
+        // Success - redirect to staff list
         navigate("/admin/staff");
       }
     } catch (error) {
-      console.error("Error:", error.response?.data);
-      setError(
-        error.response?.data?.email?.[0] || 
-        error.response?.data?.username?.[0] || 
-        error.response?.data?.message ||
-        "Une erreur est survenue lors de la création du compte"
-      );
+      console.error("Registration error full:", error);
+      console.error("Registration error response:", error.response?.data);
+      
+      if (error.response?.data?.errors) {
+        const errorData = error.response.data.errors;
+        const errorMessages = [];
+        
+        if (errorData.username) errorMessages.push(`Nom d'utilisateur: ${errorData.username.join(', ')}`);
+        if (errorData.email) errorMessages.push(`Email: ${errorData.email.join(', ')}`);
+        if (errorData.password) errorMessages.push(`Mot de passe: ${errorData.password.join(', ')}`);
+        
+        setError(errorMessages.join('\n'));
+      } else {
+        setError("Une erreur est survenue lors de la création du compte. Veuillez réessayer.");
+      }
     }
   };
 
@@ -85,10 +121,18 @@ export function UserCreate() {
         <div className="mb-4 flex flex-col gap-6">
           <Input
             size="lg"
-            label="Nom d'utilisateur"
-            name="username"
-            value={formData.username}
-            onChange={handleChange}
+            label="Email"
+            name="email"
+            type="email"
+            value={formData.email}
+            onChange={(e) => {
+              const email = e.target.value;
+              setFormData(prev => ({
+                ...prev,
+                email,
+                username: email.split('@')[0]  // Generate username from email
+              }));
+            }}
             required
           />
           <Input

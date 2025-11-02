@@ -15,7 +15,7 @@ import { UserPlusIcon } from "@heroicons/react/24/solid";
 import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import axiosInstance from "../../api/axiosInstance";
 
-const TABLE_HEAD = ["Membre", "Email", "Rôle", "Actions"];
+const TABLE_HEAD = ["Utilisateur", "Email", "Rôle", "Actions"];
 
 const ROLE_COLORS = {
   ADMIN: "blue",
@@ -28,44 +28,69 @@ export function StaffList() {
   const [staff, setStaff] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredStaff, setFilteredStaff] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     fetchStaff();
   }, []);
 
   useEffect(() => {
+    if (!Array.isArray(staff)) {
+      console.error("Staff is not an array:", staff);
+      setFilteredStaff([]);
+      return;
+    }
+
     const filtered = staff.filter(
       (member) =>
-        member.first_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        member.last_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        member.email.toLowerCase().includes(searchQuery.toLowerCase())
+        (member.first_name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (member.last_name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (member.email || "").toLowerCase().includes(searchQuery.toLowerCase())
     );
     setFilteredStaff(filtered);
   }, [searchQuery, staff]);
 
   const fetchStaff = async () => {
+    setLoading(true);
+    setError(null);
     try {
-      const response = await axiosInstance.get("/api/auth/users/");
-      setStaff(response.data);
-      setFilteredStaff(response.data);
+      console.log("Fetching staff list...");
+      const response = await axiosInstance.get("auth/users/");
+      console.log("Staff list response:", response.data);
+      
+      // Check if the response is paginated
+      const staffData = response.data.results || response.data;
+      setStaff(staffData);
+      setFilteredStaff(staffData);
     } catch (error) {
-      console.error("Error fetching staff:", error);
+      console.error("Error fetching staff:", error.response?.data || error.message);
+      setError(error.response?.data?.detail || "Erreur lors du chargement de la liste du personnel");
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleRoleChange = async (userId, newRole) => {
     try {
-      await axiosInstance.patch(`/api/auth/users/${userId}/`, {
-        role: newRole,
+      const userResponse = await axiosInstance.get(`auth/users/${userId}/`);
+      const currentUser = userResponse.data;
+
+      const response = await axiosInstance.put(`auth/users/${userId}/`, {
+        ...currentUser,
+        role: newRole
       });
+
+      console.log("Role update response:", response.data);
       fetchStaff(); // Refresh the list after update
     } catch (error) {
-      console.error("Error updating role:", error);
+      console.error("Error updating role:", error.response?.data || error.message);
+      alert("Erreur lors de la modification du rôle. Veuillez réessayer.");
     }
   };
 
   const getRoleOptions = (currentRole) => {
-    const roles = ["ADMIN", "COACH", "RECEPTIONIST"];
+    const roles = ["ADMIN", "COACH", "RECEPTIONIST", "MEMBER"];
     return roles.filter(role => role !== currentRole);
   };
 
@@ -77,7 +102,9 @@ export function StaffList() {
             Liste du Personnel
           </Typography>
           <Typography color="gray" className="mt-1 font-normal">
-            Voir et gérer les membres du personnel
+            {loading ? "Chargement..." : 
+             error ? `Erreur: ${error}` :
+             `${Array.isArray(filteredStaff) ? filteredStaff.length : 0} membre(s) au total`}
           </Typography>
         </div>
         <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
@@ -119,7 +146,7 @@ export function StaffList() {
             </tr>
           </thead>
           <tbody>
-            {filteredStaff.map(
+            {Array.isArray(filteredStaff) && filteredStaff.map(
               ({ id, first_name, last_name, email, role, profile_picture }, index) => {
                 const isLast = index === filteredStaff.length - 1;
                 const classes = isLast
