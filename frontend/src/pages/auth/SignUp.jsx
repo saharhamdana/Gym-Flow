@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-// 🎯 Assurez-vous que le chemin est correct. 
-import api from "../api/axiosInstance"; 
+import api from "../../api/axiosInstance"; 
 
 import {
   Input,
@@ -12,7 +11,6 @@ import {
 
 export function SignUp() {
   const navigate = useNavigate();
-  // 🔑 Champs nécessaires pour l'enregistrement sur le backend Django
   const [form, setForm] = useState({ 
     username: "", 
     email: "", 
@@ -33,7 +31,6 @@ export function SignUp() {
     setError(null);
     setSuccess(null);
 
-    // 1. Validation de base
     if (!form.username || !form.password) {
       setError("Le nom d'utilisateur et le mot de passe sont requis.");
       return;
@@ -43,7 +40,6 @@ export function SignUp() {
       return;
     }
     
-    // Si l'utilisateur n'a pas mis de first/last name, utiliser le username
     const dataToSend = {
       ...form,
       first_name: form.first_name || form.username,
@@ -52,21 +48,16 @@ export function SignUp() {
 
     try {
         setLoading(true);
-        
-        // 🔑 CORRECTION : L'URL complète sera : http://127.0.0.1:8000/api/auth/register/
         const response = await api.post("auth/register/", dataToSend); 
-        
         setLoading(false);
         setSuccess("Inscription réussie. Vous pouvez maintenant vous connecter.");
 
-        // Optionnel : Rediriger après quelques secondes
         setTimeout(() => {
           navigate("/sign-in");
         }, 2000);
 
     } catch (err) {
         setLoading(false);
-        // Gérer les erreurs spécifiques de Django (ex: utilisateur/email déjà existant)
         if (err.response && err.response.data) {
             const errors = err.response.data;
             let errorMessage = "Erreur d'inscription.";
@@ -95,7 +86,6 @@ export function SignUp() {
           </Typography>
         </div>
         
-        {/* Affichage de l'erreur/succès */}
         {error && (
             <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative my-4" role="alert">
                 <strong className="font-bold">Erreur: </strong>
@@ -111,8 +101,6 @@ export function SignUp() {
 
         <form className="mt-8 mb-2 mx-auto w-80 max-w-screen-lg lg:w-1/2" onSubmit={handleSubmit}>
           <div className="mb-1 flex flex-col gap-6">
-            
-            {/* Champs d'inscription */}
             <Typography variant="small" color="blue-gray" className="-mb-3 font-medium">
               Nom d'utilisateur*
             </Typography>
@@ -172,7 +160,6 @@ export function SignUp() {
             </Link>
           </Typography>
         </form>
-
       </div>
 
       <div className="w-2/5 h-full hidden lg:block">

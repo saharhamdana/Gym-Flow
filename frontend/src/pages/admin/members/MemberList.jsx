@@ -13,7 +13,7 @@ import {
     Alert,
 } from "@material-tailwind/react";
 import { MagnifyingGlassIcon, UserPlusIcon } from "@heroicons/react/24/solid";
-import api from "../../api/axiosInstance";
+import api from "@/api/axiosInstance";
 
 export function MemberList() {
     const navigate = useNavigate();

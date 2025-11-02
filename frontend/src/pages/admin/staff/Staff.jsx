@@ -1,5 +1,5 @@
 import React from "react";
-import { StaffList } from "../../components/admin/StaffList";
+import { StaffList } from "@/components/admin/StaffList";
 import { Card } from "@material-tailwind/react";
 
 export function Staff() {
