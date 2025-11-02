@@ -15,7 +15,7 @@ import {
 } from "@material-tailwind/react";
 import { ArrowLeftIcon } from "@heroicons/react/24/solid";
 import api from "@/api/axiosInstance";
-import PhotoUpload from "@/components/PhotoUpload";
+import PhotoUpload from "@/components/common/PhotoUpload";
 
 const MemberCreate = () => {
     const navigate = useNavigate();

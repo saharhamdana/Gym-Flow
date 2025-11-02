@@ -6,7 +6,7 @@ import {
     Typography,
     Checkbox,
 } from "@material-tailwind/react";
-import api from "../api/axiosInstance";
+import api from "../../api/axiosInstance";
 
 export function SignIn() {
     const navigate = useNavigate();

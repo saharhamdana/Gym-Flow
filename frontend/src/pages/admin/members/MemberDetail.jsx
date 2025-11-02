@@ -13,8 +13,8 @@ import {
 } from "@material-tailwind/react";
 import { ArrowLeftIcon, PencilIcon, TrashIcon, PlusIcon } from "@heroicons/react/24/solid";
 import api from "@/api/axiosInstance";
-import DeleteMemberModal from "@/components/DeleteMemberModal";
-import AddMeasurementModal from "@/components/AddMeasurementModal";
+import { DeleteMemberModal } from "@/components/profile/DeleteMemberModal";
+import { AddMeasurementModal } from "@/components/profile/AddMeasurementModal";
 
 const MemberDetail = () => {
     const { userId } = useParams();

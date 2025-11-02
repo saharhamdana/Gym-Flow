@@ -1,5 +1,5 @@
 import React from "react";
-import { UserCreate } from "../../components/admin/UserCreate";
+import UserCreate from "@/components/admin/UserCreate";
 
 export function UserCreatePage() {
   return (
@@ -9,4 +9,4 @@ export function UserCreatePage() {
   );
 }
 
-export default UserCreatePage;
+export default UserCreate;

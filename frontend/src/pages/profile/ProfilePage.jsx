@@ -30,7 +30,7 @@ import {
 } from "@heroicons/react/24/solid";
 import { Footer } from "@/widgets/layout";
 
-export default function Profile() {
+export default function ProfilePage() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [subscriptions, setSubscriptions] = useState([]);
