@@ -1,16 +1,20 @@
 import React from "react";
 import PropTypes from "prop-types";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import {
   Navbar as MTNavbar,
   Collapse,
   Typography,
   IconButton,
+  Button,
 } from "@material-tailwind/react";
 import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline";
 
-export function Navbar({ routes }) {
+import { mainNavigation } from "@/data/navigation-data";
+
+export function Navbar() {
   const [openNav, setOpenNav] = React.useState(false);
+  const location = useLocation();
 
   React.useEffect(() => {
     window.addEventListener(
@@ -20,52 +24,63 @@ export function Navbar({ routes }) {
   }, []);
 
   const navList = (
-    <ul className="mb-4 mt-2 flex flex-col gap-2 text-inherit lg:mb-0 lg:mt-0 lg:flex-row lg:items-center lg:gap-6">
-      {routes.map(({ name, path, icon, href, target }) => (
-        <Typography
-          key={name}
-          as="li"
-          variant="small"
-          color="inherit"
-          className="capitalize"
-        >
-          {href ? (
-            <a
-              href={href}
-              target={target}
-              className="flex items-center gap-1 p-1 font-bold"
+    <ul className="mb-4 mt-2 flex flex-col gap-2 lg:mb-0 lg:mt-0 lg:flex-row lg:items-center lg:gap-6">
+      {mainNavigation.map(({ name, path }) => {
+        const isAuthLink = path === "/sign-in" || path === "/sign-up";
+        const isActive = location.pathname === path || (path.startsWith("#") && location.pathname === "/" && location.hash === path);
+        
+        if (isAuthLink) {
+          return (
+            <Button
+              key={name}
+              variant={path === "/sign-up" ? "gradient" : "text"}
+              size="sm"
+              color={path === "/sign-up" ? "blue" : "white"}
+              className={path === "/sign-in" ? "text-gray-900" : ""}
             >
-              {icon &&
-                React.createElement(icon, {
-                  className: "w-[18px] h-[18px] opacity-75 mr-1",
-                })}
-              {name}
-            </a>
-          ) : (
+              <Link to={path} className="flex items-center gap-1">
+                {name}
+              </Link>
+            </Button>
+          );
+        }
+
+        return (
+          <Typography
+            key={name}
+            as="li"
+            variant="small"
+            color="gray"
+            className="capitalize"
+          >
             <Link
               to={path}
-              target={target}
-              className="flex items-center gap-1 p-1 font-bold"
+              className={`flex items-center gap-1 p-1 font-medium transition-colors ${
+                isActive ? "text-blue-500" : "hover:text-blue-500"
+              }`}
+              onClick={(e) => {
+                if (path.startsWith("#")) {
+                  e.preventDefault();
+                  const element = document.querySelector(path);
+                  if (element) {
+                    element.scrollIntoView({ behavior: "smooth" });
+                  }
+                }
+              }}
             >
-              {icon &&
-                React.createElement(icon, {
-                  className: "w-[18px] h-[18px] opacity-75 mr-1",
-                })}
               {name}
             </Link>
-          )}
-        </Typography>
-      ))}
+          </Typography>
+        );
+      })}
     </ul>
   );
 
   return (
-    <MTNavbar color="transparent" className="p-3">
-      {/* Utilisation de relative pour positionner le logo en absolute */}
-      <div className="container mx-auto flex items-center justify-between text-white relative">
-        
-        {/* LOGO positionné à gauche */}
-        <Link to="/" className="absolute left-0 py-1.5 ml-2">
+    <MTNavbar color="white" className="p-3 sticky top-0 z-50">
+      <div className="container mx-auto flex items-center justify-between relative">
+        {/* LOGO */}
+        <Link to="/" className="py-1.5">
           <img 
             src="/img/logoclaire.png"
             alt="Logo Claire"
@@ -73,14 +88,9 @@ export function Navbar({ routes }) {
           />
         </Link>
         
-        {/* navList centré sur les grands écrans (lg:justify-center) */}
-        <div className="hidden lg:flex lg:w-full lg:justify-center">
+        {/* Navigation principale */}
+        <div className="hidden lg:flex lg:items-center lg:gap-6">
           {navList}
-        </div>
-        
-        {/* Espace pour le coin droit (vide) */}
-        <div className="hidden gap-2 lg:flex">
-          {/* Les boutons ont été supprimés ici */}
         </div>
         
         {/* Bouton hamburger */}

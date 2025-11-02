@@ -4,6 +4,7 @@ import React from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { Navbar } from "@/widgets/layout"; 
 import routes from "./routes"; 
+import AdminLayout from "@/components/admin/AdminLayout";
 // 🌟 Importez les nouvelles gardes de protection
 import { RequireAuth, RequireAdminOrReceptionistOrCoach } from "./utils/AuthGuard"; 
 
@@ -16,14 +17,11 @@ function App() {
   return (
     <>
       {/* Navbar avec son style original */}
-      {!(pathname === '/sign-in' || pathname === '/sign-up') && (
-        <div className="container absolute left-2/4 z-10 mx-auto -translate-x-2/4 p-4">
-          {/* Filtrez les routes cachées si besoin */}
-          <Navbar routes={routes.filter(r => r.path !== '/profile' && !r.hidden)} /> 
-        </div>
+      {!(pathname === '/sign-in' || pathname === '/sign-up' || isAdminRoute(pathname)) && (
+        <Navbar />
       )}
       
-      {/* Contenu principal avec padding-top pour l'espace sous la navbar */}
+{/* Routes avec wrapper pleine largeur */}
       <div className={`w-full min-h-screen ${!(pathname === '/sign-in' || pathname === '/sign-up') ? 'pt-24' : ''}`}>
         <Routes>
           {routes.map(
@@ -37,7 +35,13 @@ function App() {
                             key={key} 
                             exact 
                             path={path} 
-                            element={<RequireAdminOrReceptionistOrCoach>{element}</RequireAdminOrReceptionistOrCoach>} 
+                            element={
+                                <RequireAdminOrReceptionistOrCoach>
+                                    <AdminLayout>
+                                        {element}
+                                    </AdminLayout>
+                                </RequireAdminOrReceptionistOrCoach>
+                            } 
                         />
                     );
                 }
