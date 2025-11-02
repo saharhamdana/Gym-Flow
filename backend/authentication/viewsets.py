@@ -13,9 +13,9 @@ class UserFilter(filters.FilterSet):
         model = User
         fields = ['role']
 
-class UserViewSet(viewsets.ReadOnlyModelViewSet):
+class UserViewSet(viewsets.ModelViewSet):
     """
-    A viewset for viewing users.
+    A viewset for viewing and editing users.
     """
     serializer_class = UserSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -27,3 +27,13 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
         if role is not None:
             queryset = queryset.filter(role=role)
         return queryset
+    
+    def get_permissions(self):
+        """
+        Override permissions:
+        - List/Retrieve: Any authenticated user
+        - Update/Delete: Only admin users
+        """
+        if self.action in ['update', 'partial_update', 'destroy']:
+            self.permission_classes = [permissions.IsAuthenticated]
+        return super().get_permissions()
