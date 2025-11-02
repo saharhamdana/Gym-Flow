@@ -5,6 +5,8 @@ import MyPrograms from "./pages/MyPrograms";
 import ProgramBuilder from "./pages/admin/ProgramBuilder"; 
 import ExerciseList from "./pages/admin/ExerciseList"; 
 import ReservationList from "./pages/admin/ReservationList";
+import Staff from "./pages/admin/Staff";
+import UserCreatePage from "./pages/admin/UserCreatePage";
 
 // Imports Membres
 import MemberCreate from "@/pages/admin/MemberCreate";
@@ -99,6 +101,19 @@ export const routes = [
     name: "Gestion Membres",
     path: "/admin/members",
     element: <MemberList />,
+  },
+  // ==========================================
+  // ROUTES ADMIN - STAFF
+  // ==========================================
+  {
+    name: "Gestion Personnel",
+    path: "/admin/staff",
+    element: <Staff />,
+  },
+  {
+    path: "/admin/users/create",
+    element: <UserCreatePage />,
+    hidden: true,
   },
   {
     path: "/admin/members/create", 

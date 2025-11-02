@@ -17,6 +17,9 @@ class Member(models.Model):
         ('EXPIRED', 'Expiré'),
     ]
     
+    # Liaison avec le modèle User
+    user = models.OneToOneField('authentication.User', on_delete=models.CASCADE, null=True, blank=True, related_name='member_profile')
+    
     # Informations personnelles
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
