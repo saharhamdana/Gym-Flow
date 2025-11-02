@@ -1,18 +1,21 @@
 // Fichier: frontend/src/routes.jsx
 
-import { Home, Profile, SignIn, SignUp } from "@/pages";
-import MyPrograms from "./pages/MyPrograms";
-import ProgramBuilder from "./pages/admin/ProgramBuilder"; 
-import ExerciseList from "./pages/admin/ExerciseList"; 
-import ReservationList from "./pages/admin/ReservationList";
-import Staff from "./pages/admin/Staff";
-import UserCreatePage from "./pages/admin/UserCreatePage";
+import Home from "@/pages/home";
+import SignIn from "@/pages/auth/SignIn";
+import SignUp from "@/pages/auth/SignUp";
+import ProfilePage from "@/pages/profile/ProfilePage";
+import MyPrograms from "@/pages/programs/MyPrograms";
+
+// Admin imports
+import { ProgramBuilder, ExerciseList } from "@/pages/admin/programs";
+import ReservationList from "@/pages/admin/ReservationList";
+import { Staff, UserCreate } from "@/pages/admin/staff";
 
 // Imports Membres
-import MemberCreate from "@/pages/admin/MemberCreate";
-import MemberDetail from "@/pages/admin/MemberDetail";
-import MemberEdit from "@/pages/admin/MemberEdit";
-import MemberList from "@/pages/admin/MemberList";
+import MemberCreate from "@/pages/admin/members/MemberCreate";
+import MemberDetail from "@/pages/admin/members/MemberDetail";
+import MemberEdit from "@/pages/admin/members/MemberEdit";
+import MemberList from "@/pages/admin/members/MemberList";
 
 // Imports Salles (Rooms)
 import RoomCreate from "./pages/admin/bookings/rooms/RoomCreate";
@@ -71,7 +74,7 @@ export const routes = [
   {
     name: "profile",
     path: "/profile",
-    element: <Profile />,
+    element: <ProfilePage />,
     hidden: true
   },
   { 
@@ -112,7 +115,7 @@ export const routes = [
   },
   {
     path: "/admin/users/create",
-    element: <UserCreatePage />,
+    element: <UserCreate />,
     hidden: true,
   },
   {

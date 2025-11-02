@@ -5,12 +5,12 @@ import { ThemeProvider } from "@material-tailwind/react";
 
 // Import de vos composants principaux
 import App from "./App";
-import { Home } from "./pages/Home"; // 👈 Ajout de l'import pour le composant Home
-import { SignIn } from "./pages/sign-in"; 
-import { SignUp }from "./pages/sign-up";
-import Profile from "./pages/Profile.jsx";
-import MemberList from "./pages/admin/MemberList";
-import CourseTypeList from "./pages/admin/CourseTypeList";
+import { Home } from "./pages/home";
+import { SignIn } from "./pages/auth/SignIn"; 
+import { SignUp } from "./pages/auth/SignUp";
+import { ProfilePage } from "./pages/profile";
+import { MemberList } from "./pages/admin/members";
+import { CourseTypeList } from "./pages/admin/bookings/course-types";
 import ReservationList from "./pages/admin/ReservationList";
 
 import "./assets/tailwind.css";

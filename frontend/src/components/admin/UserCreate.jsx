@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   Card,
   Input,
@@ -7,10 +7,10 @@ import {
   Select,
   Option,
 } from "@material-tailwind/react";
-import axiosInstance from "../../api/axiosInstance";
+import axiosInstance from "@/api/axiosInstance";
 import { useNavigate } from "react-router-dom";
 
-export function UserCreate() {
+function UserCreate() {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     email: "",
@@ -74,11 +74,10 @@ export function UserCreate() {
       if (registerResponse.status === 201) {
         const userId = registerResponse.data.id;
 
-        // Update user role
         try {
           console.log("Updating role for user:", userId);
           const roleResponse = await axiosInstance.put(`auth/users/${userId}/`, {
-            ...registerResponse.data,  // Include existing user data
+            ...registerResponse.data,
             role: formData.role
           });
           console.log("Role update response:", roleResponse.data);
@@ -88,12 +87,10 @@ export function UserCreate() {
         } catch (roleError) {
           console.error("Error updating role:", roleError.response?.data);
           setError("L'utilisateur a été créé mais la mise à jour du rôle a échoué.");
-          return;
         }
       }
     } catch (error) {
-      console.error("Registration error full:", error);
-      console.error("Registration error response:", error.response?.data);
+      console.error("Registration error:", error);
       
       if (error.response?.data?.errors) {
         const errorData = error.response.data.errors;
@@ -103,9 +100,11 @@ export function UserCreate() {
         if (errorData.email) errorMessages.push(`Email: ${errorData.email.join(', ')}`);
         if (errorData.password) errorMessages.push(`Mot de passe: ${errorData.password.join(', ')}`);
         
-        setError(errorMessages.join('\n'));
+        setError(errorMessages.join(' '));
+      } else if (error.response?.data?.detail) {
+        setError(error.response.data.detail);
       } else {
-        setError("Une erreur est survenue lors de la création du compte. Veuillez réessayer.");
+        setError("Une erreur est survenue lors de la création de l'utilisateur.");
       }
     }
   };
@@ -187,3 +186,5 @@ export function UserCreate() {
     </Card>
   );
 }
+
+export default UserCreate;

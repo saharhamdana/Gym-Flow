@@ -1,7 +1,8 @@
-# members/models.py
+# Fichier: backend/members/models.py
+
 from django.db import models
 from django.core.validators import RegexValidator
-from django.utils import timezone  # ✅ IMPORT AJOUTÉ
+from django.utils import timezone
 
 class Member(models.Model):
     GENDER_CHOICES = [
@@ -11,20 +12,17 @@ class Member(models.Model):
     ]
     
     STATUS_CHOICES = [
+        ('INACTIVE', 'Inactif'),      # ✅ Changé l'ordre (INACTIVE en premier)
         ('ACTIVE', 'Actif'),
-        ('INACTIVE', 'Inactif'),
         ('SUSPENDED', 'Suspendu'),
         ('EXPIRED', 'Expiré'),
     ]
-    
-    # Liaison avec le modèle User
-    user = models.OneToOneField('authentication.User', on_delete=models.CASCADE, null=True, blank=True, related_name='member_profile')
     
     # Informations personnelles
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
     email = models.EmailField(unique=True)
-    phone_regex = RegexValidator(regex=r'^\+?1?\d{9,15}$')
+    phone_regex = RegexValidator(regex=r'^\+?[0-9]{8,17}$')
     phone = models.CharField(validators=[phone_regex], max_length=17)
     date_of_birth = models.DateField()
     gender = models.CharField(max_length=1, choices=GENDER_CHOICES)
@@ -33,7 +31,11 @@ class Member(models.Model):
     # Informations membre
     member_id = models.CharField(max_length=20, unique=True, editable=False)
     join_date = models.DateField(auto_now_add=True)
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='ACTIVE')
+    status = models.CharField(
+        max_length=20, 
+        choices=STATUS_CHOICES, 
+        default='INACTIVE'  # ✅ Changé de 'ACTIVE' à 'INACTIVE'
+    )
     emergency_contact_name = models.CharField(max_length=100)
     emergency_contact_phone = models.CharField(max_length=17)
     
@@ -68,6 +70,36 @@ class Member(models.Model):
         return today.year - self.date_of_birth.year - (
             (today.month, today.day) < (self.date_of_birth.month, self.date_of_birth.day)
         )
+    
+    @property
+    def has_active_subscription(self):
+        """Vérifier si le membre a un abonnement actif"""
+        from subscriptions.models import Subscription  # Import ici pour éviter import circulaire
+        return Subscription.objects.filter(
+            member=self,
+            status='ACTIVE',
+            end_date__gte=timezone.now().date()
+        ).exists()
+    
+    def activate(self):
+        """Activer le membre (appelé lors de la souscription d'un abonnement)"""
+        if self.status != 'ACTIVE':
+            self.status = 'ACTIVE'
+            self.save(update_fields=['status', 'updated_at'])
+    
+    def deactivate(self):
+        """Désactiver le membre (appelé lors de l'annulation/expiration d'abonnement)"""
+        if self.status == 'ACTIVE':
+            # Vérifier s'il n'y a plus d'abonnements actifs
+            if not self.has_active_subscription:
+                self.status = 'INACTIVE'
+                self.save(update_fields=['status', 'updated_at'])
+    
+    def mark_as_expired(self):
+        """Marquer comme expiré (abonnement expiré)"""
+        if not self.has_active_subscription:
+            self.status = 'EXPIRED'
+            self.save(update_fields=['status', 'updated_at'])
     
     def save(self, *args, **kwargs):
         if not self.member_id:

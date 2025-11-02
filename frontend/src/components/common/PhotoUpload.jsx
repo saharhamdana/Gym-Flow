@@ -1,5 +1,4 @@
-// Fichier: frontend/src/components/PhotoUpload.jsx
-
+{/* Import existing content */}
 import React, { useState, useRef } from 'react';
 import { Typography, Button, Avatar } from "@material-tailwind/react";
 import { CameraIcon, XMarkIcon } from "@heroicons/react/24/solid";
@@ -100,10 +99,6 @@ const PhotoUpload = ({ currentPhoto, onPhotoChange, disabled = false }) => {
                     </Button>
                 )}
             </div>
-            
-            <Typography variant="small" className="text-gray-600 text-center">
-                Format: JPG, PNG, GIF (max 5MB)
-            </Typography>
         </div>
     );
 };

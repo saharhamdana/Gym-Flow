@@ -12,7 +12,7 @@ import {
   Option,
   Typography,
 } from "@material-tailwind/react";
-import PhotoUpload from "../PhotoUpload";
+import PhotoUpload from "../common/PhotoUpload";
 import axiosInstance from "../../api/axiosInstance";
 
 export function EditStaffModal({ open, handleOpen, staff, onUpdate }) {
