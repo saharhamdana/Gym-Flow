@@ -18,7 +18,7 @@ export function UserCreate() {
     username: "",  // Will be generated from email
     first_name: "",
     last_name: "",
-    role: "MEMBER",
+    role: "RECEPTIONIST", // Default role for staff
   });
   const [error, setError] = useState("");
 
@@ -63,7 +63,10 @@ export function UserCreate() {
       password: formData.password,
       first_name: formData.first_name || '',
       last_name: formData.last_name || '',
-    };    try {
+      role: formData.role,  // Include role in initial registration
+    };
+
+    try {
       console.log("Sending registration data:", registrationData);
       const registerResponse = await axiosInstance.post("auth/register/", registrationData);
       console.log("Registration response:", registerResponse.data);
@@ -71,24 +74,22 @@ export function UserCreate() {
       if (registerResponse.status === 201) {
         const userId = registerResponse.data.id;
 
-        // Update user role in a separate request
-        if (formData.role && formData.role !== "MEMBER") {
-          try {
-            console.log("Updating role for user:", userId);
-            const roleResponse = await axiosInstance.put(`auth/users/${userId}/`, {
-              ...registerResponse.data,  // Include existing user data
-              role: formData.role
-            });
-            console.log("Role update response:", roleResponse.data);
-          } catch (roleError) {
-            console.error("Error updating role:", roleError.response?.data);
-            setError("L'utilisateur a été créé mais la mise à jour du rôle a échoué.");
-            return;
-          }
-        }
+        // Update user role
+        try {
+          console.log("Updating role for user:", userId);
+          const roleResponse = await axiosInstance.put(`auth/users/${userId}/`, {
+            ...registerResponse.data,  // Include existing user data
+            role: formData.role
+          });
+          console.log("Role update response:", roleResponse.data);
 
-        // Success - redirect to staff list
-        navigate("/admin/staff");
+          // Success - redirect to staff list
+          navigate("/admin/staff");
+        } catch (roleError) {
+          console.error("Error updating role:", roleError.response?.data);
+          setError("L'utilisateur a été créé mais la mise à jour du rôle a échoué.");
+          return;
+        }
       }
     } catch (error) {
       console.error("Registration error full:", error);
@@ -152,15 +153,6 @@ export function UserCreate() {
             required
           />
           <Input
-            size="lg"
-            label="Email"
-            name="email"
-            type="email"
-            value={formData.email}
-            onChange={handleChange}
-            required
-          />
-          <Input
             type="password"
             size="lg"
             label="Mot de passe"
@@ -174,7 +166,6 @@ export function UserCreate() {
             value={formData.role}
             onChange={handleRoleChange}
           >
-            <Option value="MEMBER">Membre</Option>
             <Option value="RECEPTIONIST">Réceptionniste</Option>
             <Option value="COACH">Coach</Option>
             <Option value="ADMIN">Administrateur</Option>
