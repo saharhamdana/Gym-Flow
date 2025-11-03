@@ -105,10 +105,21 @@ def delete_profile_picture(request):
 # ---------- GymCenter ViewSet ----------
 
 class GymCenterViewSet(viewsets.ModelViewSet):
-    queryset = GymCenter.objects.all()
+    queryset = GymCenter.objects.filter(is_active=True)
     serializer_class = GymCenterSerializer
-    permission_classes = [IsAuthenticated]
-    lookup_field = 'subdomain'  # Permet de rechercher par sous-domaine au lieu de l'ID
+    lookup_field = 'subdomain'
+    
+    def get_permissions(self):
+        """
+        Définir les permissions selon l'action
+        """
+        if self.action in ['list', 'retrieve', 'check_subdomain', 'get_by_subdomain']:
+            # Actions publiques
+            permission_classes = [AllowAny]
+        else:
+            # Actions qui nécessitent l'authentification
+            permission_classes = [IsAuthenticated]
+        return [permission() for permission in permission_classes]
 
     def perform_create(self, serializer):
         serializer.save(owner=self.request.user)

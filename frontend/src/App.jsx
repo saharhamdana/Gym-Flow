@@ -8,6 +8,7 @@ import routes from "./routes";
 import { RequireAuth, RequireAdminOrReceptionistOrCoach } from "./utils/AuthGuard"; 
 import ProgramList from "./components/coaching/ProgramList";
 
+
 function App() {
   const { pathname } = useLocation();
 
