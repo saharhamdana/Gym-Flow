@@ -30,7 +30,7 @@ import {
 } from "@heroicons/react/24/solid";
 import { Footer } from "@/widgets/layout";
 
-export default function ProfilePage() {
+export default function ProfilePage({ adminView = false }) {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [subscriptions, setSubscriptions] = useState([]);
@@ -38,6 +38,16 @@ export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState("overview");
   const [loading, setLoading] = useState(true);
   const [uploadingImage, setUploadingImage] = useState(false);
+
+  // Redirect non-admin users away from admin profile page
+  useEffect(() => {
+    const currentUser = JSON.parse(localStorage.getItem("user"));
+    if (adminView && currentUser?.role !== "ADMIN") {
+      navigate("/profile");
+    } else if (!adminView && currentUser?.role === "ADMIN") {
+      navigate("/admin/profile");
+    }
+  }, [adminView, navigate]);
 
 
   // Fonction pour rafraîchir le token
@@ -721,9 +731,12 @@ const fetchUser = async (retryWithRefresh = true) => {
         </div>
       </section>
 
-      <div className="bg-white">
-        <Footer />
-      </div>
+      {/* Afficher le footer uniquement pour les non-admins */}
+      {!adminView && (
+        <div className="bg-white">
+          <Footer />
+        </div>
+      )}
     </div>
   );
 }

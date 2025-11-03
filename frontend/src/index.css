@@ -1,68 +1,83 @@
-:root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
+/* --- CODE CSS GLOBAL AVEC VITESSE AJUSTÉE (20s) --- */
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+/* 1. Définir l'animation de défilement */
+@keyframes scrolling {
+  /* Déplace le contenu sur la largeur totale du premier jeu de cartes (50% de la totalité du .marquee-content) */
+  0% { 
+    transform: translateX(0); 
+  }
+  100% { 
+    /* Déplace à gauche de la moitié de sa largeur totale (la largeur du contenu dupliqué) */
+    transform: translateX(-50%); 
+  }
 }
 
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
+/* 2. Style du conteneur parent (le viewport) */
+.marquee {
+  width: 100%;
+  /* Cache la partie du contenu qui est hors de l'écran */
+  overflow: hidden; 
 }
 
-body {
-  margin: 0;
+/* 3. Style du conteneur des cartes (celui qui bouge) */
+.marquee-content {
   display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
+  /* Assure que toutes les cartes restent sur une seule ligne */
+  white-space: nowrap; 
+  
+  /* Applique l'animation : 
+     - 20s : Durée de la boucle (vitesse moyenne)
+     - linear : Vitesse constante
+     - infinite : Répétition infinie
+  */
+  animation: scrolling 20s linear infinite; 
+  
+  /* Permet de déborder horizontalement le conteneur .marquee */
+  width: max-content; 
 }
 
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
+/* Règle pour mettre en pause l'animation lorsque la souris est dessus (optionnel) */
+.marquee-content:hover {
+  animation-play-state: paused;
 }
 
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+/* Correctifs d'overflow globaux (issus de votre dernier message) */
+html, body {
+  overflow-x: hidden;
+  width: 100%;
+  margin: 0;
+  padding: 0;
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
+#root {
+  overflow-x: hidden;
+  width: 100%;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* Fix pour les conteneurs Material Tailwind */
+.container {
+  max-width: 100% !important;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+@media (min-width: 1280px) {
+  .container {
+    max-width: 1280px !important;
+    margin-left: auto;
+    margin-right: auto;
   }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+section, div {
+  max-width: 100vw;
 }

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import axios from "axios"; // 👈 IMPORTANT: Import axios for API calls
 import {
   Card,
   CardBody,
@@ -9,20 +10,98 @@ import {
   Input,
   Textarea,
   Checkbox,
+  // 👇 Imports for the Terms & Conditions popup
+  Dialog,
+  DialogHeader,
+  DialogBody,
+  DialogFooter,
 } from "@material-tailwind/react";
-import { FingerPrintIcon, UsersIcon } from "@heroicons/react/24/solid";
+// AJOUT D'ICÔNES COMMUNES POUR ÉVITER LES ERREURS (si utilisées dans featuresData)
+import { 
+    FingerPrintIcon, 
+    UsersIcon, 
+    CalendarDaysIcon, 
+    ChartBarIcon, 
+    CreditCardIcon 
+} from "@heroicons/react/24/solid";
 import { PageTitle, Footer } from "@/widgets/layout";
 import { FeatureCard, TeamCard } from "@/widgets/cards";
 import { featuresData, teamData, contactData } from "@/data";
 
 export function Home() {
-  // État pour le calculateur d'IMC
+  // === CALCULATEUR D'IMC STATE ===
   const [height, setHeight] = useState("");
   const [weight, setWeight] = useState("");
   const [bmi, setBmi] = useState(null);
   const [classification, setClassification] = useState("");
 
-  // Fonction de calcul d'IMC
+  // === CONTACT FORM STATE ===
+  const [formData, setFormData] = useState({
+    fullName: "",
+    email: "",
+    message: "",
+    agreedToTerms: false,
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitMessage, setSubmitMessage] = useState("");
+
+  // 👇 State and Handlers for Terms & Conditions Modal
+  const [showTermsModal, setShowTermsModal] = useState(false);
+  const handleOpenTerms = () => setShowTermsModal(true);
+  const handleCloseTerms = () => setShowTermsModal(false);
+  
+  // === CONTACT FORM HANDLERS ===
+
+  // Handler for all contact form input changes
+  const handleContactChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setFormData((prevData) => ({
+      ...prevData,
+      [name]: type === "checkbox" ? checked : value,
+    }));
+  };
+
+  // Handler for form submission (sends data to Django)
+  const handleContactSubmit = async (e) => {
+    e.preventDefault();
+    setSubmitMessage("");
+
+    if (!formData.agreedToTerms) {
+      setSubmitMessage("Please agree to the Terms and Conditions.");
+      return;
+    }
+    
+    if (!formData.fullName || !formData.email || !formData.message) {
+      setSubmitMessage("Please fill out all required fields.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    // Endpoint for your Django API
+    const API_URL = "http://localhost:8000/api/contact/"; 
+
+    try {
+      const response = await axios.post(API_URL, {
+        fullName: formData.fullName,
+        email: formData.email,
+        message: formData.message,
+      });
+
+      setSubmitMessage(response.data.message || "Message sent successfully!");
+      // Clear the form on success
+      setFormData({ fullName: "", email: "", message: "", agreedToTerms: false }); 
+    } catch (error) {
+      // Extract specific error message from Django or provide a generic error
+      const errorMessage = error.response?.data?.message || "Failed to send message. Please check the console (F12) for network errors.";
+      setSubmitMessage(errorMessage);
+      console.error("Frontend Error:", error.response || error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+
+  // Fonction de calcul d'IMC 
   const calculateBMI = () => {
     if (!height || !weight || height <= 0 || weight <= 0) {
       alert("Veuillez entrer une taille et un poids valides.");
@@ -46,18 +125,19 @@ export function Home() {
   };
 
   return (
-    <>
+    // 'overflow-x-hidden' est nécessaire ici pour garantir qu'il n'y a pas de défilement horizontal
+    <div className="w-full overflow-x-hidden">
       {/* === HERO SECTION === */}
-      <div className="relative flex h-screen content-center items-center justify-center pt-16 pb-32">
+      <div className="relative flex h-screen content-center items-center justify-center pt-16 pb-32 w-full">
         <div className="absolute top-0 h-full w-full bg-[url('/img/background-3.jpg')] bg-cover bg-center" />
         <div className="absolute top-0 h-full w-full bg-black/60 bg-cover bg-center" />
-        <div className="max-w-8xl container relative mx-auto">
+        <div className="container relative mx-auto px-4 max-w-7xl">
           <div className="flex flex-wrap items-center">
             <div className="ml-auto mr-auto w-full px-4 text-center lg:w-8/12">
-              <Typography variant="h1" style={{ color: "#00357a" }} className="mb-6 font-black">
+              <Typography variant="h1" style={{ color: "#b5c9e3ff" }} className="mb-6 font-black">
                 Your fitness starts with Gymflow.
               </Typography>
-              <Typography variant="lead" style={{ color: "#00357a" }} className="opacity-80">
+              <Typography variant="lead" style={{ color: "#d2ddecff" }} className="opacity-80">
                 Gymflow is the ultimate solution for your fitness routine. We offer personalized programs, track your progress, and help you reach your goals.
               </Typography>
             </div>
@@ -65,28 +145,49 @@ export function Home() {
         </div>
       </div>
 
-      {/* === FEATURES === */}
-      <section className="-mt-32 bg-white px-4 pb-20 pt-4">
-        <div className="container mx-auto">
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {featuresData.map(({ color, title, icon, description }) => (
-              <FeatureCard
-                key={title}
-                color={color}
-                title={title}
-                icon={React.createElement(icon, {
-                  className: "w-5 h-5 text-white",
-                })}
-                description={description}
-              />
-            ))}
+      {/* === FEATURES === (AVEC DÉFILEMENT MARQUEE) */}
+      <section className="-mt-32 bg-white px-4 pb-20 pt-4 w-full">
+        <div className="container mx-auto max-w-7xl">
+          {/* Nouveau Conteneur : Utilise la classe CSS 'marquee' pour cacher l'overflow */}
+          <div className="marquee"> 
+            {/* Contenu défilant : Utilise la classe CSS 'marquee-content' pour l'animation */}
+            <div className="marquee-content">
+              {/* --- 1ère itération des cartes --- */}
+              {featuresData.map(({ color, title, icon, description }, index) => (
+                <FeatureCard
+                  key={title + index}
+                  color={color}
+                  title={title}
+                  // Cards compactes : largeur fixe de 320px
+                  className="min-w-[200px] w-[200px] mx-4 flex-shrink-0" 
+                  icon={React.createElement(icon, {
+                    className: "w-5 h-5 text-white",
+                  })}
+                  description={description}
+                />
+              ))}
+              {/* --- 2ème itération des cartes (DUPLICATION pour la boucle infinie) --- */}
+              {featuresData.map(({ color, title, icon, description }, index) => (
+                <FeatureCard
+                  key={title + index + featuresData.length} // Clé unique
+                  color={color}
+                  title={title}
+                  // Cards compactes : largeur fixe de 320px
+                  className="min-w-[200px] w-[200px] mx-4 flex-shrink-0" 
+                  icon={React.createElement(icon, {
+                    className: "w-5 h-5 text-white",
+                  })}
+                  description={description}
+                />
+              ))}
+            </div>
           </div>
 
           {/* === WORKING WITH US === */}
           <div className="mt-32 flex flex-wrap items-center">
             <div className="mx-auto -mt-8 w-full px-4 md:w-5/12">
               <div className="mb-6 inline-flex h-16 w-16 items-center justify-center rounded-full"
-                   style={{ backgroundColor: "#9b0e16" }}>
+                  style={{ backgroundColor: "#9b0e16" }}>
                 <FingerPrintIcon className="h-8 w-8 text-white " />
               </div>
               <Typography variant="h3" className="mb-3 font-bold" style={{ color: "#00357a" }}>
@@ -118,8 +219,8 @@ export function Home() {
       </section>
 
       {/* === CALCULATEUR D'IMC === */}
-      <section className="py-16 px-4" style={{ backgroundColor: "#00357a10" }}>
-        <div className="container mx-auto">
+      <section className="py-16 px-4 w-full" style={{ backgroundColor: "#00357a10" }}>
+        <div className="container mx-auto max-w-7xl">
           <PageTitle section="Santé" heading="Calculez votre IMC">
             L'Indice de Masse Corporelle (IMC) est un indicateur simple de la relation entre votre poids et votre taille.
           </PageTitle>
@@ -162,13 +263,13 @@ export function Home() {
                     </Typography>
                     <Typography variant="h5" style={{ color: "#00357a" }}>
                       Classification : <span
-                        className={`font-bold ${
-                          classification.includes("Normal")
-                            ? "text-green-600"
-                            : classification.includes("Obésité")
-                            ? "text-[#9b0e16]"
-                            : "text-orange-600"
-                        }`}
+                          className={`font-bold ${
+                            classification.includes("Normal")
+                              ? "text-green-600"
+                              : classification.includes("Obésité")
+                              ? "text-[#9b0e16]"
+                              : "text-orange-600"
+                          }`}
                       >
                         {classification}
                       </span>
@@ -224,8 +325,8 @@ export function Home() {
       </section>
 
       {/* === OUR TEAM === */}
-      <section className="px-4 pt-20 pb-48">
-        <div className="container mx-auto">
+      <section className="px-4 pt-20 pb-48 w-full">
+        <div className="container mx-auto max-w-7xl">
           <PageTitle section="Our Team" heading="Here are our heroes">
             According to the National Oceanic and Atmospheric Administration...
           </PageTitle>
@@ -251,8 +352,9 @@ export function Home() {
         </div>
       </section>
 
-      <section className="py-20 bg-white">
-        <div className="container mx-auto px-4">
+      {/* === FAQ SECTION === */}
+      <section className="py-20 bg-white w-full">
+        <div className="container mx-auto px-4 max-w-7xl">
           <Typography variant="h2" style={{ color: "#00357a" }} className="text-center mb-12">
             Questions Fréquentes
           </Typography>
@@ -281,8 +383,8 @@ export function Home() {
       </section>
 
       {/* === CO-WORKING & CONTACT === */}
-      <section className="relative bg-white py-24 px-4">
-        <div className="container mx-auto">
+      <section className="relative bg-white py-24 px-4 w-full">
+        <div className="container mx-auto max-w-7xl">
           <PageTitle section="Co-Working" heading="Build something">
             Put the potentially record low maximum sea ice extent...
           </PageTitle>
@@ -304,34 +406,132 @@ export function Home() {
           <PageTitle section="Contact Us" heading="Want to work with us?">
             Complete this form and we will get back to you in 24 hours.
           </PageTitle>
-          <form className="mx-auto w-full mt-12 lg:w-5/12">
+          {/* ATTACH SUBMIT HANDLER */}
+          <form className="mx-auto w-full mt-12 lg:w-5/12" onSubmit={handleContactSubmit}>
             <div className="mb-8 flex gap-8">
-              <Input variant="outlined" size="lg" label="Full Name" />
-              <Input variant="outlined" size="lg" label="Email Address" />
+              {/* BIND FULL NAME INPUT */}
+              <Input 
+                variant="outlined" 
+                size="lg" 
+                label="Full Name" 
+                name="fullName"
+                value={formData.fullName}
+                onChange={handleContactChange}
+                required
+              />
+              {/* BIND EMAIL INPUT */}
+              <Input 
+                variant="outlined" 
+                size="lg" 
+                label="Email Address"
+                name="email"
+                type="email"
+                value={formData.email}
+                onChange={handleContactChange}
+                required
+              />
             </div>
-            <Textarea variant="outlined" size="lg" label="Message" rows={8} />
+            {/* BIND MESSAGE TEXTAREA */}
+            <Textarea 
+              variant="outlined" 
+              size="lg" 
+              label="Message" 
+              rows={8} 
+              name="message"
+              value={formData.message}
+              onChange={handleContactChange}
+              required
+            />
+            {/* BIND CHECKBOX - UPDATED CLICK HANDLER */}
             <Checkbox
+              checked={formData.agreedToTerms}
+              onChange={handleContactChange}
+              name="agreedToTerms"
               label={
                 <Typography variant="small" style={{ color: "#00357a" }} className="flex items-center font-normal">
                   I agree the
-                  <a href="#" className="font-medium transition-colors" style={{ color: "#9b0e16" }}>
+                  <a 
+                    href="#" // Use '#' to prevent navigation
+                    className="font-medium transition-colors" 
+                    style={{ color: "#9b0e16" }}
+                    onClick={(e) => { // 👇 NEW: Add onClick handler
+                      e.preventDefault(); 
+                      handleOpenTerms(); // Open the modal
+                    }}
+                  >
                     &nbsp;Terms and Conditions
                   </a>
                 </Typography>
               }
               containerProps={{ className: "-ml-2.5" }}
             />
-            <Button size="lg" className="mt-8" fullWidth style={{ backgroundColor: "#00357a" }}>
-              Send Message
+            
+            {/* DISPLAY SUBMISSION MESSAGE */}
+            {submitMessage && (
+              <Typography 
+                variant="small" 
+                color={submitMessage.includes("success") ? "green" : "red"} 
+                className="mt-4"
+              >
+                {submitMessage}
+              </Typography>
+            )}
+
+            {/* SUBMIT BUTTON WITH LOADING STATE */}
+            <Button 
+              size="lg" 
+              className="mt-8" 
+              fullWidth 
+              type="submit" 
+              style={{ backgroundColor: "#00357a" }}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? "Sending..." : "Send Message"}
             </Button>
           </form>
         </div>
       </section>
 
-      <div className="bg-white">
+      <div className="bg-white w-full">
         <Footer />
       </div>
-    </>
+
+      {/* === TERMS AND CONDITIONS DIALOG/MODAL === */}
+      <Dialog open={showTermsModal} handler={handleCloseTerms} size="lg">
+        <DialogHeader className="text-[#00357a]">Terms and Conditions</DialogHeader>
+        <DialogBody divider className="h-[400px] overflow-y-scroll">
+          <Typography color="blue-gray" className="font-normal mb-4">
+            **1. Acceptance of Terms:** By using the Gymflow services, you agree to these Terms and Conditions. If you do not agree, you must not use our services.
+          </Typography>
+          <Typography color="blue-gray" className="font-normal mb-4">
+            **2. Service Use:** Our services are provided for your personal, non-commercial use only. You agree not to reproduce, duplicate, copy, sell, resell or exploit any portion of the Service without express written permission.
+          </Typography>
+          <Typography color="blue-gray" className="font-normal mb-4">
+            **3. BMI Calculator Disclaimer:** The Body Mass Index (BMI) calculator is for informational purposes only. It is not a substitute for professional medical advice, diagnosis, or treatment. Always seek the advice of a qualified health provider with any questions you may have regarding a medical condition.
+          </Typography>
+          <Typography color="blue-gray" className="font-normal mb-4">
+            **4. Privacy:** Your use of the service is also governed by our Privacy Policy, which is incorporated into these Terms by reference.
+          </Typography>
+          <Typography color="blue-gray" className="font-normal mb-4">
+            **5. Termination:** We may terminate or suspend your access immediately, without prior notice or liability, for any reason whatsoever, including without limitation if you breach the Terms.
+          </Typography>
+          <Typography color="blue-gray" className="font-normal mb-4">
+            **6. Governing Law:** These Terms shall be governed and construed in accordance with the laws of [Your Jurisdiction], without regard to its conflict of law provisions.
+          </Typography>
+        </DialogBody>
+        <DialogFooter>
+          <Button
+            variant="gradient"
+            color="red"
+            onClick={handleCloseTerms}
+            className="mr-1"
+          >
+            <span>Close</span>
+          </Button>
+        </DialogFooter>
+      </Dialog>
+      {/* === END OF DIALOG === */}
+    </div>
   );
 }
 

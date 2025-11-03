@@ -5,8 +5,10 @@ import SignIn from "@/pages/auth/SignIn";
 import SignUp from "@/pages/auth/SignUp";
 import ProfilePage from "@/pages/profile/ProfilePage";
 import MyPrograms from "@/pages/programs/MyPrograms";
+import Terms  from "@/pages/Terms";
 
 // Admin imports
+import Dashboard from "@/pages/admin/dashboard/Dashboard";
 import { ProgramBuilder, ExerciseList } from "@/pages/admin/programs";
 import ReservationList from "@/pages/admin/ReservationList";
 import { Staff, UserCreate } from "@/pages/admin/staff";
@@ -90,6 +92,21 @@ export const routes = [
     name: "Mes Programmes",
     path: "/my-programs",
     element: <MyPrograms />,
+  },
+
+  // ==========================================
+  // ROUTES ADMIN - DASHBOARD & PROFILE
+  // ==========================================
+  {
+    name: "Dashboard",
+    path: "/admin/dashboard",
+    element: <Dashboard />,
+  },
+  {
+    name: "Admin Profile",
+    path: "/admin/profile",
+    element: <ProfilePage adminView={true} />,
+    hidden: true
   },
 
   // ==========================================
@@ -277,6 +294,11 @@ export const routes = [
     path: "/admin/bookings/:bookingId/edit",
     element: <BookingEdit />,
     hidden: true
+  },
+  {
+    name: "terms",
+    path: "/terms",
+    element: <Terms />,
   },
 
   // ==========================================

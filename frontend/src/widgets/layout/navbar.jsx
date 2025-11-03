@@ -33,9 +33,9 @@ export function Navbar() {
           return (
             <Button
               key={name}
-              variant={path === "/sign-up" ? "gradient" : "text"}
+              variant={path === "/sign-up" ? "filled" : "text"}
               size="sm"
-              color={path === "/sign-up" ? "blue" : "white"}
+              style={path === "/sign-up" ? { backgroundColor: "#9b0e16", color: "white" } : {}}
               className={path === "/sign-in" ? "text-gray-900" : ""}
             >
               <Link to={path} className="flex items-center gap-1">
@@ -77,19 +77,23 @@ export function Navbar() {
   );
 
   return (
-    <MTNavbar color="white" className="p-3 sticky top-0 z-50">
-      <div className="container mx-auto flex items-center justify-between relative">
+    <MTNavbar 
+      className="fixed top-0 left-0 right-0 z-50 rounded-none border-0 shadow-md w-full bg-white p-0"
+      fullWidth
+      blurred={false}
+    >
+      <div className="w-full flex items-center justify-between px-4 lg:px-8">
         {/* LOGO */}
-        <Link to="/" className="py-1.5">
+        <Link to="/" className="py-2">
           <img 
-            src="/img/logoclaire.png"
+            src="/img/logotwil.png"
             alt="Logo Claire"
             className="h-8 w-auto"
           />
         </Link>
         
         {/* Navigation principale */}
-        <div className="hidden lg:flex lg:items-center lg:gap-6">
+        <div className="hidden lg:flex lg:items-center lg:gap-8">
           {navList}
         </div>
         
@@ -97,8 +101,7 @@ export function Navbar() {
         <IconButton
           variant="text"
           size="sm"
-          color="white"
-          className="ml-auto text-inherit hover:bg-transparent focus:bg-transparent active:bg-transparent lg:hidden z-10"
+          className="ml-auto text-gray-900 hover:bg-gray-100 focus:bg-transparent active:bg-transparent lg:hidden z-10"
           onClick={() => setOpenNav(!openNav)}
         >
           {openNav ? (
@@ -109,10 +112,10 @@ export function Navbar() {
         </IconButton>
       </div>
       
-      {/* ✅ Remplacement de MobileNav par Collapse */}
+      {/* Collapse pour mobile */}
       <Collapse open={openNav}>
-        <div className="container mx-auto">
-          <div className="rounded-xl bg-white px-4 pt-2 pb-4 text-blue-gray-900">
+        <div className="w-full bg-white">
+          <div className="px-4 py-2 text-blue-gray-900">
             {navList}
           </div>
         </div>

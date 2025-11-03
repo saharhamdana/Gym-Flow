@@ -5,7 +5,6 @@ import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { Navbar } from "@/widgets/layout"; 
 import routes from "./routes"; 
 import AdminLayout from "@/components/admin/AdminLayout";
-// 🌟 Importez les nouvelles gardes de protection
 import { RequireAuth, RequireAdminOrReceptionistOrCoach } from "./utils/AuthGuard"; 
 
 function App() {
@@ -21,8 +20,10 @@ function App() {
         <Navbar />
       )}
       
-{/* Routes avec wrapper pleine largeur */}
-      <div className={`w-full min-h-screen ${!(pathname === '/sign-in' || pathname === '/sign-up') ? 'pt-24' : ''}`}>
+      {/* Routes avec wrapper pleine largeur - SANS padding-top pour la home page */}
+      <div className={`w-full min-h-screen ${
+        !(pathname === '/sign-in' || pathname === '/sign-up' || pathname === '/') ? 'pt-24' : ''
+      }`}>
         <Routes>
           {routes.map(
             ({ path, element }, key) => {

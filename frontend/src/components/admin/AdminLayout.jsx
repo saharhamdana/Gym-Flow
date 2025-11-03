@@ -17,7 +17,8 @@ import {
     CalendarDaysIcon,
     ClipboardDocumentCheckIcon,
     ClipboardDocumentListIcon, 
-    TagIcon, 
+    TagIcon,
+    UserCircleIcon, 
 } from "@heroicons/react/24/solid";
 
 const Sidebar = () => {
@@ -33,6 +34,11 @@ const Sidebar = () => {
             label: "Tableau de bord",
             path: "/admin/dashboard",
             icon: PresentationChartBarIcon,
+        },
+        {
+            label: "Mon Profil",
+            path: "/admin/profile",
+            icon: UserCircleIcon,
         },
         {
             label: "Membres",
@@ -51,7 +57,6 @@ const Sidebar = () => {
         },
         {
             label: "Plans d'Abonnement",
-            path: "/admin/subscription-plans",
             path: "/admin/subscription-plans",
             icon: TagIcon,
         },
