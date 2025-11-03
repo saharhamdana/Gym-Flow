@@ -731,12 +731,6 @@ const fetchUser = async (retryWithRefresh = true) => {
         </div>
       </section>
 
-      {/* Afficher le footer uniquement pour les non-admins */}
-      {!adminView && (
-        <div className="bg-white">
-          <Footer />
-        </div>
-      )}
     </div>
   );
 }

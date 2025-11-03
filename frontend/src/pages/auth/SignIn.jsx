@@ -39,7 +39,7 @@ export function SignIn() {
                         if (userProfile.role === "ADMIN" || userProfile.role === "COACH" || userProfile.role === "RECEPTIONIST") {
                             navigate("/admin/dashboard");
                         } else {
-                            navigate("/profile");
+                            navigate("/portal"); // Redirection vers le portail membre
                         }
                     })
                     .catch((err) => {

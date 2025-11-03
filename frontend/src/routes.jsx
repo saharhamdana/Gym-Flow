@@ -5,7 +5,13 @@ import SignIn from "@/pages/auth/SignIn";
 import SignUp from "@/pages/auth/SignUp";
 import ProfilePage from "@/pages/profile/ProfilePage";
 import MyPrograms from "@/pages/programs/MyPrograms";
-import Terms  from "@/pages/Terms";
+import Terms from "@/pages/Terms";
+
+// Member Portal Components
+import MemberLayout from "@/components/member/MemberLayout";
+import MemberDashboard from "@/pages/member/MemberDashboard";
+import MemberProgress from "@/pages/member/MemberProgress";
+import MemberBookings from "@/pages/member/MemberBookings";
 
 // Admin imports
 import Dashboard from "@/pages/admin/dashboard/Dashboard";
@@ -83,15 +89,29 @@ export const routes = [
   // ROUTES MEMBRES (AUTHENTIFIÉES)
   // ==========================================
   {
-    name: "profile",
-    path: "/profile",
-    element: <ProfilePage />,
-    hidden: true
+    name: "Member Dashboard",
+    path: "/portal",
+    element: <MemberLayout><MemberDashboard /></MemberLayout>,
   },
-  { 
-    name: "Mes Programmes",
-    path: "/my-programs",
-    element: <MyPrograms />,
+  {
+    name: "Member Profile",
+    path: "/portal/profile",
+    element: <MemberLayout><ProfilePage /></MemberLayout>,
+  },
+  {
+    name: "Member Programs",
+    path: "/portal/programs",
+    element: <MemberLayout><MyPrograms /></MemberLayout>,
+  },
+  {
+    name: "Member Bookings",
+    path: "/portal/bookings",
+    element: <MemberLayout><MemberBookings /></MemberLayout>,
+  },
+  {
+    name: "Member Progress",
+    path: "/portal/progress",
+    element: <MemberLayout><MemberProgress /></MemberLayout>,
   },
 
   // ==========================================
