@@ -1,12 +1,64 @@
-// Fichier: frontend/src/api/axiosInstance.js
-
 import axios from "axios";
 
+/**
+ * Fonction pour extraire le sous-domaine de l'URL actuelle
+ * Ex: powerfit.gymflow.com → "powerfit"
+ * moveup.localhost → "moveup"
+ */
+const getSubdomain = () => {
+  const hostname = window.location.hostname;
+  const parts = hostname.split('.');
+  
+  // En développement sur localhost simple (sans sous-domaine)
+  if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    return null;
+  }
+  
+  // Pour les sous-domaines en .localhost (développement)
+  // Ex: moveup.localhost → "moveup"
+  if (hostname.endsWith('.localhost')) {
+    return parts[0];
+  }
+  
+  // Pour les sous-domaines en production ou en dev simulé
+  // Ex: moveup.gymflow.com → "moveup"
+  // On s'assure qu'il y a au moins trois parties et que ce n'est pas 'www'
+  if (parts.length >= 3 && parts[0] !== 'www') {
+    return parts[0];
+  }
+  
+  return null;
+};
+
+/**
+ * Déterminer l'URL de base de l'API dynamiquement.
+ */
+const getBaseURL = () => {
+  const hostname = window.location.hostname;
+
+  // 💻 En développement local (localhost, 127.0.0.1 ou sous-domaine.localhost)
+  if (
+    hostname === 'localhost' ||
+    hostname === '127.0.0.1' ||
+    hostname.endsWith('.localhost') ||
+    hostname.endsWith('.gymflow.com')
+  ) {
+    // Utilise l'IP locale du backend pour contourner les problèmes CORS/proxy en dev
+    return "http://127.0.0.1:8000/api/";
+  }
+
+  // 🚀 En production: assume que l'API est sur un sous-domaine api.
+  return `${window.location.protocol}//api.gymflow.com/api/`;
+};
+
+
+// Créer l'instance Axios
 const api = axios.create({
-  baseURL: "http://127.0.0.1:8000/api/",
+  baseURL: getBaseURL(),
 });
 
-// Variable pour éviter les boucles infinies de rafraîchissement
+
+// Variable pour éviter les boucles infinies de rafraîchissement (HEAD logic)
 let isRefreshing = false;
 let failedQueue = [];
 
@@ -24,23 +76,40 @@ const processQueue = (error, token = null) => {
 
 // Intercepteur de requête
 api.interceptors.request.use((config) => {
-    const skipAuthUrls = ["auth/register/", "auth/token/", "auth/token/refresh/"];
+    // URLs à ignorer pour l'authentification
+    const skipAuthUrls = [
+      "auth/register/", 
+      "auth/token/", 
+      "auth/token/refresh/",
+      // Permettre la vérification de sous-domaine sans auth
+      "auth/centers/check-subdomain/" 
+    ]; 
     const url = config.url || "";
     
+    // Vérifier si l'URL nécessite l'authentification
     const shouldSkip = skipAuthUrls.some((u) => url.includes(u));
     
-    if (shouldSkip) {
-        delete config.headers.Authorization;
-        return config;
-    }
-
-    const token = localStorage.getItem("access_token");
-    
-    if (token) {
-      config.headers = config.headers || {};
-      config.headers.Authorization = `Bearer ${token}`;
+    // 1. GESTION DU TOKEN JWT
+    if (!shouldSkip) {
+      const token = localStorage.getItem("access_token");
+      
+      if (token) {
+        config.headers = config.headers || {};
+        config.headers.Authorization = `Bearer ${token}`;
+      } else {
+        // S'assurer que l'en-tête n'est pas envoyé si le token est manquant
+        delete config.headers?.Authorization;
+      }
     } else {
-      delete config.headers.Authorization;
+      // Supprimer l'autorisation pour les endpoints publics
+      delete config.headers?.Authorization;
+    }
+    
+    // 2. 🎯 AJOUTER LE SOUS-DOMAINE À CHAQUE REQUÊTE (Logic Multi-Tenant)
+    const subdomain = getSubdomain();
+    if (subdomain) {
+      config.headers = config.headers || {};
+      config.headers['X-Tenant-Subdomain'] = subdomain;
     }
     
     return config;
@@ -48,7 +117,7 @@ api.interceptors.request.use((config) => {
     return Promise.reject(error);
 });
 
-// Intercepteur de réponse pour gérer les erreurs 401
+// Intercepteur de réponse pour gérer les erreurs 401 et la file d'attente
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
@@ -77,7 +146,7 @@ api.interceptors.response.use(
       const refreshToken = localStorage.getItem("refresh_token");
 
       if (!refreshToken) {
-        // Pas de refresh token, rediriger vers login
+        // Pas de refresh token, déconnecter
         localStorage.removeItem("access_token");
         localStorage.removeItem("refresh_token");
         window.location.href = "/auth/sign-in";
@@ -85,10 +154,11 @@ api.interceptors.response.use(
       }
 
       try {
-        // Tenter de rafraîchir le token
-        const response = await axios.post("http://127.0.0.1:8000/api/auth/token/refresh/", {
-          refresh: refreshToken,
-        });
+        // Tenter de rafraîchir le token (en utilisant getBaseURL)
+        const response = await axios.post(
+          `${getBaseURL()}auth/token/refresh/`, 
+          { refresh: refreshToken }
+        );
 
         const { access } = response.data;
         
@@ -121,5 +191,8 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+// Exporter des utilitaires (pourrait être utile dans d'autres hooks/composants)
+export { getSubdomain, getBaseURL };
 
 export default api;

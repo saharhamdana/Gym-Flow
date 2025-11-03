@@ -1,5 +1,5 @@
 from rest_framework import status, viewsets
-from rest_framework.decorators import api_view, permission_classes, parser_classes
+from rest_framework.decorators import api_view, permission_classes, parser_classes, action
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.parsers import MultiPartParser, FormParser
@@ -7,7 +7,8 @@ from .serializers import (
     RegisterSerializer, 
     UserSerializer, 
     UpdateProfileSerializer,
-    GymCenterSerializer
+    GymCenterSerializer,
+    CheckSubdomainSerializer
 )
 from authentication.models import GymCenter
 
@@ -104,9 +105,82 @@ def delete_profile_picture(request):
 # ---------- GymCenter ViewSet ----------
 
 class GymCenterViewSet(viewsets.ModelViewSet):
-    queryset = GymCenter.objects.all()
+    queryset = GymCenter.objects.filter(is_active=True)
     serializer_class = GymCenterSerializer
-    permission_classes = [IsAuthenticated]
+    lookup_field = 'subdomain'
+    
+    def get_permissions(self):
+        """
+        Définir les permissions selon l'action
+        """
+        if self.action in ['list', 'retrieve', 'check_subdomain', 'get_by_subdomain']:
+            # Actions publiques
+            permission_classes = [AllowAny]
+        else:
+            # Actions qui nécessitent l'authentification
+            permission_classes = [IsAuthenticated]
+        return [permission() for permission in permission_classes]
 
     def perform_create(self, serializer):
         serializer.save(owner=self.request.user)
+    
+    @action(detail=False, methods=['post'], url_path='check-subdomain', permission_classes=[AllowAny])
+    def check_subdomain(self, request):
+        """
+        Vérifier la disponibilité d'un sous-domaine
+        POST /api/auth/centers/check-subdomain/
+        Body: {"subdomain": "powerfit"}
+        """
+        serializer = CheckSubdomainSerializer(data=request.data)
+        
+        if not serializer.is_valid():
+            return Response({
+                'available': False,
+                'errors': serializer.errors
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        subdomain = serializer.validated_data['subdomain']
+        
+        # Vérifier les sous-domaines réservés
+        reserved_subdomains = [
+            'www', 'api', 'admin', 'app', 'mail', 'ftp', 
+            'smtp', 'pop', 'imap', 'test', 'dev', 'staging',
+            'beta', 'demo', 'support', 'help', 'blog'
+        ]
+        
+        if subdomain in reserved_subdomains:
+            return Response({
+                'available': False,
+                'message': f"Le sous-domaine '{subdomain}' est réservé."
+            }, status=status.HTTP_200_OK)
+        
+        # Vérifier l'unicité
+        exists = GymCenter.objects.filter(subdomain=subdomain).exists()
+        
+        if exists:
+            return Response({
+                'available': False,
+                'message': f"Le sous-domaine '{subdomain}' est déjà utilisé."
+            }, status=status.HTTP_200_OK)
+        
+        return Response({
+            'available': True,
+            'message': f"Le sous-domaine '{subdomain}' est disponible.",
+            'full_url': f"https://{subdomain}.gymflow.com"
+        }, status=status.HTTP_200_OK)
+    
+    @action(detail=False, methods=['get'], url_path=r'(?P<subdomain>[^/.]+)', permission_classes=[AllowAny])
+    def get_by_subdomain(self, request, subdomain=None):
+        """
+        Récupérer un centre par son sous-domaine
+        GET /api/auth/centers/{subdomain}/
+        """
+        try:
+            center = GymCenter.objects.get(subdomain=subdomain, is_active=True)
+            serializer = self.get_serializer(center)
+            return Response(serializer.data)
+        except GymCenter.DoesNotExist:
+            return Response(
+                {'detail': 'Centre non trouvé avec ce sous-domaine.'},
+                status=status.HTTP_404_NOT_FOUND
+            )

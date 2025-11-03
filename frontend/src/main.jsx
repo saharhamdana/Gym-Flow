@@ -6,6 +6,7 @@ import { ThemeProvider } from "@material-tailwind/react";
 // Import de vos composants principaux
 import App from "./App";
 import { Home } from "./pages/Home"; // 👈 Ajout de l'import pour le composant Home
+import HomePage from "./pages/home";
 import { SignIn } from "./pages/sign-in"; 
 import { SignUp }from "./pages/sign-up";
 import Profile from "./pages/Profile.jsx";
