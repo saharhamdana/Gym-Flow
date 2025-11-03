@@ -12,7 +12,7 @@ export default defineConfig({
   },
   
   server: {
-    port: 80, // Configuration du port d'écoute
+    port: 5173, // Configuration du port d'écoute
     host: true,
     
     // 🌐 Configuration pour accepter les sous-domaines

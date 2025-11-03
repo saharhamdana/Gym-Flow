@@ -1,60 +1,27 @@
 import React, { StrictMode } from "react";
 import ReactDOM from "react-dom/client";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter } from "react-router-dom";
 import { ThemeProvider } from "@material-tailwind/react";
 
-// Import de vos composants principaux
+// --- Import de vos composants principaux (Consolidé pour éviter les doublons) ---
 import App from "./App";
-import { Home } from "./pages/Home"; // 👈 Ajout de l'import pour le composant Home
-import HomePage from "./pages/home";
-import { SignIn } from "./pages/sign-in"; 
-import { SignUp }from "./pages/sign-up";
-import Profile from "./pages/Profile.jsx";
-import MemberList from "./pages/admin/MemberList";
-import CourseTypeList from "./pages/admin/CourseTypeList";
+
+// Les imports en conflit ont été remplacés par la version structurée (nommée) ci-dessous.
 import { Home } from "./pages/home";
 import { SignIn } from "./pages/auth/SignIn"; 
 import { SignUp } from "./pages/auth/SignUp";
 import { ProfilePage } from "./pages/profile";
 import { MemberList } from "./pages/admin/members";
 import { CourseTypeList } from "./pages/admin/bookings/course-types";
-import ReservationList from "./pages/admin/ReservationList";
+import ReservationList from "./pages/admin/ReservationList"; // Gardé car c'était un import par défaut unique
 
 import "./assets/tailwind.css";
 import "./index.css"; 
 
-// --- Composant de Protection des Routes (Authentication) ---
-function RequireAuth({ children }) {
-    const token = localStorage.getItem("access_token"); 
-    return token ? children : <Navigate to="/sign-in" />;
-}
+// 🚨 Note: Les composants de protection de route (RequireAuth, RequireAdminOrCoach)
+// ont été retirés de ce fichier car ils ne sont pas utilisés directement ici et
+// devraient être définis dans un module de routes (e.g., App.jsx ou un hook) pour la propreté.
 
-// --- Composant de Protection des Routes (Rôles Admin/Coach) ---
-function RequireAdminOrCoach({ children }) {
-    const token = localStorage.getItem("access_token");
-    if (!token) {
-        return <Navigate to="/sign-in" />;
-    }
-    
-    // Récupération et parsing des infos utilisateur
-    const userInfo = localStorage.getItem("user");
-    let user;
-    try {
-        user = JSON.parse(userInfo);
-    } catch (e) {
-        // En cas d'erreur de parsing ou si pas de user, renvoyer à la connexion
-        return <Navigate to="/sign-in" />; 
-    }
-
-    const userRole = user?.role;
-    
-    if (userRole === "admin" || userRole === "coach") {
-        return children;
-    }
-
-    // Rediriger les membres vers leur profil (ou une page d'accès refusé)
-    return <Navigate to="/profile" />;
-}
 // -----------------------------------------------------------
 
 ReactDOM.createRoot(document.getElementById("root")).render(
@@ -62,7 +29,8 @@ ReactDOM.createRoot(document.getElementById("root")).render(
         <BrowserRouter>
             <ThemeProvider>
                 {/* 🚨 CORRECTION: Seul le composant principal App est rendu ici.
-                    Toutes les Routes sont gérées DANS App.jsx. */}
+                    Toutes les Routes, y compris celles utilisant les composants importés ci-dessus,
+                    doivent être gérées DANS App.jsx. */}
                 <App />
             </ThemeProvider>
         </BrowserRouter>
