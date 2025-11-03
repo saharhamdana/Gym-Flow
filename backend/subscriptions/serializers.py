@@ -1,48 +1,50 @@
-from rest_framework import serializers
-from .models import SubscriptionPlan, MemberSubscription
-from authentication.models import GymCenter
+# Fichier: backend/subscriptions/serializers.py
 
+from rest_framework import serializers
+from .models import SubscriptionPlan, Subscription
+from members.serializers import MemberListSerializer
 
 class SubscriptionPlanSerializer(serializers.ModelSerializer):
-    center_name = serializers.CharField(source='center.name', read_only=True)
-    
     class Meta:
         model = SubscriptionPlan
-        fields = [
-            'id', 'name', 'description', 'duration', 'price', 
-            'features', 'is_active', 'max_subscriptions', 
-            'center', 'center_name', 'created_at', 'updated_at'
-        ]
+        fields = '__all__'
 
 
-class MemberSubscriptionSerializer(serializers.ModelSerializer):
-    plan = SubscriptionPlanSerializer(read_only=True)
-    plan_id = serializers.PrimaryKeyRelatedField(
-        queryset=SubscriptionPlan.objects.all(),
-        source='plan',
-        write_only=True
-    )
-    member_name = serializers.CharField(source='member.get_full_name', read_only=True)
-    member_email = serializers.EmailField(source='member.email', read_only=True)
+class SubscriptionListSerializer(serializers.ModelSerializer):
+    member_name = serializers.CharField(source='member.full_name', read_only=True)
+    plan_name = serializers.CharField(source='plan.name', read_only=True)
+    is_active = serializers.BooleanField(read_only=True)
+    days_remaining = serializers.IntegerField(read_only=True)
     
     class Meta:
-        model = MemberSubscription
+        model = Subscription
         fields = [
-            'id', 'member', 'member_name', 'member_email',
-            'plan', 'plan_id', 'created_by', 
-            'start_date', 'end_date', 'is_active', 'created_at'
+            'id', 'member', 'member_name', 'plan', 'plan_name',
+            'start_date', 'end_date', 'status', 'amount_paid',
+            'payment_date', 'is_active', 'days_remaining'
         ]
-        read_only_fields = ['member', 'created_at', 'start_date']
 
 
-class GymCenterSerializer(serializers.ModelSerializer):
-    owner_name = serializers.CharField(source='owner.get_full_name', read_only=True)
+class SubscriptionDetailSerializer(serializers.ModelSerializer):
+    member_details = MemberListSerializer(source='member', read_only=True)
+    plan_details = SubscriptionPlanSerializer(source='plan', read_only=True)
+    is_active = serializers.BooleanField(read_only=True)
+    days_remaining = serializers.IntegerField(read_only=True)
     
     class Meta:
-        model = GymCenter
-        fields = [
-            'id', 'name', 'description', 'email', 'phone', 
-            'address', 'owner', 'owner_name', 'logo', 
-            'tenant_id', 'is_active', 'created_at', 'updated_at'
-        ]
-        read_only_fields = ['owner', 'created_at', 'updated_at']
+        model = Subscription
+        fields = '__all__'
+
+
+class SubscriptionCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Subscription
+        fields = ['member', 'plan', 'start_date', 'amount_paid', 'payment_method', 'notes']
+    
+    def create(self, validated_data):
+        subscription = Subscription.objects.create(**validated_data)
+        
+        # ✅ ACTIVER AUTOMATIQUEMENT L'ABONNEMENT ET LE MEMBRE
+        subscription.activate()
+        
+        return subscription

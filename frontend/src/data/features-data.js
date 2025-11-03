@@ -1,28 +1,40 @@
 import {
-  ChatBubbleBottomCenterTextIcon,
+  UsersIcon,       // Pour la Gestion des Membres et Rôles
+  CalendarDaysIcon, // Pour l'Agenda et les Réservations
+  ChartBarIcon,     // Pour le Suivi de Performance et Coaching
+  CreditCardIcon,   // Pour les Abonnements et Paiements
+  FingerPrintIcon, // Nouvelle icône pour l'accès/le mobile
 } from "@heroicons/react/24/solid";
 
+// Données des fonctionnalités de la page d'accueil, orientées utilisateur
 export const featuresData = [
   {
-    color: "gray",
-    title: "Awarded Agency",
-    icon: ChatBubbleBottomCenterTextIcon,
+    color: "blue",
+    title: "Portail Membre 100% Mobile",
+    icon: FingerPrintIcon, 
     description:
-      "Divide details about your product or agency work into parts. A paragraph describing a feature will be enough.",
+      "Accès sécurisé et simple à votre planning, vos programmes d'entraînement et votre historique de performance, directement sur smartphone.",
   },
   {
-    color: "gray",
-    title: "Free Revisions",
-    icon: ChatBubbleBottomCenterTextIcon,
+    color: "red",
+    title: "Agenda & Réservations en Temps Réel",
+    icon: CalendarDaysIcon,
     description:
-      "Keep you user engaged by providing meaningful information. Remember that by this time, the user is curious.",
+      "Planification, modification et annulation faciles des cours collectifs et sessions de coaching. Calendrier visible par coach et par salle.",
   },
   {
-    color: "gray",
-    title: "Verified Company",
-    icon: ChatBubbleBottomCenterTextIcon,
+    color: "teal",
+    title: "Coaching Personnalisé & Suivi",
+    icon: ChartBarIcon,
     description:
-      "Write a few lines about each one. A paragraph describing a feature will be enough. Keep you user engaged!",
+      "Création de programmes d'entraînement sur mesure par les coachs, fiches de progrès détaillées et possibilité d'export PDF pour les membres.",
+  },
+  {
+    color: "orange",
+    title: "Abonnements & Paiement en Ligne",
+    icon: CreditCardIcon,
+    description:
+      "Renouvelez vos abonnements et consultez votre historique de facturation directement depuis votre espace. Intégration de Stripe pour le paiement sécurisé.",
   },
 ];
 

@@ -4,7 +4,7 @@ import React from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { Navbar } from "@/widgets/layout"; 
 import routes from "./routes"; 
-// 🌟 Importez les nouvelles gardes de protection
+import AdminLayout from "@/components/admin/AdminLayout";
 import { RequireAuth, RequireAdminOrReceptionistOrCoach } from "./utils/AuthGuard"; 
 import ProgramList from "./components/coaching/ProgramList";
 
@@ -18,15 +18,14 @@ function App() {
   return (
     <>
       {/* Navbar avec son style original */}
-      {!(pathname === '/sign-in' || pathname === '/sign-up') && (
-        <div className="container absolute left-2/4 z-10 mx-auto -translate-x-2/4 p-4">
-          {/* Filtrez les routes cachées si besoin */}
-          <Navbar routes={routes.filter(r => r.path !== '/profile' && !r.hidden)} /> 
-        </div>
+      {!(pathname === '/sign-in' || pathname === '/sign-up' || isAdminRoute(pathname)) && (
+        <Navbar />
       )}
       
-      {/* Routes avec wrapper pleine largeur */}
-      <div className="w-full min-h-screen">
+      {/* Routes avec wrapper pleine largeur - SANS padding-top pour la home page */}
+      <div className={`w-full min-h-screen ${
+        !(pathname === '/sign-in' || pathname === '/sign-up' || pathname === '/') ? 'pt-24' : ''
+      }`}>
         <Routes>
           {routes.map(
             ({ path, element }, key) => {
@@ -39,7 +38,13 @@ function App() {
                             key={key} 
                             exact 
                             path={path} 
-                            element={<RequireAdminOrReceptionistOrCoach>{element}</RequireAdminOrReceptionistOrCoach>} 
+                            element={
+                                <RequireAdminOrReceptionistOrCoach>
+                                    <AdminLayout>
+                                        {element}
+                                    </AdminLayout>
+                                </RequireAdminOrReceptionistOrCoach>
+                            } 
                         />
                     );
                 }

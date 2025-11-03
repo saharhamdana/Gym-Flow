@@ -18,11 +18,20 @@ from authentication.models import GymCenter
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def register(request):
+    print("Registration data received:", request.data)  # Debug print
     serializer = RegisterSerializer(data=request.data)
     if serializer.is_valid():
-        serializer.save()
-        return Response({"message": "Utilisateur créé avec succès"}, status=status.HTTP_201_CREATED)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        user = serializer.save()
+        # Return the created user data along with success message
+        return Response({
+            "message": "Utilisateur créé avec succès",
+            "id": user.id,
+            "email": user.email,
+            "username": user.username,
+            "role": user.role
+        }, status=status.HTTP_201_CREATED)
+    print("Registration errors:", serializer.errors)  # Debug print
+    return Response({"errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(['GET'])

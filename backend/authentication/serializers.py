@@ -17,6 +17,9 @@ class UserSerializer(serializers.ModelSerializer):
             'profile_picture', 'profile_picture_url', 'created_at'
         ]
         read_only_fields = ['id', 'created_at', 'profile_picture_url']
+        extra_kwargs = {
+            'role': {'required': False}  # Make role optional in updates
+        }
     
     def get_profile_picture_url(self, obj):
         if obj.profile_picture:
