@@ -1,6 +1,9 @@
-# members/views.py
+# Fichier: backend/members/views.py
+
 from rest_framework import viewsets, status, filters
 from rest_framework.decorators import action
+# NOTE: L'importation de Subscription ici peut être inutile si MemberSubscription est utilisé ailleurs.
+from subscriptions.models import Subscription 
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 from .models import Member, MemberMeasurement
@@ -45,7 +48,7 @@ class MemberViewSet(viewsets.ModelViewSet):
     
     @action(detail=False, methods=['get'])
     def statistics(self, request):
-        """Statistiques globales des membres"""
+        """Statistiques globales des membres (différent de dashboard_stats)"""
         total = Member.objects.count()
         active = Member.objects.filter(status='ACTIVE').count()
         inactive = Member.objects.filter(status='INACTIVE').count()

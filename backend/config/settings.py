@@ -13,6 +13,24 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 from pathlib import Path
 import os
 from datetime import timedelta
+import os 
+from dotenv import load_dotenv
+load_dotenv()
+
+# --- Email Backend Configuration (for SendGrid) ---
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp.sendgrid.net') 
+EMAIL_PORT = int(os.environ.get('EMAIL_PORT', 587))
+EMAIL_USE_TLS = True # Utilisation du port 587
+# EMAIL_USE_SSL = False # S'assurer que SSL est désactivé si TLS est activé
+
+# --- Email Credentials from .env ---
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER')     # 'apikey'
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD') # La clé API
+
+# --- Site Defaults ---
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL') # L'adresse vérifiée
+RECIPIENT_EMAIL = os.environ.get('RECIPIENT_EMAIL')
 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -54,6 +72,7 @@ INSTALLED_APPS = [
     'members',
     'bookings',
     'training_programs',
+    'site_utils',
 ]
 
 AUTH_USER_MODEL = 'authentication.User'
