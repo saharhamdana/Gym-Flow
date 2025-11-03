@@ -15,6 +15,7 @@ import { ArrowLeftIcon, PencilIcon, TrashIcon, PlusIcon } from "@heroicons/react
 import api from "@/api/axiosInstance";
 import { DeleteMemberModal } from "@/components/profile/DeleteMemberModal";
 import { AddMeasurementModal } from "@/components/profile/AddMeasurementModal";
+import DownloadCardButton from "@/components/profile/DownloadCardButton";
 
 const MemberDetail = () => {
     const { userId } = useParams();
@@ -153,7 +154,8 @@ const MemberDetail = () => {
                         </Button>
 
                         {/* Boutons d'action */}
-                        <div className="flex gap-2 justify-end">
+                        <div className="flex gap-2 justify-end flex-wrap">
+                            <DownloadCardButton memberId={member.member_id} />
                             <Button
                                 color="blue"
                                 size="sm"

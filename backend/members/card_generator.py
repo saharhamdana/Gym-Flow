@@ -37,67 +37,87 @@ def generate_membership_card(member_id):
             expiry_date_str = latest_sub.end_date.strftime("%d/%m/%Y")
             plan_name = latest_sub.plan.name
         
-        # 1. Créer une image de base (fond bleu uni pour l'exemple)
-        img = Image.new('RGB', (CARD_WIDTH, CARD_HEIGHT), color='#1C7BFF')
+        # 1. Créer une image de base (fond blanc)
+        img = Image.new('RGB', (CARD_WIDTH, CARD_HEIGHT), color='#FFFFFF')
         draw = ImageDraw.Draw(img)
 
-        # Charger la police (utilisez un chemin vers une vraie police .ttf)
+        # Définir les couleurs
+        RED_COLOR = "#9b0e16"
+        BLUE_COLOR = "#00357a"
+
+        # Charger la police
         try:
             font_title = ImageFont.truetype(FONT_PATH, 40)
             font_label = ImageFont.truetype(FONT_PATH, 24)
             font_data = ImageFont.truetype(FONT_PATH, 32)
         except IOError:
-            # Police par défaut si le chemin échoue
             font_title = ImageFont.load_default()
             font_label = ImageFont.load_default()
             font_data = ImageFont.load_default()
 
+        # 2. Ajouter la photo du membre si disponible
+        photo_size = 150
+        photo_margin = 30
+        if member.photo:
+            try:
+                member_photo = Image.open(member.photo.path).convert('RGB')
+                # Redimensionner l'image tout en conservant le ratio
+                member_photo.thumbnail((photo_size, photo_size))
+                # Calculer la position pour coller la photo (en haut à droite)
+                photo_x = CARD_WIDTH - photo_size - photo_margin
+                photo_y = photo_margin
+                img.paste(member_photo, (photo_x, photo_y))
+            except Exception as e:
+                print(f"Erreur lors du chargement de la photo: {e}")
 
-        # 2. Informations de la salle de sport
-        draw.text((30, 30), "GYMFLOW - Carte Membre", fill=(255, 255, 255), font=font_title)
+        # 3. Informations de la salle de sport
+        draw.text((30, 30), "GYMFLOW", fill=RED_COLOR, font=font_title)
+        draw.text((30, 80), "Carte Membre", fill=BLUE_COLOR, font=font_label)
         
-        # 3. Informations du membre
+        # 4. Informations du membre
         full_name = f"{member.first_name} {member.last_name}"
         
         # Nom complet
-        draw.text((30, 150), "NOM COMPLET", fill=(200, 200, 255), font=font_label)
-        draw.text((30, 185), full_name, fill=(255, 255, 255), font=font_data)
+        draw.text((30, 150), "NOM COMPLET", fill=BLUE_COLOR, font=font_label)
+        draw.text((30, 185), full_name, fill=RED_COLOR, font=font_data)
 
         # ID Membre
-        draw.text((30, 270), "ID MEMBRE", fill=(200, 200, 255), font=font_label)
-        draw.text((30, 305), member.member_id, fill=(255, 255, 255), font=font_data)
+        draw.text((30, 270), "ID MEMBRE", fill=BLUE_COLOR, font=font_label)
+        draw.text((30, 305), member.member_id, fill=RED_COLOR, font=font_data)
 
         # Plan
-        draw.text((30, 390), "PLAN", fill=(200, 200, 255), font=font_label)
-        draw.text((30, 425), plan_name, fill=(255, 255, 255), font=font_data)
+        draw.text((30, 390), "PLAN", fill=BLUE_COLOR, font=font_label)
+        draw.text((30, 425), plan_name, fill=RED_COLOR, font=font_data)
 
         # Date d'expiration
-        draw.text((350, 390), "EXPIRATION", fill=(200, 200, 255), font=font_label)
-        draw.text((350, 425), expiry_date_str, fill=(255, 255, 255), font=font_data)
+        draw.text((350, 390), "EXPIRATION", fill=BLUE_COLOR, font=font_label)
+        draw.text((350, 425), expiry_date_str, fill=RED_COLOR, font=font_data)
         
-        
-        # 4. Génération du QR Code
-        # Le QR code code le Member ID, ce qui permet de scanner et de trouver le profil directement
+        # 5. Génération du QR Code
         qr_data = member.member_id 
         qr = qrcode.QRCode(
             version=1,
             error_correction=qrcode.constants.ERROR_CORRECT_L,
-            box_size=6,
-            border=4,
+            box_size=5,
+            border=2,
         )
         qr.add_data(qr_data)
         qr.make(fit=True)
         
-        qr_img = qr.make_image(fill_color="white", back_color="transparent").convert('RGB')
+        qr_img = qr.make_image(fill_color=RED_COLOR, back_color="white").convert('RGB')
         
-        # Taille et positionnement du QR code
-        qr_pos_x = CARD_WIDTH - qr_img.size[0] - 30
-        qr_pos_y = 30
+        # Positionner le QR code en bas à droite
+        qr_margin = 30
+        qr_pos_x = CARD_WIDTH - qr_img.size[0] - qr_margin
+        qr_pos_y = CARD_HEIGHT - qr_img.size[1] - qr_margin
         img.paste(qr_img, (qr_pos_x, qr_pos_y))
         
 
         # 5. Sauvegarde du fichier
         file_name = f"card_{member_id}.png"
+        file_path = os.path.join(OUTPUT_DIR, file_name)
+        img.save(file_path)
+        return file_path
         full_path = os.path.join(OUTPUT_DIR, file_name)
         
         img.save(full_path)
