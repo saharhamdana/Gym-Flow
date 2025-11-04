@@ -37,6 +37,9 @@ INSTALLED_APPS = [
     'authentication',
     'subscriptions',
     'members',
+    'bookings',
+    'training_programs',
+    'site_utils'
 ]
 
 AUTH_USER_MODEL = 'authentication.User'

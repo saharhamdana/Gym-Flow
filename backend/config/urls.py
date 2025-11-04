@@ -8,7 +8,7 @@ urlpatterns = [
     path('api/auth/', include('authentication.urls')),
     path('api/subscriptions/', include('subscriptions.urls')),
     path('api/members/', include('members.urls')),
-    path('api/coaching/', include('coaching.urls')),
+    path('api/bookings/', include('bookings.urls')),
 ]
 
 # Servir les fichiers média en développement

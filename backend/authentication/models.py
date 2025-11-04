@@ -89,13 +89,8 @@ class GymCenter(models.Model):
     description = models.TextField(_('description'), blank=True)
     
     # Sous-domaine unique pour chaque salle
-    subdomain = models.CharField(
-        _('sous-domaine'),
-        max_length=63,  # Limite DNS standard
-        unique=True,
-        validators=[subdomain_validator],
-        help_text='Sous-domaine unique (ex: powerfit pour powerfit.gymflow.com)'
-    )
+    subdomain = models.CharField(max_length=100, default="default_subdomain")
+
     
     # Contact
     email = models.EmailField(_('email'))
