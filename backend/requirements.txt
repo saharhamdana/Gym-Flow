@@ -1,29 +1,29 @@
-# backend/requirements.txt
-
-# Django
-Django==5.0
-djangorestframework==3.14.0
-
-# JWT Authentication
-djangorestframework-simplejwt==5.3.1
-
-# Database
-psycopg2-binary==2.9.9
-
-# CORS
-django-cors-headers==4.3.1
-
-# Environment variables
-python-decouple==3.8
-
-# Image handling
-Pillow==10.2.0
-
-# API Documentation (optional)
-drf-spectacular==0.27.0
-
-# Password validation
-argon2-cffi==23.1.0
-
-# Timezone
-pytz==2024.1
+asgiref==3.10.0
+Brotli==1.1.0
+cffi==2.0.0
+charset-normalizer==3.4.4
+cssselect2==0.8.0
+Django==5.2.7
+django-cors-headers==4.9.0
+django-filter==25.2
+djangorestframework==3.16.1
+djangorestframework_simplejwt==5.5.1
+fonttools==4.60.1
+pillow==12.0.0
+psycopg2==2.9.11
+psycopg2-binary==2.9.11
+pycparser==2.23
+pydyf==0.11.0
+PyJWT==2.10.1
+pyphen==0.17.2
+python-dotenv==1.2.1
+reportlab==4.4.4
+setuptools==80.9.0
+sqlparse==0.5.3
+tinycss2==1.4.0
+tinyhtml5==2.0.0
+tzdata==2025.2
+weasyprint==66.0
+webencodings==0.5.1
+wheel==0.45.1
+zopfli==0.2.3.post1

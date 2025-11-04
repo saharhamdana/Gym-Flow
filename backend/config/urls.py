@@ -8,8 +8,7 @@ urlpatterns = [
     path('api/auth/', include('authentication.urls')),
     path('api/subscriptions/', include('subscriptions.urls')),
     path('api/members/', include('members.urls')),
-    # <-- Ligne ajoutée par la branche distante
-    path('api/coaching/', include('coaching.urls')), 
+    # <-- Ligne ajoutée par la branche distante 
     path('api/bookings/', include('bookings.urls')),
     path('api/training-programs/', include('training_programs.urls')),
     path('api/', include('site_utils.urls')),
