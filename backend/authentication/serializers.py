@@ -1,7 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from authentication.models import GymCenter
-import re # Ajout de la dépendance pour le nouveau serializer
 
 User = get_user_model()
 
@@ -17,9 +16,6 @@ class UserSerializer(serializers.ModelSerializer):
             'profile_picture', 'profile_picture_url', 'created_at'
         ]
         read_only_fields = ['id', 'created_at', 'profile_picture_url']
-        extra_kwargs = {
-            'role': {'required': False}  # Make role optional in updates
-        }
     
     def get_profile_picture_url(self, obj):
         if obj.profile_picture:
@@ -122,6 +118,7 @@ class CheckSubdomainSerializer(serializers.Serializer):
         value = value.lower().strip()
         
         # Vérifier le format
+        import re
         if not re.match(r'^[a-z0-9]([a-z0-9-]*[a-z0-9])?$', value):
             raise serializers.ValidationError(
                 "Le sous-domaine doit contenir uniquement des lettres minuscules, "

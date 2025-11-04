@@ -18,20 +18,11 @@ from authentication.models import GymCenter
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def register(request):
-    print("Registration data received:", request.data)  # Debug print
     serializer = RegisterSerializer(data=request.data)
     if serializer.is_valid():
-        user = serializer.save()
-        # Return the created user data along with success message
-        return Response({
-            "message": "Utilisateur créé avec succès",
-            "id": user.id,
-            "email": user.email,
-            "username": user.username,
-            "role": user.role
-        }, status=status.HTTP_201_CREATED)
-    print("Registration errors:", serializer.errors)  # Debug print
-    return Response({"errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+        serializer.save()
+        return Response({"message": "Utilisateur créé avec succès"}, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(['GET'])
@@ -178,11 +169,11 @@ class GymCenterViewSet(viewsets.ModelViewSet):
             'full_url': f"https://{subdomain}.gymflow.com"
         }, status=status.HTTP_200_OK)
     
-    @action(detail=False, methods=['get'], url_path=r'(?P<subdomain>[^/.]+)', permission_classes=[AllowAny])
+    @action(detail=True, methods=['get'], url_path='by-subdomain', permission_classes=[AllowAny])
     def get_by_subdomain(self, request, subdomain=None):
         """
         Récupérer un centre par son sous-domaine
-        GET /api/auth/centers/{subdomain}/
+        GET /api/auth/centers/{subdomain}/by-subdomain/
         """
         try:
             center = GymCenter.objects.get(subdomain=subdomain, is_active=True)

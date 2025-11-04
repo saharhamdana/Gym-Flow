@@ -1,3 +1,5 @@
+# backend/authentication/models.py
+
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils.translation import gettext_lazy as _
@@ -7,7 +9,6 @@ from django.core.validators import RegexValidator
 class User(AbstractUser):
     """
     Modèle utilisateur personnalisé avec rôles
-    IMPORTANT: Le nom de la classe doit être 'User' exactement
     """
     class Role(models.TextChoices):
         ADMIN = 'ADMIN', _('Administrateur')
@@ -75,7 +76,7 @@ class User(AbstractUser):
 
 class GymCenter(models.Model):
     """
-    Modèle pour les centres de fitness/salles de sport avec système de sous-domaine (Multi-Tenant)
+    Modèle pour les centres de fitness/salles de sport avec système de sous-domaines
     """
     # Validateur pour le sous-domaine (alphanumerique et tirets uniquement)
     subdomain_validator = RegexValidator(
@@ -111,7 +112,6 @@ class GymCenter(models.Model):
     
     # Configuration
     logo = models.ImageField(_('logo'), upload_to='centers/logos/', blank=True, null=True)
-    # Rendu blank=True pour être auto-généré dans la méthode save()
     tenant_id = models.CharField(_('tenant ID'), max_length=100, unique=True, blank=True)
     
     # Métadonnées
@@ -129,8 +129,8 @@ class GymCenter(models.Model):
     
     def save(self, *args, **kwargs):
         # Générer automatiquement tenant_id à partir du sous-domaine si non fourni
-        if not self.tenant_id and self.subdomain:
-            self.tenant_id = self.subdomain.lower()
+        if not self.tenant_id:
+            self.tenant_id = self.subdomain
         
         # Forcer le sous-domaine en minuscules
         if self.subdomain:
