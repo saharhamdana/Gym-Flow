@@ -12,20 +12,20 @@ export default defineConfig({
   },
   
   server: {
-    port: 5173, // Configuration du port d'écoute
+    port: 80,  // ← Changer ici
     host: true,
     
     // 🌐 Configuration pour accepter les sous-domaines
     allowedHosts: ['.gymflow.com', 'localhost'],
     
-    // Proxy pour l'API
+    // Proxy pour l'API (optionnel)
     proxy: {
-      '/api': {
-        target: 'http://127.0.0.1:8000', // Assurez-vous que c'est l'adresse de votre backend Django
-        changeOrigin: true,
-        secure: false,
-      },
-    },
+  '/api': {
+    target: 'http://127.0.0.1:8000',
+    changeOrigin: true,
+    secure: false,
+  },
+},
 
     // Configuration CORS
     cors: true,
