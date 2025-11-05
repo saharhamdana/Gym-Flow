@@ -5,11 +5,33 @@ Django settings for config project - Configuration Multi-Tenant
 from pathlib import Path
 import os
 
+import ssl
+from django.core.mail.backends.smtp import EmailBackend
+
+class UnverifiedEmailBackend(EmailBackend):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.ssl_context = ssl._create_unverified_context()
+
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = 'django-insecure-j9f@fp$#g%c8m&j1x(nbxxm6tevy)onkt4=*09(s2o6u5!2t(s'
 
 DEBUG = True
+
+
+
+EMAIL_BACKEND = 'config.settings.UnverifiedEmailBackend'  # adapter selon ton chemin settings
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'hamdanasahar06@gmail.com'
+EMAIL_HOST_PASSWORD = 'wtfg jexi stwy icwl'
+DEFAULT_FROM_EMAIL = 'GymFlow <hamdanasahar06@gmail.com>'  # ✅ Utilisez votre email Gmail
+
+PASSWORD_RESET_TIMEOUT = 86400
+
 
 # 🌐 Configuration pour les sous-domaines
 ALLOWED_HOSTS = [
@@ -55,6 +77,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'authentication.middleware.SubdomainMiddleware',
     'authentication.middleware.TenantMiddleware',
+    'authentication.middleware.TenantAccessControlMiddleware',
 ]
 
 ROOT_URLCONF = 'config.urls'

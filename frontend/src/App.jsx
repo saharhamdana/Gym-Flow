@@ -2,11 +2,13 @@
 
 import React from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
-import { Navbar } from "@/widgets/layout"; 
-import routes from "./routes"; 
+import { Navbar } from "@/widgets/layout";
+import routes from "./routes";
 import AdminLayout from "@/components/admin/AdminLayout";
-import { RequireAuth, RequireAdminOrReceptionistOrCoach } from "./utils/AuthGuard"; 
+import { RequireAuth, RequireAdminOrReceptionistOrCoach } from "./utils/AuthGuard";
 import ProgramList from "./components/coaching/ProgramList";
+import ForgotPassword from "./pages/auth/ForgotPassword";
+import ResetPassword from "./pages/auth/ResetPassword";
 
 
 function App() {
@@ -19,54 +21,55 @@ function App() {
     <>
       {/* Navbar avec son style original */}
       {!(pathname === '/sign-in' || pathname === '/sign-up' || isAdminRoute(pathname)) && (
-        <Navbar />
+        <Navbar routes={routes} />
       )}
-      
+
       {/* Routes avec wrapper pleine largeur - SANS padding-top pour la home page */}
-      <div className={`w-full min-h-screen ${
-        !(pathname === '/sign-in' || pathname === '/sign-up' || pathname === '/') ? 'pt-24' : ''
-      }`}>
+      <div className={`w-full min-h-screen ${!(pathname === '/sign-in' || pathname === '/sign-up' || pathname === '/') ? 'pt-24' : ''
+        }`}>
         <Routes>
           {routes.map(
             ({ path, element }, key) => {
-                if (!element) return null;
+              if (!element) return null;
 
-                // Protège les routes Admin/Coach/Réceptionniste
-                if (isAdminRoute(path)) {
-                    return (
-                        <Route 
-                            key={key} 
-                            exact 
-                            path={path} 
-                            element={
-                                <RequireAdminOrReceptionistOrCoach>
-                                    <AdminLayout>
-                                        {element}
-                                    </AdminLayout>
-                                </RequireAdminOrReceptionistOrCoach>
-                            } 
-                        />
-                    );
-                }
+              // Protège les routes Admin/Coach/Réceptionniste
+              if (isAdminRoute(path)) {
+                return (
+                  <Route
+                    key={key}
+                    exact
+                    path={path}
+                    element={
+                      <RequireAdminOrReceptionistOrCoach>
+                        <AdminLayout>
+                          {element}
+                        </AdminLayout>
+                      </RequireAdminOrReceptionistOrCoach>
+                    }
+                  />
+                );
+              }
 
-                // Protège les routes Membre (Profile, Programmes)
-                if (path === '/profile' || path === '/my-programs') {
-                    return (
-                        <Route 
-                            key={key} 
-                            exact 
-                            path={path} 
-                            element={<RequireAuth>{element}</RequireAuth>} 
-                        />
-                    );
-                }
+              // Protège les routes Membre (Profile, Programmes)
+              if (path === '/profile' || path === '/my-programs') {
+                return (
+                  <Route
+                    key={key}
+                    exact
+                    path={path}
+                    element={<RequireAuth>{element}</RequireAuth>}
+                  />
+                );
+              }
 
-                // Routes publiques (Home, Sign-in, Sign-up, Docs)
-                return <Route key={key} exact path={path} element={element} />;
+              // Routes publiques (Home, Sign-in, Sign-up, Docs)
+              return <Route key={key} exact path={path} element={element} />;
             }
           )}
           <Route path="*" element={<Navigate to="/" replace />} />
           <Route path="/coaching/programs" element={<ProgramList />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} /> 
+          <Route path="/reset-password/:uid/:token" element={<ResetPassword />} />  
         </Routes>
       </div>
     </>
