@@ -4,4 +4,4 @@ __pycache__/
 *.pyd
 *.class
 
-backend/.env
+backend/.env.env
