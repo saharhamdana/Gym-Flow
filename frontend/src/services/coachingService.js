@@ -1,6 +1,4 @@
-// Fichier: frontend/src/services/coachingService.js
-
-import api from '../api/axiosInstance';  // ✅ Utiliser votre axiosInstance existant
+import api from '@/api/axiosInstance';  // ← CHANGEMENT ICI
 
 const coachingService = {
   // ===== EXERCISE CATEGORIES =====
@@ -59,6 +57,9 @@ const coachingService = {
   createWorkoutLog: (data) => api.post('coaching/workout-logs/', data),
   updateWorkoutLog: (id, data) => api.put(`coaching/workout-logs/${id}/`, data),
   deleteWorkoutLog: (id) => api.delete(`coaching/workout-logs/${id}/`),
+
+  // ===== MEMBERS (pour sélection dans formulaires) =====
+  getMembers: (params) => api.get('coaching/members/', { params }),
 };
 
 export default coachingService;

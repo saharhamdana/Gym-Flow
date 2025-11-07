@@ -4,4 +4,9 @@ __pycache__/
 *.pyd
 *.class
 
+# Environnements virtuels
+backend/env/
+venv/
+
+# Fichiers d’environnement
 backend/.env

@@ -39,7 +39,8 @@ INSTALLED_APPS = [
     'members',
     'bookings',
     'training_programs',
-    'site_utils'
+    'site_utils',
+    'coaching'
 ]
 
 AUTH_USER_MODEL = 'authentication.User'
