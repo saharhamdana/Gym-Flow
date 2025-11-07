@@ -6,8 +6,10 @@ from django_filters.rest_framework import DjangoFilterBackend
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from weasyprint import HTML
+from members.models import Member
+from django.utils import timezone
+from collections import defaultdict
 import io
-
 from .models import (
     ExerciseCategory, Exercise, TrainingProgram,
     WorkoutSession, WorkoutExercise, ProgressTracking,
@@ -55,14 +57,15 @@ class TrainingProgramViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         queryset = TrainingProgram.objects.select_related(
-            'member__user', 'coach'
+            'member',
+            'coach'
         ).prefetch_related('workout_sessions__exercises__exercise')
         
         # Filtrer selon le rôle
         user = self.request.user
         if user.role == 'member':
-            # Les membres ne voient que leurs propres programmes
-            queryset = queryset.filter(member__user=user)
+            # Filtrer par email du membre
+            queryset = queryset.filter(member__email=user.email)
         elif user.role == 'coach':
             # Les coachs voient les programmes qu'ils ont créés
             queryset = queryset.filter(coach=user)
@@ -72,9 +75,16 @@ class TrainingProgramViewSet(viewsets.ModelViewSet):
     
     def get_serializer_class(self):
         if self.action in ['create', 'update', 'partial_update']:
-            return TrainingProgramCreateSerializer
+            # Utiliser le nouveau serializer pour la création complète
+            return TrainingProgramFullCreateSerializer  # ← Changez ici
         return TrainingProgramSerializer
     
+    def perform_create(self, serializer):
+        # Ajouter le coach automatiquement si pas fourni
+        if 'coach' not in serializer.validated_data:
+            serializer.save(coach=self.request.user)
+        else:
+            serializer.save()
     @action(detail=True, methods=['post'])
     def duplicate(self, request, pk=None):
         """Dupliquer un programme existant"""
@@ -126,40 +136,46 @@ class TrainingProgramViewSet(viewsets.ModelViewSet):
     
     @action(detail=True, methods=['get'])
     def export_pdf(self, request, pk=None):
-        """Exporter le programme en PDF"""
+        """Exporter un programme en PDF"""
         program = self.get_object()
-        
-        # Récupérer toutes les sessions avec exercices
+    
+        # Récupérer toutes les sessions avec leurs exercices
+        # CORRECTION : utiliser 'workout_sessions' au lieu de 'sessions'
         sessions = program.workout_sessions.prefetch_related(
             'exercises__exercise__category'
-        ).order_by('week_number', 'day_of_week')
-        
-        # Grouper les sessions par semaine
-        weeks = {}
+        ).order_by('week_number', 'day_of_week', 'order')
+    
+        # Organiser les sessions par semaine
+        sessions_by_week = defaultdict(list)
         for session in sessions:
-            if session.week_number not in weeks:
-                weeks[session.week_number] = []
-            weeks[session.week_number].append(session)
-        
-        # Contexte pour le template
+            sessions_by_week[session.week_number].append(session)
+    
+        # Calculer les statistiques
+        total_sessions = sessions.count()
+        total_exercises = sum(session.exercises.count() for session in sessions)
+    
         context = {
             'program': program,
-            'weeks': sorted(weeks.items()),
-            'member': program.member,
-            'coach': program.coach,
+            'sessions_by_week': dict(sessions_by_week),
+            'stats': {
+                'total_sessions': total_sessions,
+                'total_exercises': total_exercises,
+            },
+            'current_date': timezone.now(),
         }
-        
-        # Rendre le template HTML
+    
+        # Générer le HTML
         html_string = render_to_string('coaching/program_pdf.html', context)
-        
-        # Convertir en PDF
+    
+        # Convertir en PDF avec WeasyPrint
         html = HTML(string=html_string)
-        pdf_file = html.write_pdf()
-        
+        pdf = html.write_pdf()
+    
         # Retourner la réponse PDF
-        response = HttpResponse(pdf_file, content_type='application/pdf')
-        response['Content-Disposition'] = f'attachment; filename="programme_{program.id}.pdf"'
-        
+        response = HttpResponse(pdf, content_type='application/pdf')
+        filename = f'programme_{program.id}_{program.title.replace(" ", "_")}.pdf'
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    
         return response
 
 
@@ -172,13 +188,14 @@ class WorkoutSessionViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         queryset = WorkoutSession.objects.select_related(
-            'program__member__user', 'program__coach'
+            'program__member',
+            'program__coach'
         ).prefetch_related('exercises__exercise')
         
         # Filtrer selon le rôle
         user = self.request.user
         if user.role == 'member':
-            queryset = queryset.filter(program__member__user=user)
+            queryset = queryset.filter(program__member__email=user.email)
         elif user.role == 'coach':
             queryset = queryset.filter(program__coach=user)
         
@@ -200,13 +217,14 @@ class ProgressTrackingViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         queryset = ProgressTracking.objects.select_related(
-            'member__user', 'program'
+            'member',
+            'program'
         )
         
         # Filtrer selon le rôle
         user = self.request.user
         if user.role == 'member':
-            queryset = queryset.filter(member__user=user)
+            queryset = queryset.filter(member__email=user.email)
         
         return queryset
     
@@ -259,13 +277,14 @@ class WorkoutLogViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         queryset = WorkoutLog.objects.select_related(
-            'member__user', 'workout_session__program'
+            'member',
+            'workout_session__program'
         ).prefetch_related('exercises__exercise')
         
         # Filtrer selon le rôle
         user = self.request.user
         if user.role == 'member':
-            queryset = queryset.filter(member__user=user)
+            queryset = queryset.filter(member__email=user.email)
         
         return queryset
     
@@ -273,3 +292,24 @@ class WorkoutLogViewSet(viewsets.ModelViewSet):
         if self.action in ['create', 'update', 'partial_update']:
             return WorkoutLogCreateSerializer
         return WorkoutLogSerializer
+    
+class MemberSelectionViewSet(viewsets.ReadOnlyModelViewSet):
+    """ViewSet pour sélectionner un membre dans un formulaire"""
+    permission_classes = [IsAuthenticated]
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['first_name', 'last_name', 'email', 'phone']  # ← CORRECTION: 'phone' au lieu de 'phone_number'
+    
+    def get_queryset(self):
+        # Retourner uniquement les membres actifs
+        return Member.objects.filter(status='ACTIVE').order_by('first_name', 'last_name') 
+    def get_serializer_class(self):
+        from rest_framework import serializers
+        
+        class MemberSimpleSerializer(serializers.ModelSerializer):
+            full_name = serializers.CharField(read_only=True)
+            
+            class Meta:
+                model = Member
+                fields = ['id', 'member_id', 'full_name', 'email', 'phone']  
+        
+        return MemberSimpleSerializer

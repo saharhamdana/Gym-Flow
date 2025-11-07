@@ -76,6 +76,7 @@ export const routes = [
     target: "_blank",
     element: "",
   }
+  
 ];
 
 export default routes;

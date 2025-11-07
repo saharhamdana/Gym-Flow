@@ -130,8 +130,8 @@ class CoachBasicSerializer(serializers.Serializer):
 
 
 class TrainingProgramSerializer(serializers.ModelSerializer):
-    member_name = serializers.CharField(source='member.user.get_full_name', read_only=True)
-    member_email = serializers.EmailField(source='member.user.email', read_only=True)
+    member_name = serializers.CharField(source='member.full_name', read_only=True)
+    member_email = serializers.EmailField(source='member.email', read_only=True)
     coach_name = serializers.SerializerMethodField()
     coach_email = serializers.EmailField(source='coach.email', read_only=True)
     workout_sessions = WorkoutSessionSerializer(many=True, read_only=True)
@@ -168,7 +168,7 @@ class TrainingProgramCreateSerializer(serializers.ModelSerializer):
 
 
 class ProgressTrackingSerializer(serializers.ModelSerializer):
-    member_name = serializers.CharField(source='member.user.get_full_name', read_only=True)
+    member_name = serializers.CharField(source='member.full_name', read_only=True)
     program_title = serializers.CharField(source='program.title', read_only=True)
     
     class Meta:
@@ -195,7 +195,7 @@ class WorkoutLogExerciseSerializer(serializers.ModelSerializer):
 
 
 class WorkoutLogSerializer(serializers.ModelSerializer):
-    member_name = serializers.CharField(source='member.user.get_full_name', read_only=True)
+    member_name = serializers.CharField(source='member.full_name', read_only=True)
     exercises = WorkoutLogExerciseSerializer(many=True, read_only=True)
     feeling_display = serializers.CharField(source='get_feeling_display', read_only=True)
     
@@ -231,3 +231,40 @@ class WorkoutLogCreateSerializer(serializers.ModelSerializer):
             )
         
         return workout_log
+
+class TrainingProgramFullCreateSerializer(serializers.ModelSerializer):
+    """Serializer pour créer un programme complet avec sessions et exercices"""
+    workout_sessions = WorkoutSessionCreateSerializer(many=True, required=False)
+    
+    class Meta:
+        model = TrainingProgram
+        fields = [
+            'id', 'title', 'description', 'member', 'coach', 'status',
+            'start_date', 'end_date', 'duration_weeks',
+            'goal', 'target_weight', 'target_body_fat', 'notes',
+            'workout_sessions'
+        ]
+    
+    def create(self, validated_data):
+        sessions_data = validated_data.pop('workout_sessions', [])
+        
+        # Créer le programme
+        program = TrainingProgram.objects.create(**validated_data)
+        
+        # Créer les sessions avec leurs exercices
+        for session_data in sessions_data:
+            exercises_data = session_data.pop('exercises', [])
+            
+            workout_session = WorkoutSession.objects.create(
+                program=program,
+                **session_data
+            )
+            
+            # Créer les exercices de la session
+            for exercise_data in exercises_data:
+                WorkoutExercise.objects.create(
+                    workout_session=workout_session,
+                    **exercise_data
+                )
+        
+        return program

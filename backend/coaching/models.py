@@ -79,7 +79,7 @@ class TrainingProgram(models.Model):
         ordering = ['-created_at']
     
     def __str__(self):
-        return f"{self.title} - {self.member.user.get_full_name()}"
+        return f"{self.title} - {self.member.full_name}"
 
 
 class WorkoutSession(models.Model):
@@ -160,8 +160,7 @@ class ProgressTracking(models.Model):
         verbose_name_plural = "Progress Trackings"
     
     def __str__(self):
-        return f"{self.member.user.get_full_name()} - {self.date}"
-
+        return f"{self.member.full_name} - {self.date}"
 
 class WorkoutLog(models.Model):
     """Journal d'entraînement - enregistrement des séances réalisées"""
@@ -185,7 +184,7 @@ class WorkoutLog(models.Model):
         ordering = ['-date']
     
     def __str__(self):
-        return f"{self.member.user.get_full_name()} - {self.date.strftime('%d/%m/%Y')}"
+        return f"{self.member.full_name} - {self.date.strftime('%d/%m/%Y')}"
 
 
 class WorkoutLogExercise(models.Model):
