@@ -13,8 +13,9 @@ from .serializers import (
     MemberCreateUpdateSerializer,
     MemberMeasurementSerializer
 )
+from authentication.mixins import TenantQuerysetMixin
 
-class MemberViewSet(viewsets.ModelViewSet):
+class MemberViewSet(TenantQuerysetMixin, viewsets.ModelViewSet):
     queryset = Member.objects.all()
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['status', 'gender']

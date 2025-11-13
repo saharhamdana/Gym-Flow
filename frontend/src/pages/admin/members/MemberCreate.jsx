@@ -79,7 +79,7 @@ const MemberCreate = () => {
 
             // Créer l'utilisateur
             const userResponse = await api.post('auth/register/', userData);
-            const userId = userResponse.data.id;
+            const userId = userResponse.data.user.id;
 
             // Créer le membre avec l'ID de l'utilisateur
             const formDataToSend = new FormData();

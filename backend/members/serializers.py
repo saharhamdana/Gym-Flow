@@ -69,6 +69,11 @@ class MemberCreateUpdateSerializer(serializers.ModelSerializer):
         first_name = validated_data.get('first_name')
         last_name = validated_data.get('last_name')
 
+          # ✅ Récupérer le tenant_id depuis la requête
+        request = self.context.get('request')
+        gym_center = getattr(request, 'gym_center', None)
+        tenant_id = gym_center.tenant_id if gym_center else ''
+
         # Créer l'utilisateur
         user = User.objects.create_user(
             username=email.split('@')[0],  # Utiliser la partie avant @ comme nom d'utilisateur
@@ -76,14 +81,24 @@ class MemberCreateUpdateSerializer(serializers.ModelSerializer):
             password=password,
             first_name=first_name,
             last_name=last_name,
-            role='MEMBER'
+            role='MEMBER',
+            tenant_field=tenant_id  # ✅ Associer le tenant_id à l'utilisateur
         )
 
-        # Créer le membre et l'associer à l'utilisateur
-        member = Member.objects.create(**validated_data, user=user)
-        return member
-    latest_measurement = serializers.SerializerMethodField()
-    
+         # Créer le membre avec le tenant_id
+        member = Member.objects.create(
+            **validated_data, 
+            user=user,
+            tenant_id=tenant_id  # ✅ Assigner le tenant_id
+        )
+
+
+
+    #     # Créer le membre et l'associer à l'utilisateur
+    #     member = Member.objects.create(**validated_data, user=user)
+    #     return member
+    # latest_measurement = serializers.SerializerMethodField()
+
     class Meta:
         model = Member
         fields = '__all__'

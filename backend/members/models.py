@@ -60,6 +60,8 @@ class Member(models.Model):
     # Métadonnées
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    tenant_id = models.CharField(max_length=100, null=True, blank=True, verbose_name="ID du centre") 
     
     class Meta:
         ordering = ['-created_at']
