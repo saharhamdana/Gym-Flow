@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from "@/api/axiosInstance"; // ✅ Utiliser l'instance configurée
 
 import { 
   Avatar, 
@@ -49,90 +49,45 @@ export default function ProfilePage({ adminView = false }) {
     }
   }, [adminView, navigate]);
 
-
-  // Fonction pour rafraîchir le token
-const refreshAccessToken = async () => {
-  try {
-    const refreshToken = localStorage.getItem("refresh_token");
-    if (!refreshToken) {
-      throw new Error("No refresh token");
-    }
-
-    const res = await axios.post("http://127.0.0.1:8000/api/auth/token/refresh/", {
-      refresh: refreshToken,
-    });
-
-    localStorage.setItem("access_token", res.data.access);
-    return res.data.access;
-  } catch (err) {
-    console.error("Erreur lors du rafraîchissement du token:", err);
-    // Si le refresh échoue, déconnecter l'utilisateur
-    localStorage.removeItem("access_token");
-    localStorage.removeItem("refresh_token");
-    localStorage.removeItem("user");
-    navigate("/sign-in");
-    return null;
-  }
-};
-
-  // Fonction pour récupérer les informations de l'utilisateur
-const fetchUser = async (retryWithRefresh = true) => {
-  try {
-    let token = localStorage.getItem("access_token");
-    
-    if (!token) {
-      navigate("/sign-in");
-      return;
-    }
-
-    // Appel à l'API auth pour récupérer le profil
-    const res = await axios.get("http://127.0.0.1:8000/api/auth/me/", {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-    
-    setUser(res.data);
-    
-    // Si l'utilisateur est un membre, récupérer ses abonnements
-    if (res.data.role === "MEMBER") {
-      fetchSubscriptions(token);
-    }
-  } catch (err) {
-    console.error("Erreur lors du chargement de l'utilisateur:", err);
-    
-    // Si erreur 401 et qu'on n'a pas encore tenté de rafraîchir
-    if (err.response?.status === 401 && retryWithRefresh) {
-      console.log("Token expiré, tentative de rafraîchissement...");
-      const newToken = await refreshAccessToken();
-      
-      if (newToken) {
-        // Réessayer avec le nouveau token
-        return fetchUser(false); // false = ne pas réessayer si ça échoue encore
-      }
-    } else {
-      // Autre erreur ou échec du refresh
-      setError("Impossible de charger les informations utilisateur.");
-      localStorage.removeItem("access_token");
-      localStorage.removeItem("refresh_token");
-      navigate("/sign-in");
-    }
-  } finally {
-    setLoading(false);
-  }
-};
-
-  // Fonction pour récupérer les abonnements
-  const fetchSubscriptions = async (token) => {
+  // ✅ Fonction pour récupérer les informations de l'utilisateur (CORRIGÉE)
+  const fetchUser = async () => {
     try {
-      const res = await axios.get(
-        "http://127.0.0.1:8000/api/subscriptions/subscriptions/my-subscriptions/",
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const token = localStorage.getItem("access_token");
+      
+      if (!token) {
+        navigate("/sign-in");
+        return;
+      }
+
+      // ✅ Utiliser l'instance api au lieu d'URL en dur
+      const res = await api.get("auth/me/");
+      
+      setUser(res.data);
+      
+      // Si l'utilisateur est un membre, récupérer ses abonnements
+      if (res.data.role === "MEMBER") {
+        fetchSubscriptions();
+      }
+    } catch (err) {
+      console.error("Erreur lors du chargement de l'utilisateur:", err);
+      
+      // Le refresh token est géré automatiquement par l'intercepteur
+      if (err.response?.status === 401) {
+        // Si 401 persiste après refresh, déconnexion (gérée par l'intercepteur)
+        setError("Session expirée. Veuillez vous reconnecter.");
+      } else {
+        setError("Impossible de charger les informations utilisateur.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ✅ Fonction pour récupérer les abonnements (CORRIGÉE)
+  const fetchSubscriptions = async () => {
+    try {
+      // ✅ Utiliser l'instance api
+      const res = await api.get("subscriptions/subscriptions/my-subscriptions/");
       setSubscriptions(res.data);
       console.log("✅ Abonnements chargés:", res.data);
     } catch (err) {
@@ -158,7 +113,7 @@ const fetchUser = async (retryWithRefresh = true) => {
     navigate("/sign-in");
   };
 
-  // Fonction pour uploader la photo de profil
+  // ✅ Fonction pour uploader la photo de profil (CORRIGÉE)
   const handleProfilePictureUpload = async (event) => {
     const file = event.target.files[0];
     if (!file) return;
@@ -179,17 +134,12 @@ const fetchUser = async (retryWithRefresh = true) => {
     formData.append('profile_picture', file);
 
     try {
-      const token = localStorage.getItem("access_token");
-      const res = await axios.post(
-        "http://127.0.0.1:8000/api/auth/me/upload-picture/",
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'multipart/form-data',
-          },
-        }
-      );
+      // ✅ Utiliser l'instance api
+      const res = await api.post("auth/me/upload-picture/", formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
 
       setUser(res.data);
       console.log("✅ Photo de profil mise à jour:", res.data);
@@ -201,7 +151,7 @@ const fetchUser = async (retryWithRefresh = true) => {
     }
   };
 
-  // Fonction pour supprimer la photo de profil
+  // ✅ Fonction pour supprimer la photo de profil (CORRIGÉE)
   const handleDeleteProfilePicture = async () => {
     if (!confirm('Êtes-vous sûr de vouloir supprimer votre photo de profil ?')) {
       return;
@@ -210,15 +160,8 @@ const fetchUser = async (retryWithRefresh = true) => {
     setUploadingImage(true);
 
     try {
-      const token = localStorage.getItem("access_token");
-      const res = await axios.delete(
-        "http://127.0.0.1:8000/api/auth/me/delete-picture/",
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      // ✅ Utiliser l'instance api
+      const res = await api.delete("auth/me/delete-picture/");
 
       setUser(res.data);
       console.log("✅ Photo de profil supprimée");
@@ -283,7 +226,7 @@ const fetchUser = async (retryWithRefresh = true) => {
     { id: 3, name: "Pilates", date: "31 Oct 2025", time: "10:00", coach: "Sophie Laurent" },
   ];
 
-  // --- RENDU DU COMPOSANT ---
+  // --- RENDU DU COMPOSANT (inchangé) ---
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header avec image de fond */}
@@ -313,7 +256,6 @@ const fetchUser = async (retryWithRefresh = true) => {
                       />
                       {/* Boutons pour gérer la photo */}
                       <div className="absolute bottom-2 right-2 flex gap-2">
-                        {/* Bouton supprimer (affiché seulement si photo existe) */}
                         {user.profile_picture_url && (
                           <button
                             onClick={handleDeleteProfilePicture}
@@ -342,7 +284,6 @@ const fetchUser = async (retryWithRefresh = true) => {
                           </button>
                         )}
                         
-                        {/* Bouton changer/ajouter */}
                         <label
                           htmlFor="profile-picture-upload"
                           className="bg-blue-500 hover:bg-blue-600 text-white rounded-full p-2 cursor-pointer shadow-lg transition-all duration-200 hover:scale-110"
@@ -689,7 +630,6 @@ const fetchUser = async (retryWithRefresh = true) => {
                                   </div>
                                 </div>
                                 
-                                {/* Fonctionnalités incluses */}
                                 {sub.plan.features && sub.plan.features.length > 0 && (
                                   <div className="mt-4">
                                     <Typography variant="small" className="text-gray-600 font-semibold mb-2">
@@ -730,7 +670,6 @@ const fetchUser = async (retryWithRefresh = true) => {
           </div>
         </div>
       </section>
-
     </div>
   );
 }

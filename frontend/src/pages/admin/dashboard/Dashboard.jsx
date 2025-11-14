@@ -1,10 +1,10 @@
 import React from 'react';
-// CORRECTION DU CHEMIN D'IMPORTATION (dépend de la structure de votre projet)
-import api from '../../../api/axiosInstance'; 
+import api from '../../../api/axiosInstance';
 import {
     Card,
     CardBody,
     Typography,
+    Alert,
 } from "@material-tailwind/react";
 import {
     UserGroupIcon,
@@ -14,7 +14,6 @@ import {
     ClockIcon,
 } from "@heroicons/react/24/solid";
 
-// Composant pour afficher les cartes de statistiques (StatCard)
 const StatCard = ({ title, value, icon: Icon, color }) => (
     <Card>
         <CardBody className="p-4">
@@ -35,16 +34,14 @@ const StatCard = ({ title, value, icon: Icon, color }) => (
     </Card>
 );
 
-// Composant principal du tableau de bord (Dashboard)
 const Dashboard = () => {
     const [stats, setStats] = React.useState({
         totalMembers: 0,
         activeSubscriptions: 0,
         upcomingCourses: 0,
         monthlyRevenue: 0,
-        // Les détails des listes ne sont pas dans le state principal pour les cartes, mais sont bien dans l'API
-        recentMembers: [], 
-        upcomingCoursesDetails: [], 
+        recentMembers: [],
+        upcomingCoursesDetails: [],
     });
     const [isLoading, setIsLoading] = React.useState(true);
     const [error, setError] = React.useState(null);
@@ -54,12 +51,10 @@ const Dashboard = () => {
             setIsLoading(true);
             setError(null);
             try {
-                // Utilisation de l'URL sans le préfixe /api/ car il est déjà dans baseURL
                 const response = await api.get('members/dashboard-stats/');
 
                 if (response.data) {
                     setStats({
-                        // 🟢 CORRECTION : Utilisation des clés camelCase pour correspondre au JSON renvoyé par le backend
                         totalMembers: response.data.totalMembers || 0,
                         activeSubscriptions: response.data.activeSubscriptions || 0,
                         upcomingCourses: response.data.upcomingCourses || 0,
@@ -70,12 +65,24 @@ const Dashboard = () => {
                 }
                 
             } catch (err) {
-                console.error("Erreur lors de la récupération des statistiques:", err.response || err);
+                console.error("❌ Erreur dashboard:", err);
                 
-                if (err.response && err.response.status !== 401) {
-                   setError("Impossible de charger les données. Vérifiez l'endpoint API ou les permissions.");
-                } else if (!err.response) {
-                   setError("Erreur réseau: API Backend injoignable.");
+                // ✅ GESTION DÉTAILLÉE DES ERREURS
+                if (err.response) {
+                    // Erreur HTTP (4xx, 5xx)
+                    if (err.response.status === 403) {
+                        setError("🔒 Accès refusé. Vous n'avez pas les permissions nécessaires.");
+                    } else if (err.response.status === 401) {
+                        setError("🔑 Non authentifié. Veuillez vous reconnecter.");
+                    } else {
+                        setError(`❌ Erreur serveur (${err.response.status}): ${err.response.data?.detail || 'Erreur inconnue'}`);
+                    }
+                } else if (err.request) {
+                    // Requête envoyée, mais pas de réponse
+                    setError("🌐 Erreur réseau: Le serveur backend est injoignable. Vérifiez qu'il est démarré sur http://localhost:8000");
+                } else {
+                    // Autre erreur
+                    setError(`⚠️ Erreur: ${err.message}`);
                 }
             } finally {
                 setIsLoading(false);
@@ -85,7 +92,6 @@ const Dashboard = () => {
         fetchStats();
     }, []);
 
-    // Affichage du chargement ou de l'erreur
     if (isLoading) {
         return (
             <div className="flex justify-center items-center h-40">
@@ -99,13 +105,34 @@ const Dashboard = () => {
 
     if (error) {
         return (
-            <div className="p-4 bg-red-100 border border-red-400 text-red-700 rounded">
-                <Typography variant="h6">{error}</Typography>
+            <div className="p-4">
+                <Alert color="red" className="mb-4">
+                    <div className="flex flex-col gap-2">
+                        <Typography variant="h6" color="white">
+                            Erreur de Chargement
+                        </Typography>
+                        <Typography variant="small" color="white">
+                            {error}
+                        </Typography>
+                    </div>
+                </Alert>
+                
+                {/* ✅ AIDE AU DÉBOGAGE */}
+                <Alert color="blue">
+                    <Typography variant="h6" className="mb-2">
+                        💡 Solutions possibles :
+                    </Typography>
+                    <ul className="list-disc list-inside space-y-1 text-sm">
+                        <li>Vérifiez que le serveur Django est démarré : <code>python manage.py runserver</code></li>
+                        <li>Vérifiez votre token JWT (déconnexion/reconnexion)</li>
+                        <li>Vérifiez les permissions de votre rôle utilisateur</li>
+                        <li>Consultez la console du navigateur (F12) pour plus de détails</li>
+                    </ul>
+                </Alert>
             </div>
         );
     }
-    
-    // Rendu du tableau de bord avec les données chargées
+
     return (
         <div>
             <div className="mb-8">
@@ -113,7 +140,7 @@ const Dashboard = () => {
                     Tableau de bord
                 </Typography>
                 <Typography color="gray" className="mt-1 font-normal">
-                    Vue d'overview de votre salle de sport
+                    Vue d'ensemble de votre salle de sport
                 </Typography>
             </div>
 
@@ -138,14 +165,13 @@ const Dashboard = () => {
                 />
                 <StatCard
                     title="Revenu Mensuel"
-                    // Assurez-vous que toLocaleString gère le formatage monétaire si nécessaire
-                    value={`${stats.monthlyRevenue.toLocaleString('fr-FR')} DT`} 
+                    value={`${stats.monthlyRevenue.toLocaleString('fr-FR')} DT`}
                     icon={CurrencyDollarIcon}
                     color="bg-purple-500"
                 />
             </div>
 
-            {/* TODO: Add more dashboard widgets here (using recentMembers and upcomingCoursesDetails) */}
+            {/* TODO: Ajouter les widgets pour recentMembers et upcomingCoursesDetails */}
         </div>
     );
 };
