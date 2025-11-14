@@ -24,14 +24,7 @@ export function SignIn() {
         setWrongTenantError(null);
         setLoading(true);
 
-<<<<<<< HEAD
-        api.post("auth/token/", form) 
-            .then((res) => {
-                localStorage.setItem("access_token", res.data.access);
-                localStorage.setItem("refresh_token", res.data.refresh);
 
-                api.get("auth/me/") 
-=======
         api.post("auth/token/", form)
             .then((res) => {
                 // Stockage des tokens
@@ -40,26 +33,25 @@ export function SignIn() {
 
                 // Récupérer le profil utilisateur
                 api.get("auth/me/")
->>>>>>> 892163ee208c0323a7da5e66ff8cba405c684215
-                    .then((r) => {
-                        const userProfile = r.data;
-                        localStorage.setItem("user", JSON.stringify(userProfile));
-                        setLoading(false);
 
-<<<<<<< HEAD
-                        // 🚀 Redirection basée sur le rôle
-                        if (userProfile.role === "COACH") {
-                            navigate("/coach"); // ← NOUVELLE REDIRECTION POUR LES COACH
-                        } else if (userProfile.role === "ADMIN" || userProfile.role === "RECEPTIONIST") {
-=======
-                        // Redirection basée sur le rôle
-                        if (userProfile.role === "ADMIN" || userProfile.role === "COACH" || userProfile.role === "RECEPTIONIST") {
->>>>>>> 892163ee208c0323a7da5e66ff8cba405c684215
-                            navigate("/admin/dashboard");
-                        } else {
-                            navigate("/portal");
-                        }
-                    })
+                    .then((r) => {
+                const userProfile = r.data;
+                localStorage.setItem("user", JSON.stringify(userProfile));
+                setLoading(false);
+
+                // 🚀 Redirection basée sur le rôle
+                if (userProfile.role === "COACH") {
+                    navigate("/coach");
+                } else if (
+                    userProfile.role === "ADMIN" ||
+                    userProfile.role === "RECEPTIONIST"
+                ) {
+                    navigate("/admin/dashboard");
+                } else {
+                    navigate("/portal");
+                }
+            })
+
                     .catch((err) => {
                         console.error("Erreur lors de la récupération du profil:", err);
                         setError("Connexion réussie, mais échec de la récupération du profil.");
@@ -108,14 +100,14 @@ export function SignIn() {
                         Entrez votre email et votre mot de passe.
                     </Typography>
                 </div>
-<<<<<<< HEAD
+
                 
                 {error && (
                     <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative my-4" role="alert">
                         <strong className="font-bold">⚠️ Erreur : </strong>
                         <span className="block sm:inline">{error}</span>
                     </div>
-=======
+                )}
 
                 {/* ⚠️ Erreur de tenant (mauvais sous-domaine) */}
                 {wrongTenantError && (
@@ -167,7 +159,6 @@ export function SignIn() {
                             {error}
                         </Typography>
                     </Alert>
->>>>>>> 892163ee208c0323a7da5e66ff8cba405c684215
                 )}
 
                 <form className="mt-8 mb-2 mx-auto w-80 max-w-screen-lg lg:w-1/2" onSubmit={handleSubmit}>

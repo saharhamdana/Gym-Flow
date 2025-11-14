@@ -10,8 +10,6 @@ import APIDebugTool from './components/debug/APIDebugTool';
 import EditProgramForm from './components/coaching/EditProgramForm';
 import ProgramDetails from './components/coaching/ProgramDetails';
 
-import { RequireAuth, RequireAdminOrReceptionistOrCoach } from "./utils/AuthGuard";
-import ProgramList from "./components/coaching/ProgramList";
 import ForgotPassword from "./pages/auth/ForgotPassword";
 import ResetPassword from "./pages/auth/ResetPassword";
 
