@@ -24,14 +24,6 @@ export function SignIn() {
         setWrongTenantError(null);
         setLoading(true);
 
-<<<<<<< HEAD
-        api.post("auth/token/", form) 
-            .then((res) => {
-                localStorage.setItem("access_token", res.data.access);
-                localStorage.setItem("refresh_token", res.data.refresh);
-
-                api.get("auth/me/") 
-=======
         api.post("auth/token/", form)
             .then((res) => {
                 // Stockage des tokens
@@ -40,21 +32,15 @@ export function SignIn() {
 
                 // Récupérer le profil utilisateur
                 api.get("auth/me/")
->>>>>>> 892163ee208c0323a7da5e66ff8cba405c684215
                     .then((r) => {
                         const userProfile = r.data;
                         localStorage.setItem("user", JSON.stringify(userProfile));
                         setLoading(false);
 
-<<<<<<< HEAD
                         // 🚀 Redirection basée sur le rôle
                         if (userProfile.role === "COACH") {
-                            navigate("/coach"); // ← NOUVELLE REDIRECTION POUR LES COACH
-                        } else if (userProfile.role === "ADMIN" || userProfile.role === "RECEPTIONIST") {
-=======
-                        // Redirection basée sur le rôle
-                        if (userProfile.role === "ADMIN" || userProfile.role === "COACH" || userProfile.role === "RECEPTIONIST") {
->>>>>>> 892163ee208c0323a7da5e66ff8cba405c684215
+                            navigate("/coach");
+                        } else if (["ADMIN", "RECEPTIONIST"].includes(userProfile.role)) {
                             navigate("/admin/dashboard");
                         } else {
                             navigate("/portal");
@@ -70,7 +56,7 @@ export function SignIn() {
                 console.error("Erreur de connexion:", err);
                 setLoading(false);
 
-                // Vérifier si c'est une erreur de tenant (mauvais sous-domaine)
+                // Erreur de tenant (mauvais centre)
                 if (err.response?.data?.error === "Mauvais centre") {
                     setWrongTenantError({
                         message: err.response.data.detail,
@@ -78,11 +64,11 @@ export function SignIn() {
                         correctSubdomain: err.response.data.correct_subdomain
                     });
                 }
-                // Vérifier si c'est une erreur de validation (array d'erreurs)
+                // Erreur Django "non_field_errors"
                 else if (err.response?.data?.non_field_errors) {
                     setError(err.response.data.non_field_errors[0]);
                 }
-                // Autres erreurs spécifiques
+                // Erreur standard
                 else if (err.response?.data?.detail) {
                     setError(err.response.data.detail);
                 }
@@ -108,16 +94,8 @@ export function SignIn() {
                         Entrez votre email et votre mot de passe.
                     </Typography>
                 </div>
-<<<<<<< HEAD
-                
-                {error && (
-                    <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative my-4" role="alert">
-                        <strong className="font-bold">⚠️ Erreur : </strong>
-                        <span className="block sm:inline">{error}</span>
-                    </div>
-=======
 
-                {/* ⚠️ Erreur de tenant (mauvais sous-domaine) */}
+                {/* ⚠️ Erreur tenant (mauvais sous-domaine) */}
                 {wrongTenantError && (
                     <Alert
                         color="amber"
@@ -141,9 +119,6 @@ export function SignIn() {
                             onClick={redirectToCorrectCenter}
                             className="flex items-center gap-2"
                         >
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="h-4 w-4">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
-                            </svg>
                             Me rediriger vers mon centre
                         </Button>
                     </Alert>
@@ -154,11 +129,6 @@ export function SignIn() {
                     <Alert
                         color="red"
                         className="mt-6 mx-auto w-80 max-w-screen-lg lg:w-1/2"
-                        icon={
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="h-6 w-6">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
-                            </svg>
-                        }
                     >
                         <Typography variant="h6" color="white">
                             Erreur de connexion
@@ -167,7 +137,6 @@ export function SignIn() {
                             {error}
                         </Typography>
                     </Alert>
->>>>>>> 892163ee208c0323a7da5e66ff8cba405c684215
                 )}
 
                 <form className="mt-8 mb-2 mx-auto w-80 max-w-screen-lg lg:w-1/2" onSubmit={handleSubmit}>
@@ -178,16 +147,15 @@ export function SignIn() {
                         <Input
                             size="lg"
                             placeholder="name@mail.com"
-                            className=" !border-t-blue-gray-200 focus:!border-t-gray-900"
-                            labelProps={{
-                                className: "before:content-none after:content-none",
-                            }}
+                            className="!border-t-blue-gray-200 focus:!border-t-gray-900"
+                            labelProps={{ className: "before:content-none after:content-none" }}
                             name="email"
                             value={form.email}
                             onChange={handleChange}
                             required
                             disabled={loading}
                         />
+
                         <Typography variant="small" color="blue-gray" className="-mb-3 font-medium">
                             Mot de passe
                         </Typography>
@@ -195,10 +163,8 @@ export function SignIn() {
                             type="password"
                             size="lg"
                             placeholder="········"
-                            className=" !border-t-blue-gray-200 focus:!border-t-gray-900"
-                            labelProps={{
-                                className: "before:content-none after:content-none",
-                            }}
+                            className="!border-t-blue-gray-200 focus:!border-t-gray-900"
+                            labelProps={{ className: "before:content-none after:content-none" }}
                             name="password"
                             value={form.password}
                             onChange={handleChange}

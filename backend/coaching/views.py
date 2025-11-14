@@ -5,7 +5,11 @@ from rest_framework.permissions import IsAuthenticated
 from django_filters.rest_framework import DjangoFilterBackend
 from django.http import HttpResponse
 from django.template.loader import render_to_string
-from weasyprint import HTML
+try:
+    from weasyprint import HTML
+except Exception:
+    HTML = None
+
 from members.models import Member
 from django.utils import timezone
 from collections import defaultdict
