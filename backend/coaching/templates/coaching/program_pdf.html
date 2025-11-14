@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Programme d'Entraînement - {{ program.title }}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 2cm;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            font-size: 11pt;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 3px solid #2563eb;
+        }
+        
+        .header h1 {
+            color: #1e40af;
+            font-size: 24pt;
+            margin-bottom: 10px;
+        }
+        
+        .header .subtitle {
+            color: #64748b;
+            font-size: 12pt;
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 30px;
+            background-color: #f8fafc;
+            padding: 20px;
+            border-radius: 8px;
+        }
+        
+        .info-item {
+            margin-bottom: 10px;
+        }
+        
+        .info-label {
+            font-weight: bold;
+            color: #475569;
+            font-size: 10pt;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .info-value {
+            color: #1e293b;
+            font-size: 11pt;
+            margin-top: 3px;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 9pt;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        
+        .status-active { background-color: #dcfce7; color: #166534; }
+        .status-draft { background-color: #fef3c7; color: #92400e; }
+        .status-completed { background-color: #dbeafe; color: #1e40af; }
+        .status-archived { background-color: #fee2e2; color: #991b1b; }
+        
+        .section {
+            margin-bottom: 30px;
+            page-break-inside: avoid;
+        }
+        
+        .section-title {
+            font-size: 16pt;
+            color: #1e40af;
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+        
+        .section-title::before {
+            content: "■ ";
+            color: #3b82f6;
+        }
+        
+        .description {
+            background-color: #f1f5f9;
+            padding: 15px;
+            border-left: 4px solid #3b82f6;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+        
+        .week-container {
+            margin-bottom: 25px;
+            page-break-inside: avoid;
+        }
+        
+        .week-header {
+            background-color: #3b82f6;
+            color: white;
+            padding: 10px 15px;
+            font-size: 13pt;
+            font-weight: bold;
+            border-radius: 6px 6px 0 0;
+        }
+        
+        .session {
+            background-color: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-top: none;
+            padding: 15px;
+            margin-bottom: 2px;
+        }
+        
+        .session:last-child {
+            border-radius: 0 0 6px 6px;
+        }
+        
+        .session-title {
+            font-size: 12pt;
+            font-weight: bold;
+            color: #1e293b;
+            margin-bottom: 8px;
+        }
+        
+        .session-meta {
+            color: #64748b;
+            font-size: 10pt;
+            margin-bottom: 12px;
+        }
+        
+        .exercise-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        
+        .exercise-table th {
+            background-color: #f1f5f9;
+            padding: 8px;
+            text-align: left;
+            font-size: 10pt;
+            color: #475569;
+            border: 1px solid #cbd5e1;
+        }
+        
+        .exercise-table td {
+            padding: 8px;
+            border: 1px solid #e2e8f0;
+            font-size: 10pt;
+        }
+        
+        .exercise-table tr:nth-child(even) {
+            background-color: #f8fafc;
+        }
+        
+        .exercise-name {
+            font-weight: bold;
+            color: #1e293b;
+        }
+        
+        .exercise-category {
+            color: #64748b;
+            font-size: 9pt;
+        }
+        
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 2px solid #e2e8f0;
+            text-align: center;
+            color: #64748b;
+            font-size: 9pt;
+        }
+        
+        .no-data {
+            text-align: center;
+            padding: 40px;
+            color: #94a3b8;
+            font-style: italic;
+        }
+        
+        .difficulty-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 8pt;
+            font-weight: bold;
+        }
+        
+        .difficulty-beginner { background-color: #dcfce7; color: #166534; }
+        .difficulty-intermediate { background-color: #fef3c7; color: #92400e; }
+        .difficulty-advanced { background-color: #fee2e2; color: #991b1b; }
+    </style>
+</head>
+<body>
+    <!-- En-tête -->
+    <div class="header">
+        <h1>{{ program.title }}</h1>
+        <p class="subtitle">Programme d'Entraînement Personnalisé</p>
+    </div>
+
+    <!-- Informations du programme -->
+    <div class="info-grid">
+        <div class="info-item">
+            <div class="info-label">Membre</div>
+            <div class="info-value">{{ program.member.full_name }}</div>
+        </div>
+        
+        <div class="info-item">
+            <div class="info-label">Coach</div>
+            <div class="info-value">{{ program.coach.get_full_name }}</div>
+        </div>
+        
+        <div class="info-item">
+            <div class="info-label">Durée</div>
+            <div class="info-value">{{ program.duration_weeks }} semaines</div>
+        </div>
+        
+        <div class="info-item">
+            <div class="info-label">Période</div>
+            <div class="info-value">
+                {{ program.start_date|date:"d/m/Y" }} - 
+                {% if program.end_date %}{{ program.end_date|date:"d/m/Y" }}{% else %}En cours{% endif %}
+            </div>
+        </div>
+        
+        <div class="info-item">
+            <div class="info-label">Objectif</div>
+            <div class="info-value">{{ program.goal }}</div>
+        </div>
+        
+        <div class="info-item">
+            <div class="info-label">Statut</div>
+            <div class="info-value">
+                <span class="status-badge status-{{ program.status|lower }}">
+                    {{ program.get_status_display }}
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Description -->
+    {% if program.description %}
+    <div class="section">
+        <h2 class="section-title">Description</h2>
+        <div class="description">
+            {{ program.description|linebreaks }}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Statistiques -->
+    <div class="section">
+        <h2 class="section-title">Aperçu du Programme</h2>
+        <div class="info-grid">
+            <div class="info-item">
+                <div class="info-label">Nombre de Sessions</div>
+                <div class="info-value">{{ stats.total_sessions }}</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Total d'Exercices</div>
+                <div class="info-value">{{ stats.total_exercises }}</div>
+            </div>
+            {% if program.target_weight %}
+            <div class="info-item">
+                <div class="info-label">Objectif de Poids</div>
+                <div class="info-value">{{ program.target_weight }} kg</div>
+            </div>
+            {% endif %}
+            {% if program.target_body_fat %}
+            <div class="info-item">
+                <div class="info-label">Objectif de Masse Grasse</div>
+                <div class="info-value">{{ program.target_body_fat }}%</div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Notes du coach -->
+    {% if program.notes %}
+    <div class="section">
+        <h2 class="section-title">Notes du Coach</h2>
+        <div class="description">
+            {{ program.notes|linebreaks }}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Sessions par semaine -->
+    <div class="section">
+        <h2 class="section-title">Planning des Sessions</h2>
+        
+        {% if sessions_by_week %}
+            {% for week_num, sessions in sessions_by_week.items %}
+            <div class="week-container">
+                <div class="week-header">
+                    Semaine {{ week_num }}
+                </div>
+                
+                {% for session in sessions %}
+                <div class="session">
+                    <div class="session-title">
+                        {{ session.title }}
+                    </div>
+                    <div class="session-meta">
+                        {{ session.get_day_of_week_display }} • Durée: {{ session.duration_minutes }} min
+                        {% if session.notes %}
+                        <br>Note: {{ session.notes }}
+                        {% endif %}
+                    </div>
+                    
+                    {% if session.exercises.all %}
+                    <table class="exercise-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 30%;">Exercice</th>
+                                <th style="width: 15%;">Difficulté</th>
+                                <th style="width: 10%;">Séries</th>
+                                <th style="width: 10%;">Reps</th>
+                                <th style="width: 15%;">Poids</th>
+                                <th style="width: 10%;">Repos</th>
+                                <th style="width: 10%;">Ordre</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for workout_exercise in session.exercises.all %}
+                            <tr>
+                                <td>
+                                    <div class="exercise-name">{{ workout_exercise.exercise.name }}</div>
+                                    {% if workout_exercise.exercise.category %}
+                                    <div class="exercise-category">{{ workout_exercise.exercise.category.name }}</div>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="difficulty-badge difficulty-{{ workout_exercise.exercise.difficulty|lower }}">
+                                        {{ workout_exercise.exercise.get_difficulty_display }}
+                                    </span>
+                                </td>
+                                <td>{{ workout_exercise.sets|default:"-" }}</td>
+                                <td>{{ workout_exercise.reps|default:"-" }}</td>
+                                <td>{{ workout_exercise.weight|default:"-" }}</td>
+                                <td>{{ workout_exercise.rest_seconds|default:"-" }}s</td>
+                                <td>{{ workout_exercise.order }}</td>
+                            </tr>
+                            {% if workout_exercise.notes %}
+                            <tr>
+                                <td colspan="7" style="background-color: #fffbeb; font-style: italic; font-size: 9pt;">
+                                    Note: {{ workout_exercise.notes }}
+                                </td>
+                            </tr>
+                            {% endif %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    {% else %}
+                    <p class="no-data">Aucun exercice défini pour cette session</p>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            {% endfor %}
+        {% else %}
+            <p class="no-data">Aucune session d'entraînement définie</p>
+        {% endif %}
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        <p>Document généré le {{ current_date|date:"d/m/Y à H:i" }}</p>
+        <p>Programme créé le {{ program.created_at|date:"d/m/Y" }}</p>
+    </div>
+</body>
+</html>

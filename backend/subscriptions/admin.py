@@ -1,3 +1,4 @@
+
 # Fichier: backend/subscriptions/admin.py
 
 from django.contrib import admin
@@ -29,3 +30,4 @@ class SubscriptionAdmin(admin.ModelAdmin):
             subscription.cancel()
         self.message_user(request, f"{queryset.count()} abonnement(s) annulé(s)")
     cancel_subscriptions.short_description = "Annuler les abonnements sélectionnés"
+
