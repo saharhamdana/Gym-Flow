@@ -13,13 +13,15 @@ from .serializers import (
     MemberCreateUpdateSerializer,
     MemberMeasurementSerializer
 )
+from authentication.mixins import TenantQuerysetMixin
 
-class MemberViewSet(viewsets.ModelViewSet):
+class MemberViewSet(TenantQuerysetMixin, viewsets.ModelViewSet):
     queryset = Member.objects.all()
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['status', 'gender']
     search_fields = ['first_name', 'last_name', 'email', 'phone', 'member_id']
     ordering_fields = ['created_at', 'first_name', 'last_name']
+    tenant_field = 'tenant_id'
     
     def get_serializer_class(self):
         if self.action == 'list':

@@ -1,13 +1,20 @@
 import React from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
-import { Navbar } from "@/widgets/layout"; 
-import routes from "./routes"; 
+import { Navbar } from "@/widgets/layout";
+import routes from "./routes";
 import AdminLayout from "@/components/admin/AdminLayout";
+
 import { RequireAuth, RequireAdminOrReceptionistOrCoach, RequireCoach } from "./utils/AuthGuard"; 
 import { ProgramList, CreateProgramForm } from "./components/coaching";
 import APIDebugTool from './components/debug/APIDebugTool';
 import EditProgramForm from './components/coaching/EditProgramForm';
 import ProgramDetails from './components/coaching/ProgramDetails';
+
+import { RequireAuth, RequireAdminOrReceptionistOrCoach } from "./utils/AuthGuard";
+import ProgramList from "./components/coaching/ProgramList";
+import ForgotPassword from "./pages/auth/ForgotPassword";
+import ResetPassword from "./pages/auth/ResetPassword";
+
 
 
 function App() {
@@ -17,6 +24,7 @@ function App() {
 
   return (
     <>
+
       {/* Navbar - cachée sur sign-in, sign-up, admin et coach */}
       {!(pathname === '/sign-in' || pathname === '/sign-up' || isAdminRoute(pathname) || isCoachRoute(pathname)) && (
         <Navbar routes={routes}/>
@@ -27,11 +35,13 @@ function App() {
         !(pathname === '/sign-in' || pathname === '/sign-up' || pathname === '/' || isCoachRoute(pathname)) ? 'pt-24' : ''
       }`}>
 
+
         <Routes>
           {/* Routes de base depuis routes.jsx */}
           {routes.map(
             ({ path, element }, key) => {
-                if (!element) return null;
+              if (!element) return null;
+
 
                 // Routes Admin
                 if (isAdminRoute(path)) {
@@ -81,6 +91,8 @@ function App() {
 
                 // Routes publiques
                 return <Route key={key} exact path={path} element={element} />;
+
+           
             }
           )}
           
@@ -103,9 +115,15 @@ function App() {
           />
           
           <Route path="*" element={<Navigate to="/" replace />} />
+
           <Route path="/debug" element={<APIDebugTool />} />
           <Route path="/coaching/programs/:id/edit" element={<EditProgramForm />} />
           <Route path="/coaching/programs/:id" element={<ProgramDetails />} />
+
+          <Route path="/coaching/programs" element={<ProgramList />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} /> 
+          <Route path="/reset-password/:uid/:token" element={<ResetPassword />} />  
+
         </Routes>
       </div>
     </>

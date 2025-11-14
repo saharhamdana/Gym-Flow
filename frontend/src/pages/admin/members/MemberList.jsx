@@ -22,18 +22,47 @@ export function MemberList() {
     const [error, setError] = useState(null);
     const [searchTerm, setSearchTerm] = useState("");
 
+    // useEffect(() => {
+    //     const fetchMembers = async () => {
+    //         try {
+    //             const response = await api.get("members/");
+    //             const memberData = Array.isArray(response.data) 
+    //                 ? response.data 
+    //                 : (response.data.results || []);
+    //             setMembers(memberData);
+    //             setError(null);
+    //         } catch (err) {
+    //             console.error("Erreur de récupération des membres:", err);
+    //             setError(err.response?.data?.detail || "Échec de la récupération des données.");
+    //         } finally {
+    //             setLoading(false);
+    //         }
+    //     };
+    //     fetchMembers();
+    // }, []);
+
     useEffect(() => {
         const fetchMembers = async () => {
             try {
+                // ✅ Log pour debug
+                console.log("🌐 Hostname:", window.location.hostname);
+                console.log("🌐 Subdomain détecté:", window.location.hostname.split('.')[0]);
+
                 const response = await api.get("members/");
-                const memberData = Array.isArray(response.data) 
-                    ? response.data 
+                console.log("📊 Headers envoyés:", response.config.headers);
+                console.log("📊 Réponse brute:", response);
+                console.log("📊 Membres reçus:", response.data);
+
+                const memberData = Array.isArray(response.data)
+                    ? response.data
                     : (response.data.results || []);
+
+                console.log("📊 Membres traités:", memberData);
                 setMembers(memberData);
                 setError(null);
             } catch (err) {
-                console.error("Erreur de récupération des membres:", err);
-                setError(err.response?.data?.detail || "Échec de la récupération des données.");
+                console.error("❌ Erreur:", err);
+                setError(err.response?.data?.detail || "Échec de la récupération.");
             } finally {
                 setLoading(false);
             }
@@ -83,9 +112,9 @@ export function MemberList() {
             {/* CARTE PRINCIPALE AVEC HEADER CORRIGÉ */}
             <Card>
                 {/* EN-TÊTE AVEC BOUTON CRÉER */}
-                <CardHeader 
-                    floated={false} 
-                    shadow={false} 
+                <CardHeader
+                    floated={false}
+                    shadow={false}
                     className="rounded-none bg-gradient-to-r from-blue-500 to-blue-600 p-4 md:p-6"
                 >
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -95,11 +124,11 @@ export function MemberList() {
 
                         {/* BOUTON CRÉER MEMBRE – MAINTENANT CLIQUABLE */}
                         <Link to="/admin/members/create">
-                            <Button 
+                            <Button
                                 className="flex items-center gap-2 bg-white text-blue-600 hover:bg-blue-50 shadow-md"
                                 size="sm"
                             >
-                                <UserPlusIcon className="h-4 w-4" /> 
+                                <UserPlusIcon className="h-4 w-4" />
                                 Créer Membre
                             </Button>
                         </Link>
@@ -146,11 +175,11 @@ export function MemberList() {
                                                 </td>
                                                 <td className={className}>
                                                     <div className="flex items-center gap-4">
-                                                        <Avatar 
-                                                            src={member.photo || "/img/default-avatar.png"} 
-                                                            alt={`${member.first_name} ${member.last_name}`} 
-                                                            size="sm" 
-                                                            variant="rounded" 
+                                                        <Avatar
+                                                            src={member.photo || "/img/default-avatar.png"}
+                                                            alt={`${member.first_name} ${member.last_name}`}
+                                                            size="sm"
+                                                            variant="rounded"
                                                         />
                                                         <Typography variant="small" color="blue-gray" className="font-semibold">
                                                             {member.first_name} {member.last_name}
@@ -176,9 +205,9 @@ export function MemberList() {
                                                     </Typography>
                                                 </td>
                                                 <td className={className}>
-                                                    <Button 
-                                                        variant="text" 
-                                                        color="blue-gray" 
+                                                    <Button
+                                                        variant="text"
+                                                        color="blue-gray"
                                                         className="font-medium text-xs"
                                                         onClick={() => navigate(`/admin/members/${member.id}`)}
                                                     >

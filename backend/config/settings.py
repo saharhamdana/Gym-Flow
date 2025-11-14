@@ -1,21 +1,41 @@
 """
-Django settings for config project - Configuration Multi-Tenant
+Django settings for config project - Configuration Multi-Tenant SÉCURISÉE
 """
 
 from pathlib import Path
 import os
+from dotenv import load_dotenv
+from datetime import timedelta
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = 'django-insecure-j9f@fp$#g%c8m&j1x(nbxxm6tevy)onkt4=*09(s2o6u5!2t(s'
+# ✅ Charger les variables d'environnement
+load_dotenv(os.path.join(BASE_DIR, '.env'))
 
-DEBUG = True
+# ✅ SÉCURITÉ : Toutes les valeurs sensibles viennent du .env
+SECRET_KEY = os.getenv('SECRET_KEY', 'changez-moi-en-production')
+
+DEBUG = os.getenv('DEBUG', 'False') == 'True'
+
+# ✅ Configuration Email SÉCURISÉE
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
+EMAIL_PORT = int(os.getenv('EMAIL_PORT', '587'))
+EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True') == 'True'
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')  # ⚠️ JAMAIS en dur !
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', f'GymFlow <{EMAIL_HOST_USER}>')
+
+# Frontend URL pour les liens de réinitialisation
+FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:5173')
+
+PASSWORD_RESET_TIMEOUT = int(os.getenv('PASSWORD_RESET_TIMEOUT', '86400'))
 
 # 🌐 Configuration pour les sous-domaines
 ALLOWED_HOSTS = [
     'localhost',
     '127.0.0.1',
-    '.gymflow.com',  # Accepte gymflow.com et tous les sous-domaines
+    '.gymflow.com',
     'gymflow.com',
     'www.gymflow.com',
     'powerfit.gymflow.com',
@@ -77,14 +97,15 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
+# ✅ Configuration Base de Données SÉCURISÉE
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'gymflow_db',
-        'USER': 'gymflow_user',
-        'PASSWORD': '123456',
-        'HOST': 'localhost',
-        'PORT': '5432',
+        'NAME': os.getenv('POSTGRES_DB', 'gymflow_db'),
+        'USER': os.getenv('POSTGRES_USER', 'gymflow_user'),
+        'PASSWORD': os.getenv('POSTGRES_PASSWORD'),  # ⚠️ JAMAIS en dur !
+        'HOST': os.getenv('POSTGRES_HOST', 'localhost'),
+        'PORT': os.getenv('POSTGRES_PORT', '5432'),
     }
 }
 
@@ -118,7 +139,6 @@ CORS_ALLOWED_ORIGINS = [
     "http://moveup.gymflow.com:5173",
 ]
 
-# Pour la production avec HTTPS
 CORS_ALLOWED_ORIGIN_REGEXES = [
     r"^https://\w+\.gymflow\.com$",
     r"^http://\w+\.gymflow\.com:\d+$",
@@ -138,11 +158,11 @@ CORS_ALLOW_HEADERS = [
     'user-agent',
     'x-csrftoken',
     'x-requested-with',
-    'x-tenant-subdomain',  # 🎯 Header pour identifier le tenant
+    'x-tenant-subdomain',
 ]
 
 # 🍪 Configuration des cookies pour sous-domaines
-SESSION_COOKIE_DOMAIN = '.gymflow.com'  # Partagé entre sous-domaines
+SESSION_COOKIE_DOMAIN = '.gymflow.com'
 SESSION_COOKIE_SAMESITE = 'Lax'
 SESSION_COOKIE_HTTPONLY = True
 
@@ -172,11 +192,31 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 PARENT_DOMAIN = 'gymflow.com'
 
 # 🔧 Configuration JWT
-from datetime import timedelta
-
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
+}
+
+# 📊 Configuration Logging pour déboguer les emails
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'INFO',
+    },
+    'loggers': {
+        'django.core.mail': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+    },
 }

@@ -1,7 +1,9 @@
 asgiref==3.10.0
 Brotli==1.1.0
+certifi==2025.10.5
 cffi==2.0.0
 charset-normalizer==3.4.4
+colorama==0.4.6
 cssselect2==0.8.0
 Django==5.2.7
 django-cors-headers==4.9.0
@@ -17,6 +19,7 @@ pydyf==0.11.0
 PyJWT==2.10.1
 pyphen==0.17.2
 python-dotenv==1.2.1
+qrcode==8.2
 reportlab==4.4.4
 setuptools==80.9.0
 sqlparse==0.5.3

@@ -1,6 +1,7 @@
 # backend/authentication/middleware.py
 
 from django.utils.deprecation import MiddlewareMixin
+from django.http import JsonResponse
 from .models import GymCenter
 
 
@@ -64,4 +65,75 @@ class TenantMiddleware(MiddlewareMixin):
                 request.subdomain = None
                 request.gym_center = None
         
+        return None
+
+
+class TenantAccessControlMiddleware(MiddlewareMixin):
+    """
+    Middleware pour contrôler l'accès des utilisateurs selon leur tenant_id.
+    Empêche l'authentification sur un sous-domaine différent de celui d'inscription.
+    
+    Ce middleware bloque les utilisateurs qui tentent d'accéder à un centre
+    qui n'est pas le leur, APRÈS qu'ils se soient connectés.
+    """
+    
+    # URLs publiques (pas de contrôle d'accès)
+    EXEMPT_URLS = [
+        '/api/auth/register/',
+        '/api/auth/token/',
+        '/api/auth/token/refresh/',
+        '/api/auth/centers/',
+        '/admin/',
+    ]
+    
+    def process_request(self, request):
+        # Ignorer les URLs publiques
+        path = request.path
+        if any(path.startswith(url) for url in self.EXEMPT_URLS):
+            return None
+        
+        # Ignorer les requêtes non authentifiées
+        if not request.user.is_authenticated:
+            return None
+        
+        # Les super-admins peuvent accéder à tous les centres
+        if request.user.is_superuser:
+            return None
+        
+        # Vérifier si un gym_center est détecté via le sous-domaine
+        gym_center = getattr(request, 'gym_center', None)
+        
+        # Si aucun centre n'est détecté, autoriser (domaine principal)
+        if not gym_center:
+            return None
+        
+        # Vérifier que l'utilisateur appartient au centre
+        user_tenant_id = request.user.tenant_id
+        center_tenant_id = gym_center.tenant_id
+        
+        # Si l'utilisateur n'a pas de tenant_id, bloquer
+        if not user_tenant_id:
+            return JsonResponse({
+                'error': 'Access denied',
+                'detail': 'Votre compte n\'est associé à aucun centre. Veuillez contacter l\'administrateur.'
+            }, status=403)
+        
+        # Si les tenant_id ne correspondent pas, bloquer avec message clair
+        if user_tenant_id != center_tenant_id:
+            # Récupérer le centre de l'utilisateur pour un message personnalisé
+            try:
+                user_center = GymCenter.objects.get(tenant_id=user_tenant_id)
+                return JsonResponse({
+                    'error': 'Access denied',
+                    'detail': f'Vous êtes inscrit au centre "{user_center.name}". Veuillez vous connecter sur : {user_center.full_url}',
+                    'correct_url': user_center.full_url,
+                    'correct_subdomain': user_center.subdomain
+                }, status=403)
+            except GymCenter.DoesNotExist:
+                return JsonResponse({
+                    'error': 'Access denied',
+                    'detail': 'Vous n\'avez pas accès à ce centre.'
+                }, status=403)
+        
+        # Si tout est OK, laisser passer
         return None
