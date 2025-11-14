@@ -16,7 +16,7 @@ import Step2SelectMember from './Step2SelectMember';
 import Step3Configuration from './Step3Configuration';
 import Step4Sessions from './Step4Sessions';
 import Step5Summary from './Step5Summary';
-
+import api from '../../api/axiosInstance';  
 // Étapes du formulaire
 const STEPS = [
   { id: 1, title: 'Informations de base', icon: FileText },
@@ -109,62 +109,92 @@ const CreateProgramForm = () => {
     setError('');
   };
 
-  // Soumettre le formulaire
-  const handleSubmit = async () => {
-    setLoading(true);
-    setError('');
+ // Soumettre le formulaire
+const handleSubmit = async () => {
+  setLoading(true);
+  setError('');
 
-    try {
-      // Préparer les données pour l'API
-      const programData = {
-        title: formData.title,
-        description: formData.description,
-        goal: formData.goal,
-        member: formData.member.id,
-        coach: null, // Le backend utilisera l'utilisateur connecté
-        status: formData.status,
-        start_date: formData.start_date,
-        end_date: calculateEndDate(formData.start_date, formData.duration_weeks),
-        duration_weeks: formData.duration_weeks,
-        target_weight: formData.target_weight || null,
-        target_body_fat: formData.target_body_fat || null,
-        notes: formData.notes,
-        workout_sessions: formData.workout_sessions.map(session => ({
-          title: session.title,
-          day_of_week: session.day_of_week,
-          week_number: session.week_number,
-          duration_minutes: session.duration_minutes,
-          notes: session.notes,
-          order: session.order,
-          exercises: session.exercises.map(ex => ({
-            exercise: ex.exercise,
-            sets: ex.sets,
-            reps: ex.reps,
-            weight: ex.weight,
-            rest_seconds: ex.rest_seconds,
-            notes: ex.notes,
-            order: ex.order
-          }))
-        }))
+  try {
+    // 1. Créer d'abord le programme sans les sessions
+    const programData = {
+      title: formData.title,
+      description: formData.description,
+      goal: formData.goal,
+      member: formData.member.id,
+      status: formData.status,
+      start_date: formData.start_date,
+      end_date: calculateEndDate(formData.start_date, formData.duration_weeks),
+      duration_weeks: formData.duration_weeks,
+      target_weight: formData.target_weight || null,
+      target_body_fat: formData.target_body_fat || null,
+      notes: formData.notes
+    };
+
+    const programResponse = await coachingService.createProgram(programData);
+    const programId = programResponse.data.id;
+
+    // 2. Créer ensuite les sessions une par une
+    for (const session of formData.workout_sessions) {
+      const sessionData = {
+        program: programId,
+        title: session.title,
+        day_of_week: session.day_of_week,
+        week_number: session.week_number,
+        duration_minutes: session.duration_minutes,
+        notes: session.notes || '',
+        order: session.order
       };
 
-      // Créer le programme
-      const response = await api.post('/coaching/programs/', programData);
-      
-      // Rediriger vers la page de détails du programme
-      navigate(`/coaching/programs/${response.data.id}`);
-    } catch (err) {
-      console.error('Erreur lors de la création du programme:', err);
-      setError(
-        err.response?.data?.message || 
-        err.response?.data?.detail ||
-        'Une erreur est survenue lors de la création du programme'
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
+      const sessionResponse = await coachingService.createWorkoutSession(sessionData);
+      const sessionId = sessionResponse.data.id;
 
+      // 3. Créer les exercices pour cette session
+      for (const ex of session.exercises) {
+        const exerciseData = {
+          workout_session: sessionId,
+          exercise: typeof ex.exercise === 'object' ? ex.exercise.id : ex.exercise,
+          sets: parseInt(ex.sets) || 0,
+          reps: String(ex.reps || ''),
+          rest_seconds: parseInt(ex.rest_seconds) || 0,
+          weight: String(ex.weight || ''),
+          notes: ex.notes || '',
+          order: ex.order || 0
+        };
+        
+        console.log('Envoi exercice:', exerciseData);
+        
+        try {
+          await api.post('coaching/workout-exercises/', exerciseData);
+        } catch (exError) {
+          console.error('Erreur sur cet exercice:', exerciseData);
+          console.error('Message d\'erreur complet:', exError.response?.data);
+          throw exError;
+        }
+      }
+    }
+
+    // Rediriger vers la page de détails du programme
+    // Rediriger vers la liste des programmes avec un message
+    alert(`Programme "${formData.title}" créé avec succès !`);
+    navigate('/coaching/programs', { 
+      state: { 
+      message: 'Programme créé avec succès',
+      programId: programId 
+    }
+});
+  } catch (err) {
+    console.error('Erreur lors de la création du programme:', err);
+    console.error('Détails complets:', err.response?.data);
+    setError(
+      JSON.stringify(err.response?.data) ||
+      err.response?.data?.message || 
+      err.response?.data?.detail ||
+      'Une erreur est survenue lors de la création du programme'
+    );
+  } finally {
+    setLoading(false);
+  }
+};
   // Rendu des étapes
   const renderStepContent = () => {
     switch (currentStep) {

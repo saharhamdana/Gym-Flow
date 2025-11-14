@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, Edit2, Dumbbell, Clock, Calendar } from 'lucide-react';
 import coachingService from '../../services/coachingService';
+import api from '../../api/axiosInstance';  
 const Step4Sessions = ({ formData, updateFormData }) => {
   const [showSessionModal, setShowSessionModal] = useState(false);
   const [editingSession, setEditingSession] = useState(null);
@@ -14,7 +15,7 @@ const Step4Sessions = ({ formData, updateFormData }) => {
 
   const fetchExercises = async () => {
     try {
-      const response = await api.get('/coaching/exercises/');
+      const response = await coachingService.getExercises();
       setExercises(response.data);
     } catch (err) {
       console.error('Erreur lors du chargement des exercices:', err);

@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import coachingService from '../../services/coachingService';
 import { 
   Calendar, User, Target, Download, Copy, 
-  Edit, Trash2, Plus, Search, Filter 
+  Edit, Trash2, Plus, Search, Filter ,ArrowLeft
 } from 'lucide-react';
-
+import api from '../../api/axiosInstance';  
 const ProgramList = () => {
   const [programs, setPrograms] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -14,6 +15,8 @@ const ProgramList = () => {
     status: '',
     member: '',
   });
+  
+  const navigate = useNavigate(); 
 
   useEffect(() => {
     loadPrograms();
@@ -118,6 +121,14 @@ const ProgramList = () => {
   return (
     <div className="min-h-screen bg-white">
       <div className="min-w-100xl mx-auto px-40 py-8">
+        <button
+        onClick={() => navigate('/coach')}
+        className="flex items-center text-gray-600 hover:text-gray-900 mb-4"
+        >
+          <ArrowLeft className="w-5 h-5 mr-2" />
+          Retour au tableau de bord
+        </button>
+
         {/* Header Section */}
         <div className="flex justify-between items-center mb-8 mt-10">
           <h1 className="text-3xl font-bold text-gray-900">Programmes d'Entraînement</h1>

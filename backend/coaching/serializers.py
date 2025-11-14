@@ -32,13 +32,23 @@ class ExerciseSerializer(serializers.ModelSerializer):
 
 
 class WorkoutExerciseSerializer(serializers.ModelSerializer):
-    exercise_details = ExerciseSerializer(source='exercise', read_only=True)
+    exercise_name = serializers.CharField(source='exercise.name', read_only=True)
+    exercise_category = serializers.CharField(source='exercise.category.name', read_only=True)
     
     class Meta:
         model = WorkoutExercise
         fields = [
-            'id', 'exercise', 'exercise_details', 'sets', 'reps',
-            'rest_seconds', 'weight', 'notes', 'order'
+            'id',
+            'workout_session',
+            'exercise',
+            'exercise_name',
+            'exercise_category',
+            'sets',
+            'reps',
+            'rest_seconds',
+            'weight',
+            'notes',
+            'order'
         ]
 
 

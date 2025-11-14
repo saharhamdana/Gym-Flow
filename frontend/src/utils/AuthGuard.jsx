@@ -35,3 +35,31 @@ export function RequireAdminOrReceptionistOrCoach({ children }) {
     // Redirige vers la page d'accueil si non autorisé
     return <Navigate to="/" />; 
 }
+// 3. Protection spécifique pour les COACH uniquement
+export function RequireCoach({ children }) {
+    const token = localStorage.getItem("access_token");
+    if (!token) {
+        return <Navigate to="/sign-in" />;
+    }
+    
+    const userInfo = localStorage.getItem("user");
+    let user;
+    try {
+        user = JSON.parse(userInfo);
+    } catch (e) {
+        return <Navigate to="/sign-in" />; 
+    }
+
+    const userRole = user?.role; 
+    
+    if (userRole === "COACH") {
+        return children;
+    }
+
+    // Rediriger selon le rôle
+    if (userRole === "ADMIN" || userRole === "RECEPTIONIST") {
+        return <Navigate to="/admin/dashboard" />;
+    }
+    
+    return <Navigate to="/" />; 
+}

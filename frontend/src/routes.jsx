@@ -13,6 +13,13 @@ import MemberDashboard from "@/pages/member/MemberDashboard";
 import MemberProgress from "@/pages/member/MemberProgress";
 import MemberBookings from "@/pages/member/MemberBookings";
 
+// ⭐ NOUVEAUX IMPORTS COACH
+import CoachPanel from "@/pages/coach/CoachPanel";
+import CoachMembers from "@/pages/coach/CoachMembers";
+import CoachSchedule from "@/pages/coach/CoachSchedule";
+import CoachExercises from "@/pages/coach/CoachExercises";
+import CoachSettings from "@/pages/coach/CoachSettings";
+
 // Admin imports
 import Dashboard from "@/pages/admin/dashboard/Dashboard";
 import { ProgramBuilder, ExerciseList } from "@/pages/admin/programs";
@@ -113,7 +120,39 @@ export const routes = [
     path: "/portal/progress",
     element: <MemberLayout><MemberProgress /></MemberLayout>,
   },
-
+  // ==========================================
+  // ⭐ NOUVELLES ROUTES COACH
+  // ==========================================
+  {
+    name: "Coach Dashboard",
+    path: "/coach",
+    element: <CoachPanel />,
+    hidden: true // Caché de la navbar
+  },
+  {
+    name: "Coach Members",
+    path: "/coach/members",
+    element: <CoachMembers />,
+    hidden: true
+  },
+  {
+    name: "Coach Schedule",
+    path: "/coach/schedule",
+    element: <CoachSchedule />,
+    hidden: true
+  },
+  {
+    name: "Coach Exercises",
+    path: "/coach/exercises",
+    element: <CoachExercises />,
+    hidden: true
+  },
+  {
+    name: "Coach Settings",
+    path: "/coach/settings",
+    element: <CoachSettings />,
+    hidden: true
+  },
   // ==========================================
   // ROUTES ADMIN - DASHBOARD & PROFILE
   // ==========================================

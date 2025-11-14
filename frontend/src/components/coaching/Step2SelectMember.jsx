@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Search, User, Mail, Phone, CheckCircle } from 'lucide-react';
 import coachingService from '../../services/coachingService';
+import api from '../../api/axiosInstance';  
+
 
 const Step2SelectMember = ({ formData, updateFormData }) => {
   const [members, setMembers] = useState([]);
@@ -14,7 +16,8 @@ const Step2SelectMember = ({ formData, updateFormData }) => {
 
   const fetchMembers = async () => {
     try {
-      const response = await coachingService.getMembers(); // 
+      const response = await coachingService.getMembers();
+
       // Gérer la pagination Django comme dans ProgramList
       const membersData = response.data?.results || response.data || [];
       setMembers(membersData);

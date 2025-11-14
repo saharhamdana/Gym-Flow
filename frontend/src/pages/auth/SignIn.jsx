@@ -21,14 +21,11 @@ export function SignIn() {
         setError("");
         setLoading(true);
 
-        // 🔑 CORRECTION : Ajout du préfixe 'auth/'
         api.post("auth/token/", form) 
             .then((res) => {
-                // 🔑 Stockage des tokens
                 localStorage.setItem("access_token", res.data.access);
                 localStorage.setItem("refresh_token", res.data.refresh);
 
-                // 🔑 CORRECTION : Ajout du préfixe 'auth/'
                 api.get("auth/me/") 
                     .then((r) => {
                         const userProfile = r.data;
@@ -36,10 +33,12 @@ export function SignIn() {
                         setLoading(false);
 
                         // 🚀 Redirection basée sur le rôle
-                        if (userProfile.role === "ADMIN" || userProfile.role === "COACH" || userProfile.role === "RECEPTIONIST") {
+                        if (userProfile.role === "COACH") {
+                            navigate("/coach"); // ← NOUVELLE REDIRECTION POUR LES COACH
+                        } else if (userProfile.role === "ADMIN" || userProfile.role === "RECEPTIONIST") {
                             navigate("/admin/dashboard");
                         } else {
-                            navigate("/portal"); // Redirection vers le portail membre
+                            navigate("/portal");
                         }
                     })
                     .catch((err) => {
@@ -65,7 +64,6 @@ export function SignIn() {
                     </Typography>
                 </div>
                 
-                {/* ⚠️ Affichage de l'erreur */}
                 {error && (
                     <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative my-4" role="alert">
                         <strong className="font-bold">⚠️ Erreur : </strong>

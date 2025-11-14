@@ -9,6 +9,10 @@ from weasyprint import HTML
 from members.models import Member
 from django.utils import timezone
 from collections import defaultdict
+from rest_framework.decorators import api_view, permission_classes
+from datetime import date, timedelta
+from django.db.models import Count, Avg
+from bookings.models import Course  
 import io
 from .models import (
     ExerciseCategory, Exercise, TrainingProgram,
@@ -18,8 +22,9 @@ from .models import (
 from .serializers import (
     ExerciseCategorySerializer, ExerciseSerializer,
     TrainingProgramSerializer, TrainingProgramCreateSerializer,
+    TrainingProgramFullCreateSerializer,
     WorkoutSessionSerializer, WorkoutSessionCreateSerializer,
-    ProgressTrackingSerializer, WorkoutLogSerializer, WorkoutLogCreateSerializer
+    ProgressTrackingSerializer, WorkoutLogSerializer, WorkoutLogCreateSerializer, WorkoutExerciseSerializer
 )
 
 
@@ -66,7 +71,7 @@ class TrainingProgramViewSet(viewsets.ModelViewSet):
         if user.role == 'member':
             # Filtrer par email du membre
             queryset = queryset.filter(member__email=user.email)
-        elif user.role == 'coach':
+        elif user.role == 'COACH':
             # Les coachs voient les programmes qu'ils ont créés
             queryset = queryset.filter(coach=user)
         # Les admins et réceptionnistes voient tout
@@ -75,8 +80,7 @@ class TrainingProgramViewSet(viewsets.ModelViewSet):
     
     def get_serializer_class(self):
         if self.action in ['create', 'update', 'partial_update']:
-            # Utiliser le nouveau serializer pour la création complète
-            return TrainingProgramFullCreateSerializer  # ← Changez ici
+            return TrainingProgramFullCreateSerializer
         return TrainingProgramSerializer
     
     def perform_create(self, serializer):
@@ -85,6 +89,7 @@ class TrainingProgramViewSet(viewsets.ModelViewSet):
             serializer.save(coach=self.request.user)
         else:
             serializer.save()
+    
     @action(detail=True, methods=['post'])
     def duplicate(self, request, pk=None):
         """Dupliquer un programme existant"""
@@ -139,18 +144,14 @@ class TrainingProgramViewSet(viewsets.ModelViewSet):
         """Exporter un programme en PDF"""
         program = self.get_object()
     
-        # Récupérer toutes les sessions avec leurs exercices
-        # CORRECTION : utiliser 'workout_sessions' au lieu de 'sessions'
         sessions = program.workout_sessions.prefetch_related(
             'exercises__exercise__category'
         ).order_by('week_number', 'day_of_week', 'order')
     
-        # Organiser les sessions par semaine
         sessions_by_week = defaultdict(list)
         for session in sessions:
             sessions_by_week[session.week_number].append(session)
     
-        # Calculer les statistiques
         total_sessions = sessions.count()
         total_exercises = sum(session.exercises.count() for session in sessions)
     
@@ -164,14 +165,10 @@ class TrainingProgramViewSet(viewsets.ModelViewSet):
             'current_date': timezone.now(),
         }
     
-        # Générer le HTML
         html_string = render_to_string('coaching/program_pdf.html', context)
-    
-        # Convertir en PDF avec WeasyPrint
         html = HTML(string=html_string)
         pdf = html.write_pdf()
     
-        # Retourner la réponse PDF
         response = HttpResponse(pdf, content_type='application/pdf')
         filename = f'programme_{program.id}_{program.title.replace(" ", "_")}.pdf'
         response['Content-Disposition'] = f'attachment; filename="{filename}"'
@@ -192,11 +189,10 @@ class WorkoutSessionViewSet(viewsets.ModelViewSet):
             'program__coach'
         ).prefetch_related('exercises__exercise')
         
-        # Filtrer selon le rôle
         user = self.request.user
         if user.role == 'member':
             queryset = queryset.filter(program__member__email=user.email)
-        elif user.role == 'coach':
+        elif user.role == 'COACH':
             queryset = queryset.filter(program__coach=user)
         
         return queryset
@@ -221,7 +217,6 @@ class ProgressTrackingViewSet(viewsets.ModelViewSet):
             'program'
         )
         
-        # Filtrer selon le rôle
         user = self.request.user
         if user.role == 'member':
             queryset = queryset.filter(member__email=user.email)
@@ -244,7 +239,6 @@ class ProgressTrackingViewSet(viewsets.ModelViewSet):
         if not trackings.exists():
             return Response({'message': 'No tracking data found'})
         
-        # Calculer les statistiques
         first_tracking = trackings.first()
         last_tracking = trackings.last()
         
@@ -281,7 +275,6 @@ class WorkoutLogViewSet(viewsets.ModelViewSet):
             'workout_session__program'
         ).prefetch_related('exercises__exercise')
         
-        # Filtrer selon le rôle
         user = self.request.user
         if user.role == 'member':
             queryset = queryset.filter(member__email=user.email)
@@ -292,24 +285,254 @@ class WorkoutLogViewSet(viewsets.ModelViewSet):
         if self.action in ['create', 'update', 'partial_update']:
             return WorkoutLogCreateSerializer
         return WorkoutLogSerializer
-    
+
+
 class MemberSelectionViewSet(viewsets.ReadOnlyModelViewSet):
     """ViewSet pour sélectionner un membre dans un formulaire"""
     permission_classes = [IsAuthenticated]
     filter_backends = [filters.SearchFilter]
-    search_fields = ['first_name', 'last_name', 'email', 'phone']  # ← CORRECTION: 'phone' au lieu de 'phone_number'
+    search_fields = ['first_name', 'last_name', 'email', 'phone']
     
     def get_queryset(self):
-        # Retourner uniquement les membres actifs
-        return Member.objects.filter(status='ACTIVE').order_by('first_name', 'last_name') 
+        user = self.request.user
+        
+        # Si c'est un coach, ne montrer que SES membres
+        if user.role == 'COACH':
+            # Récupérer les IDs des membres qui ont des programmes avec ce coach
+            member_ids = TrainingProgram.objects.filter(
+                coach=user,
+                status='active'
+            ).values_list('member_id', flat=True).distinct()
+            
+            # Retourner uniquement ces membres
+            return Member.objects.filter(
+                id__in=member_ids,
+                status='ACTIVE'
+            ).order_by('first_name', 'last_name')
+        
+        # Pour admin/réceptionniste : tous les membres actifs
+        return Member.objects.filter(status='ACTIVE').order_by('first_name', 'last_name')
+    
     def get_serializer_class(self):
         from rest_framework import serializers
         
         class MemberSimpleSerializer(serializers.ModelSerializer):
             full_name = serializers.CharField(read_only=True)
+            phone_number = serializers.CharField(source='phone', read_only=True)
             
             class Meta:
                 model = Member
-                fields = ['id', 'member_id', 'full_name', 'email', 'phone']  
+                fields = ['id', 'member_id', 'full_name', 'email', 'phone_number']
         
         return MemberSimpleSerializer
+
+class WorkoutExerciseViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet pour gérer les exercices liés aux sessions d'entraînement
+    """
+    queryset = WorkoutExercise.objects.all()
+    serializer_class = WorkoutExerciseSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        queryset = WorkoutExercise.objects.select_related(
+            'workout_session',
+            'exercise'
+        ).all()
+        
+        # Filtrer par session si spécifié
+        workout_session_id = self.request.query_params.get('workout_session', None)
+        if workout_session_id:
+            queryset = queryset.filter(workout_session_id=workout_session_id)
+        
+        return queryset
+    
+# ============================================================
+# VUES POUR LE COACH DASHBOARD
+# ============================================================
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def coach_dashboard_stats(request):
+    """
+    Statistiques pour le dashboard du coach
+    """
+    user = request.user
+    
+    if user.role != 'COACH':
+        return Response({'error': 'Access denied. Coach role required.'}, status=403)
+    
+    today = date.today()
+    
+    # 1. Compter les cours aujourd'hui
+    courses_today = Course.objects.filter(
+        coach=user,
+        date=today
+    ).count()
+    
+    # 2. Compter les membres uniques assignés au coach via les programmes
+    total_members = TrainingProgram.objects.filter(
+        coach=user,
+        status='active'
+    ).values('member').distinct().count()
+    
+    # 3. Compter les cours complétés (passés)
+    completed_courses = Course.objects.filter(
+        coach=user,
+        date__lt=today
+    ).count()
+    
+    # 4. Note de satisfaction
+    satisfaction = 4.8
+    
+    return Response({
+        'sessions_today': courses_today,
+        'total_members': total_members,
+        'completed_sessions': completed_courses,
+        'satisfaction': satisfaction
+    })
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def coach_upcoming_sessions(request):
+    """
+    Liste des cours à venir pour le coach
+    """
+    user = request.user
+    
+    # Debug: afficher le rôle de l'utilisateur
+    print(f"User: {user.email}, Role: {user.role}")
+    
+    if user.role != 'COACH':
+        return Response({'error': 'Access denied. Coach role required.'}, status=403)
+    
+    try:
+        today = date.today()
+        
+        upcoming_courses = Course.objects.filter(
+            coach=user,
+            date__gte=today
+        ).select_related('course_type', 'room').order_by('date', 'start_time')[:10]
+        
+        print(f"Found {upcoming_courses.count()} courses")  # Debug
+        
+        sessions_data = []
+        for course in upcoming_courses:
+            try:
+                # Compter les réservations confirmées
+                participants_count = course.bookings.filter(status='CONFIRMED').count()
+                
+                session_dict = {
+                    'id': course.id,
+                    'title': course.course_type.name if course.course_type else 'Cours',
+                    'date': course.date.isoformat(),  # Format ISO pour JSON
+                    'start_time': course.start_time.strftime('%H:%M'),
+                    'end_time': course.end_time.strftime('%H:%M') if course.end_time else 'N/A',
+                    'room': course.room.name if course.room else 'Non assignée',
+                    'participants_count': participants_count,
+                    'max_capacity': course.max_participants or 0
+                }
+                
+                sessions_data.append(session_dict)
+                
+            except Exception as e:
+                print(f"Error processing course {course.id}: {str(e)}")
+                import traceback
+                traceback.print_exc()
+                continue
+        
+        return Response(sessions_data)
+        
+    except Exception as e:
+        print(f"Error in coach_upcoming_sessions: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        
+        # Retourner une liste vide au lieu d'une erreur 500
+        return Response([])
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def coach_my_members(request):
+    """
+    Liste des membres du coach avec leur progression
+    """
+    user = request.user
+    
+    # Debug: afficher les informations utilisateur
+    print(f"[DEBUG] User: {user.email}, Role: {user.role}")
+    
+    if user.role != 'COACH':
+        return Response({'error': 'Access denied. Coach role required.'}, status=403)
+    
+    try:
+        # Récupérer les programmes actifs du coach avec optimisation des requêtes
+        programs = TrainingProgram.objects.filter(
+            coach=user,
+            status='active'
+        ).select_related('member').order_by('-created_at')
+        
+        print(f"[DEBUG] Found {programs.count()} active programs for coach {user.email}")
+        
+        members_data = []
+        seen_members = set()  # Pour éviter les doublons si un membre a plusieurs programmes
+        
+        for program in programs:
+            try:
+                member = program.member
+                
+                # Vérifier que le membre existe
+                if not member:
+                    print(f"[WARNING] Program {program.id} has no member")
+                    continue
+                
+                # Éviter les doublons (un membre peut avoir plusieurs programmes actifs)
+                if member.id in seen_members:
+                    continue
+                seen_members.add(member.id)
+                
+                # Calculer la progression basée sur les dates
+                total_days = (program.end_date - program.start_date).days
+                elapsed_days = (date.today() - program.start_date).days
+                
+                if total_days > 0:
+                    progress = min(100, max(0, int((elapsed_days / total_days) * 100)))
+                else:
+                    progress = 0
+                
+                # Utiliser la propriété full_name du modèle Member
+                member_dict = {
+                    'id': program.id,
+                    'member_id': member.id,
+                    'member_name': member.full_name,  # Propriété définie dans le modèle
+                    'member_email': member.email,
+                    'member_phone': member.phone,
+                    'title': program.title,
+                    'progress': progress,
+                    'start_date': program.start_date.isoformat(),
+                    'end_date': program.end_date.isoformat(),
+                    'goal': program.goal[:100] if program.goal else '',  # Limiter la longueur
+                    'status': program.status,
+                    'duration_weeks': program.duration_weeks
+                }
+                
+                members_data.append(member_dict)
+                print(f"[DEBUG] Added member: {member.full_name} (ID: {member.id})")
+                
+            except Exception as prog_error:
+                print(f"[ERROR] Error processing program {program.id}: {str(prog_error)}")
+                import traceback
+                traceback.print_exc()
+                continue
+        
+        print(f"[DEBUG] Returning {len(members_data)} members")
+        return Response(members_data)
+    
+    except Exception as e:
+        import traceback
+        print(f"[ERROR] Error in coach_my_members: {str(e)}")
+        print(traceback.format_exc())
+        
+        # Retourner une liste vide au lieu d'une erreur 500 pour éviter de casser le frontend
+        return Response([])

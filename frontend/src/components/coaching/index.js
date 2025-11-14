@@ -1,7 +1,8 @@
+export { default as CoachDashboard } from './CoachDashboard';
+export { default as ProgramList } from './ProgramList';
 export { default as CreateProgramForm } from './CreateProgramForm';
 export { default as Step1BasicInfo } from './Step1BasicInfo';
 export { default as Step2SelectMember } from './Step2SelectMember';
 export { default as Step3Configuration } from './Step3Configuration';
 export { default as Step4Sessions } from './Step4Sessions';
 export { default as Step5Summary } from './Step5Summary';
-export { default as ProgramList } from './ProgramList';
