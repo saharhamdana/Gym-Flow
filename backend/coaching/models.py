@@ -1,3 +1,5 @@
+# backend/coaching/models.py
+
 from django.db import models
 from django.contrib.auth import get_user_model
 from members.models import Member
@@ -55,6 +57,7 @@ class TrainingProgram(models.Model):
     
     title = models.CharField(max_length=200)
     description = models.TextField()
+    # ✅ CORRECTION : Utiliser Member au lieu de User
     member = models.ForeignKey(Member, on_delete=models.CASCADE, related_name='training_programs')
     coach = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='coached_programs')
     
@@ -161,6 +164,7 @@ class ProgressTracking(models.Model):
     
     def __str__(self):
         return f"{self.member.full_name} - {self.date}"
+
 
 class WorkoutLog(models.Model):
     """Journal d'entraînement - enregistrement des séances réalisées"""

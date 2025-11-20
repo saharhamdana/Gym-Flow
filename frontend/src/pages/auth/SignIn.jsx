@@ -24,11 +24,6 @@ export function SignIn() {
         setWrongTenantError(null);
         setLoading(true);
 
-<<<<<<< HEAD
-=======
-
-
->>>>>>> 940638d ( modification dans le design du coach panel)
         api.post("auth/token/", form)
             .then((res) => {
                 // Stockage des tokens
@@ -44,13 +39,10 @@ export function SignIn() {
 
                         // 🚀 Redirection basée sur le rôle
                         if (userProfile.role === "COACH") {
-<<<<<<< HEAD
-                            navigate("/coach");
-                        } else if (["ADMIN", "RECEPTIONIST"].includes(userProfile.role)) {
-=======
+
                             navigate("/coach"); // ← NOUVELLE REDIRECTION POUR LES COACH
                         } else if (userProfile.role === "ADMIN" || userProfile.role === "RECEPTIONIST") {
->>>>>>> 940638d ( modification dans le design du coach panel)
+
                             navigate("/admin/dashboard");
                         } else {
                             navigate("/portal");

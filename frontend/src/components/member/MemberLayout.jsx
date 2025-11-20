@@ -37,7 +37,7 @@ const MemberLayout = ({ children }) => {
             icon: UserCircleIcon,
         },
         {
-            label: "Mes Programmes",
+            label: "Mes Programmes",  // ✅ AJOUTÉ
             path: "/portal/programs",
             icon: ClipboardDocumentListIcon,
         },
@@ -51,6 +51,7 @@ const MemberLayout = ({ children }) => {
             path: "/portal/progress",
             icon: ChartBarIcon,
         },
+
     ];
 
     return (

@@ -65,6 +65,8 @@ import {
   SubscriptionCreate,
   SubscriptionDetail,
 } from "./pages/subscriptions";
+import MemberPrograms from "./pages/member/MemberPrograms";
+import MemberProgramDetail from "./pages/member/MemberProgramDetail";
 
 export const routes = [
   // ==========================================
@@ -119,6 +121,16 @@ export const routes = [
     name: "Member Progress",
     path: "/portal/progress",
     element: <MemberLayout><MemberProgress /></MemberLayout>,
+  },
+  {
+    name: "Member Program Detail",
+    path: "/portal/programs/:id",
+    element: <MemberProgramDetail />,
+  },
+  {
+    name: "Member Programs",
+    path: "/portal/programs/",
+    element: <MemberPrograms/>,
   },
   // ==========================================
   // ⭐ ROUTES COACH - UTILISER CoachDashboard

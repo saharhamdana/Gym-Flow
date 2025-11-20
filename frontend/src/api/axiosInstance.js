@@ -13,7 +13,8 @@ const getSubdomain = () => {
   
   // En développement sur localhost simple (sans sous-domaine)
   if (hostname === 'localhost' || hostname === '127.0.0.1') {
-    return null;
+    // Retourner un tenant par défaut en dev
+    return 'powerfit'; // ✅ Changez selon votre centre par défaut
   }
   
   // Pour les sous-domaines en .localhost (développement)
@@ -28,7 +29,8 @@ const getSubdomain = () => {
     return parts[0];
   }
   
-  return null;
+  // Retour par défaut
+  return 'powerfit';
 };
 
 /**
@@ -46,7 +48,7 @@ const getBaseURL = () => {
     return "http://127.0.0.1:8000/api/";
   }
 
-  // 🌍 En développement avec sous-domaine local simulé (moveup.gymflow.com:5173)
+  // 🌐 En développement avec sous-domaine local simulé (moveup.gymflow.com:5173)
   if (hostname.endsWith('.gymflow.com') && window.location.port === '5173') {
     return "http://127.0.0.1:8000/api/";
   }
@@ -61,82 +63,63 @@ const api = axios.create({
   baseURL: getBaseURL(),
 });
 
-// Intercepteur pour ajouter le token JWT et le sous-domaine
-api.interceptors.request.use((config) => {
-    // URLs à ignorer pour l'authentification
-    const skipAuthUrls = [
-      "auth/register/", 
-      "auth/token/", 
-      "auth/token/refresh/"
-    ]; 
-    const url = config.url || "";
-    
-    // Vérifier si l'URL nécessite l'authentification
-    const shouldSkip = skipAuthUrls.some((u) => url.includes(u));
-    
-    if (!shouldSkip) {
-      // Ajouter le token JWT si disponible
-      const token = localStorage.getItem("access_token");
-      
-      if (token) {
-        config.headers = config.headers || {};
-        config.headers.Authorization = `Bearer ${token}`;
-      }
-    } else {
-      // Supprimer l'autorisation pour les endpoints publics
-      delete config.headers?.Authorization;
-    }
-    
-    // 🎯 AJOUTER LE SOUS-DOMAINE À CHAQUE REQUÊTE
-    const subdomain = getSubdomain();
-    if (subdomain) {
-      config.headers = config.headers || {};
-      config.headers['X-Tenant-Subdomain'] = subdomain;
-    }
-    
-    return config;
-}, (error) => {
-    return Promise.reject(error);
-});
 
-// Intercepteur pour gérer les erreurs de réponse
-api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    const originalRequest = error.config;
+// ✅ INTERCEPTEUR DE REQUÊTE - Ajouter le token et le tenant-id
+api.interceptors.request.use(
+  (config) => {
+    console.log("🔧 INTERCEPTOR RUNNING");
+
+    // 1️⃣ Récupérer le token depuis localStorage
+    const token = localStorage.getItem("access_token"); // ✅ NOM CORRIGÉ
     
-    // Si erreur 401 et qu'on n'a pas déjà tenté de rafraîchir le token
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
-      
-      try {
-        const refreshToken = localStorage.getItem("refresh_token");
-        
-        if (refreshToken) {
-          // Tenter de rafraîchir le token
-          const response = await axios.post(
-            `${getBaseURL()}auth/token/refresh/`,
-            { refresh: refreshToken }
-          );
-          
-          const { access } = response.data;
-          localStorage.setItem("access_token", access);
-          
-          // Réessayer la requête originale avec le nouveau token
-          originalRequest.headers.Authorization = `Bearer ${access}`;
-          return api(originalRequest);
-        }
-      } catch (refreshError) {
-        // Si le refresh échoue, déconnecter l'utilisateur
-        localStorage.removeItem("access_token");
-        localStorage.removeItem("refresh_token");
-        window.location.href = "/auth/sign-in";
-      }
+    // 2️⃣ Récupérer le subdomain (tenant_id)
+    const subdomain = getSubdomain();
+
+    console.log("🔑 TOKEN =", token ? "✅ Présent" : "❌ Absent");
+    console.log("🏢 TENANT =", subdomain);
+
+    // 3️⃣ Ajouter les headers SANS écraser ceux existants
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
     }
     
+    if (subdomain) {
+      config.headers['X-Tenant-Subdomain'] = subdomain;
+      config.headers['Tenant-ID'] = subdomain; // ✅ Ajouter aussi Tenant-ID
+    }
+
+    console.log("📤 Headers envoyés:", config.headers);
+
+    return config;
+  },
+  (error) => {
+    console.error("❌ Erreur intercepteur requête:", error);
     return Promise.reject(error);
   }
 );
+
+
+// ✅ INTERCEPTEUR DE RÉPONSE - Gérer les erreurs
+api.interceptors.response.use(
+  (response) => {
+    return response;
+  },
+  async (error) => {
+    console.error("❌ Erreur API:", error.response?.status, error.response?.data);
+
+    // Si erreur 401 (non autorisé), rediriger vers login
+    if (error.response?.status === 401) {
+      console.warn("⚠️ Token expiré ou invalide - Redirection vers login");
+      localStorage.removeItem("access_token");
+      localStorage.removeItem("refresh_token");
+      localStorage.removeItem("user");
+      window.location.href = "/sign-in";
+    }
+
+    return Promise.reject(error);
+  }
+);
+
 
 // Exporter des utilitaires
 export { getSubdomain, getBaseURL };

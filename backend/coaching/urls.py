@@ -1,3 +1,5 @@
+# backend/coaching/urls.py
+
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import (
@@ -12,6 +14,8 @@ from .views import (
     coach_upcoming_sessions,
     coach_my_members,
     WorkoutExerciseViewSet,
+    member_programs,
+    member_program_detail,
 )
 
 router = DefaultRouter()
@@ -31,7 +35,9 @@ urlpatterns = [
     path('coach/dashboard-stats/', coach_dashboard_stats, name='coach-dashboard-stats'),
     path('coach/upcoming-sessions/', coach_upcoming_sessions, name='coach-upcoming-sessions'),
     path('coach/my-members/', coach_my_members, name='coach-my-members'),
-    path('coach/dashboard-stats/', coach_dashboard_stats, name='coach-dashboard-stats'),
-    path('coach/upcoming-sessions/', coach_upcoming_sessions, name='coach-upcoming-sessions'),
     path('members/', coach_my_members, name='coach-members-list'),
+    
+    # ✅ NOUVELLES ROUTES pour les membres
+    path('member/my-programs/', member_programs, name='member-my-programs'),
+    path('member/programs/<int:program_id>/', member_program_detail, name='member-program-detail'),
 ]

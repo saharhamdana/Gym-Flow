@@ -296,31 +296,80 @@ class MemberSelectionViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [IsAuthenticated]
     filter_backends = [filters.SearchFilter]
     search_fields = ['first_name', 'last_name', 'email', 'phone']
-    
+
     def get_queryset(self):
-        user = self.request.user
-        
-        # Pour admin/réceptionniste/coach : tous les membres actifs
-        # Un coach peut créer un programme pour n'importe quel membre
-        queryset = Member.objects.filter(status='ACTIVE').order_by('first_name', 'last_name')
-        
-        print(f"[DEBUG] User: {user.email}, Role: {user.role}")
-        print(f"[DEBUG] Membres actifs trouvés: {queryset.count()}")
-        
-        return queryset
-    
+        try:
+            user = self.request.user
+            
+            # 1️⃣ Récupérer le tenant_id depuis différentes sources
+            tenant_id = None
+            
+            # Essayer depuis les headers
+            tenant_id = self.request.headers.get("Tenant-ID") or self.request.headers.get("X-Tenant-Subdomain")
+            
+            # Essayer depuis l'utilisateur
+            if not tenant_id:
+                tenant_id = getattr(user, 'tenant_field', None) or getattr(user, 'tenant_id', None)
+            
+            # Essayer depuis le middleware
+            if not tenant_id:
+                tenant_id = getattr(self.request, 'tenant_id', None)
+
+            print(f"[DEBUG] 🏢 Tenant ID reçu: {tenant_id}")
+            print(f"[DEBUG] 👤 User: {user.email}, Role: {user.role}")
+            print(f"[DEBUG] 📋 Headers: Tenant-ID={self.request.headers.get('Tenant-ID')}, X-Tenant-Subdomain={self.request.headers.get('X-Tenant-Subdomain')}")
+
+            # 2️⃣ Si pas de tenant_id, retourner tous les membres actifs (fallback)
+            if not tenant_id:
+                print("[WARNING] ⚠️ Aucun Tenant fourni — retour de TOUS les membres actifs")
+                queryset = Member.objects.filter(status="ACTIVE").order_by("first_name", "last_name")
+            else:
+                # 3️⃣ Filtrer les membres du tenant
+                queryset = Member.objects.filter(
+                    status="ACTIVE",
+                    tenant_id=tenant_id,
+                ).order_by("first_name", "last_name")
+
+            print(f"[DEBUG] ✅ Membres actifs trouvés: {queryset.count()}")
+            
+            # 4️⃣ Debug: afficher les 3 premiers membres
+            for member in queryset[:3]:
+                print(f"   - {member.full_name} (ID: {member.id}, Email: {member.email})")
+
+            return queryset
+            
+        except Exception as e:
+            print(f"[ERROR] ❌ Erreur dans get_queryset: {e}")
+            import traceback
+            traceback.print_exc()
+            return Member.objects.none()
+
     def get_serializer_class(self):
         from rest_framework import serializers
-        
+
         class MemberSimpleSerializer(serializers.ModelSerializer):
             full_name = serializers.CharField(read_only=True)
-            phone_number = serializers.CharField(source='phone', read_only=True)
-            
+            phone_number = serializers.CharField(source="phone", read_only=True)
+
             class Meta:
                 model = Member
-                fields = ['id', 'member_id', 'full_name', 'email', 'phone_number']
-        
+                fields = ["id", "member_id", "full_name", "email", "phone_number"]
+
         return MemberSimpleSerializer
+    
+    def list(self, request, *args, **kwargs):
+        """Override list pour ajouter des logs détaillés"""
+        try:
+            print(f"[DEBUG] 🚀 MemberSelectionViewSet.list() called")
+            return super().list(request, *args, **kwargs)
+        except Exception as e:
+            print(f"[ERROR] ❌ Erreur dans list(): {e}")
+            import traceback
+            traceback.print_exc()
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 class WorkoutExerciseViewSet(viewsets.ModelViewSet):
     """
@@ -532,3 +581,87 @@ def coach_my_members(request):
         
         # Retourner une liste vide au lieu d'une erreur 500 pour éviter de casser le frontend
         return Response([])
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def member_programs(request):
+    """
+    Liste des programmes assignés au membre connecté
+    """
+    user = request.user
+    
+    # Vérifier que l'utilisateur est un membre
+    if user.role != 'MEMBER':
+        return Response(
+            {'error': 'Accès réservé aux membres'},
+            status=status.HTTP_403_FORBIDDEN
+        )
+    
+    try:
+        # Récupérer le profil membre
+        member = user.member_profile
+        
+        # Récupérer tous les programmes du membre
+        programs = TrainingProgram.objects.filter(
+            member=member
+        ).select_related(
+            'coach'
+        ).prefetch_related(
+            'workout_sessions__exercises__exercise'
+        ).order_by('-created_at')
+        
+        # Sérialiser les données
+        serializer = TrainingProgramSerializer(programs, many=True)
+        
+        return Response(serializer.data)
+        
+    except Exception as e:
+        print(f"[ERROR] Erreur member_programs: {e}")
+        import traceback
+        traceback.print_exc()
+        return Response(
+            {'error': 'Erreur lors de la récupération des programmes'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def member_program_detail(request, program_id):
+    """
+    Détails d'un programme spécifique pour le membre connecté
+    """
+    user = request.user
+    
+    if user.role != 'MEMBER':
+        return Response(
+            {'error': 'Accès réservé aux membres'},
+            status=status.HTTP_403_FORBIDDEN
+        )
+    
+    try:
+        member = user.member_profile
+        
+        # Récupérer le programme - s'assurer qu'il appartient bien au membre
+        program = TrainingProgram.objects.select_related(
+            'coach'
+        ).prefetch_related(
+            'workout_sessions__exercises__exercise__category'
+        ).get(id=program_id, member=member)
+        
+        serializer = TrainingProgramSerializer(program)
+        
+        return Response(serializer.data)
+        
+    except TrainingProgram.DoesNotExist:
+        return Response(
+            {'error': 'Programme non trouvé ou accès non autorisé'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    except Exception as e:
+        print(f"[ERROR] Erreur member_program_detail: {e}")
+        return Response(
+            {'error': 'Erreur lors de la récupération du programme'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
