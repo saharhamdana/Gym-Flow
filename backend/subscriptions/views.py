@@ -14,22 +14,39 @@ from .serializers import (
     SubscriptionDetailSerializer,
     SubscriptionCreateSerializer,
 )
+from authentication.mixins import CompleteTenantMixin
 
-class SubscriptionPlanViewSet(viewsets.ModelViewSet):
+
+class SubscriptionPlanViewSet(CompleteTenantMixin, viewsets.ModelViewSet):
+    """
+    ViewSet pour les plans d'abonnement avec isolation tenant
+    """
     queryset = SubscriptionPlan.objects.all()
     serializer_class = SubscriptionPlanSerializer
     permission_classes = [IsAuthenticated]
     filter_backends = [filters.SearchFilter]
     search_fields = ['name', 'description']
+    tenant_field = 'tenant_id'
+    
+    @action(detail=False, methods=['get'])
+    def active(self, request):
+        """Plans actifs du centre"""
+        plans = self.get_queryset().filter(is_active=True)
+        serializer = self.get_serializer(plans, many=True)
+        return Response(serializer.data)
 
 
-class SubscriptionViewSet(viewsets.ModelViewSet):
+class SubscriptionViewSet(CompleteTenantMixin, viewsets.ModelViewSet):
+    """
+    ViewSet pour les abonnements avec isolation tenant
+    """
     queryset = Subscription.objects.all()
     permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['status', 'member', 'plan']
     search_fields = ['member__first_name', 'member__last_name', 'member__member_id']
     ordering_fields = ['start_date', 'end_date', 'created_at']
+    tenant_field = 'tenant_id'
     
     def get_serializer_class(self):
         if self.action == 'list':
@@ -75,7 +92,7 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
         today = timezone.now().date()
         end_date = today + timedelta(days=7)
         
-        subscriptions = Subscription.objects.filter(
+        subscriptions = self.get_queryset().filter(
             status='ACTIVE',
             end_date__range=[today, end_date]
         )
@@ -85,11 +102,13 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
     
     @action(detail=False, methods=['get'])
     def statistics(self, request):
-        """Statistiques des abonnements"""
-        total = Subscription.objects.count()
-        active = Subscription.objects.filter(status='ACTIVE').count()
-        expired = Subscription.objects.filter(status='EXPIRED').count()
-        cancelled = Subscription.objects.filter(status='CANCELLED').count()
+        """Statistiques des abonnements du centre"""
+        queryset = self.get_queryset()
+        
+        total = queryset.count()
+        active = queryset.filter(status='ACTIVE').count()
+        expired = queryset.filter(status='EXPIRED').count()
+        cancelled = queryset.filter(status='CANCELLED').count()
         
         return Response({
             'total': total,

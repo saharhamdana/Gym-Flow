@@ -7,11 +7,14 @@ from members.models import Member
 
 class SubscriptionPlan(models.Model):
     """Plans d'abonnement (Mensuel, Trimestriel, Annuel, etc.)"""
-    name = models.CharField(max_length=100, unique=True)
+    name = models.CharField(max_length=100)
     description = models.TextField(blank=True)
     duration_days = models.PositiveIntegerField(help_text="Durée en jours")
     price = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0)])
     is_active = models.BooleanField(default=True)
+    
+    # ✅ Multi-tenant
+    tenant_id = models.CharField(max_length=100, verbose_name="ID du centre", db_index=True)
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -20,6 +23,8 @@ class SubscriptionPlan(models.Model):
         ordering = ['duration_days']
         verbose_name = "Plan d'abonnement"
         verbose_name_plural = "Plans d'abonnement"
+        # ✅ Un plan avec le même nom peut exister dans différents centres
+        unique_together = [['name', 'tenant_id']]
     
     def __str__(self):
         return f"{self.name} - {self.price} TND ({self.duration_days} jours)"
@@ -48,6 +53,9 @@ class Subscription(models.Model):
     payment_method = models.CharField(max_length=50, blank=True, help_text="Espèces, Carte, Virement, etc.")
     
     notes = models.TextField(blank=True)
+    
+    # ✅ Multi-tenant
+    tenant_id = models.CharField(max_length=100, verbose_name="ID du centre", db_index=True)
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -81,7 +89,7 @@ class Subscription(models.Model):
         self.payment_date = timezone.now()
         self.save(update_fields=['status', 'payment_date', 'updated_at'])
         
-        # ✅ ACTIVER LE MEMBRE AUTOMATIQUEMENT
+        # Activer le membre automatiquement
         self.member.activate()
     
     def cancel(self):
@@ -89,7 +97,7 @@ class Subscription(models.Model):
         self.status = 'CANCELLED'
         self.save(update_fields=['status', 'updated_at'])
         
-        # ✅ DÉSACTIVER LE MEMBRE SI PLUS D'ABONNEMENTS ACTIFS
+        # Désactiver le membre si plus d'abonnements actifs
         self.member.deactivate()
     
     def mark_as_expired(self):
@@ -97,7 +105,7 @@ class Subscription(models.Model):
         self.status = 'EXPIRED'
         self.save(update_fields=['status', 'updated_at'])
         
-        # ✅ MARQUER LE MEMBRE COMME EXPIRÉ SI PLUS D'ABONNEMENTS ACTIFS
+        # Marquer le membre comme expiré si plus d'abonnements actifs
         self.member.mark_as_expired()
     
     def save(self, *args, **kwargs):
@@ -109,5 +117,9 @@ class Subscription(models.Model):
         # Définir le montant payé par défaut
         if not self.amount_paid and self.plan:
             self.amount_paid = self.plan.price
+        
+        # ✅ Hériter le tenant_id du membre si non défini
+        if not self.tenant_id and self.member:
+            self.tenant_id = self.member.tenant_id
         
         super().save(*args, **kwargs)

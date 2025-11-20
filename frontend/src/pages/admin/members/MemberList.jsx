@@ -22,53 +22,53 @@ export function MemberList() {
     const [error, setError] = useState(null);
     const [searchTerm, setSearchTerm] = useState("");
 
-    // useEffect(() => {
-    //     const fetchMembers = async () => {
-    //         try {
-    //             const response = await api.get("members/");
-    //             const memberData = Array.isArray(response.data) 
-    //                 ? response.data 
-    //                 : (response.data.results || []);
-    //             setMembers(memberData);
-    //             setError(null);
-    //         } catch (err) {
-    //             console.error("Erreur de récupération des membres:", err);
-    //             setError(err.response?.data?.detail || "Échec de la récupération des données.");
-    //         } finally {
-    //             setLoading(false);
-    //         }
-    //     };
-    //     fetchMembers();
-    // }, []);
-
     useEffect(() => {
         const fetchMembers = async () => {
             try {
-                // ✅ Log pour debug
-                console.log("🌐 Hostname:", window.location.hostname);
-                console.log("🌐 Subdomain détecté:", window.location.hostname.split('.')[0]);
-
                 const response = await api.get("members/");
-                console.log("📊 Headers envoyés:", response.config.headers);
-                console.log("📊 Réponse brute:", response);
-                console.log("📊 Membres reçus:", response.data);
-
-                const memberData = Array.isArray(response.data)
-                    ? response.data
+                const memberData = Array.isArray(response.data) 
+                    ? response.data 
                     : (response.data.results || []);
-
-                console.log("📊 Membres traités:", memberData);
                 setMembers(memberData);
                 setError(null);
             } catch (err) {
-                console.error("❌ Erreur:", err);
-                setError(err.response?.data?.detail || "Échec de la récupération.");
+                console.error("Erreur de récupération des membres:", err);
+                setError(err.response?.data?.detail || "Échec de la récupération des données.");
             } finally {
                 setLoading(false);
             }
         };
         fetchMembers();
     }, []);
+
+    // useEffect(() => {
+    //     const fetchMembers = async () => {
+    //         try {
+    //             // ✅ Log pour debug
+    //             console.log("🌐 Hostname:", window.location.hostname);
+    //             console.log("🌐 Subdomain détecté:", window.location.hostname.split('.')[0]);
+
+    //             const response = await api.get("members/");
+    //             console.log("📊 Headers envoyés:", response.config.headers);
+    //             console.log("📊 Réponse brute:", response);
+    //             console.log("📊 Membres reçus:", response.data);
+
+    //             const memberData = Array.isArray(response.data)
+    //                 ? response.data
+    //                 : (response.data.results || []);
+
+    //             console.log("📊 Membres traités:", memberData);
+    //             setMembers(memberData);
+    //             setError(null);
+    //         } catch (err) {
+    //             console.error("❌ Erreur:", err);
+    //             setError(err.response?.data?.detail || "Échec de la récupération.");
+    //         } finally {
+    //             setLoading(false);
+    //         }
+    //     };
+    //     fetchMembers();
+    // }, []);
 
     const filteredMembers = Array.isArray(members) ? members.filter(member =>
         member.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||

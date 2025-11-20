@@ -12,6 +12,10 @@ class Room(models.Model):
     capacity = models.PositiveIntegerField(validators=[MinValueValidator(1)], verbose_name="Capacité")
     description = models.TextField(blank=True, verbose_name="Description")
     is_active = models.BooleanField(default=True, verbose_name="Active")
+    
+    # ✅ Multi-tenant
+    tenant_id = models.CharField(max_length=100, verbose_name="ID du centre", db_index=True)
+    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -26,11 +30,15 @@ class Room(models.Model):
 
 class CourseType(models.Model):
     """Types de cours (Yoga, Musculation, Cardio, etc.)"""
-    name = models.CharField(max_length=100, unique=True, verbose_name="Nom du type")
+    name = models.CharField(max_length=100, verbose_name="Nom du type")
     description = models.TextField(blank=True, verbose_name="Description")
     color = models.CharField(max_length=7, default="#3B82F6", verbose_name="Couleur (hex)")
     duration_minutes = models.PositiveIntegerField(default=60, verbose_name="Durée par défaut (min)")
     is_active = models.BooleanField(default=True, verbose_name="Actif")
+    
+    # ✅ Multi-tenant
+    tenant_id = models.CharField(max_length=100, verbose_name="ID du centre", db_index=True)
+    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -38,6 +46,8 @@ class CourseType(models.Model):
         ordering = ['name']
         verbose_name = "Type de cours"
         verbose_name_plural = "Types de cours"
+        # ✅ Un type avec le même nom peut exister dans différents centres
+        unique_together = [['name', 'tenant_id']]
 
     def __str__(self):
         return self.name
@@ -68,6 +78,9 @@ class Course(models.Model):
     
     notes = models.TextField(blank=True, verbose_name="Notes")
     
+    # ✅ Multi-tenant
+    tenant_id = models.CharField(max_length=100, verbose_name="ID du centre", db_index=True)
+    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -75,8 +88,8 @@ class Course(models.Model):
         ordering = ['-date', '-start_time']
         verbose_name = "Cours"
         verbose_name_plural = "Cours"
-        # Contrainte : Un coach ne peut pas avoir 2 cours en même temps
-        unique_together = [['coach', 'date', 'start_time']]
+        # Contrainte : Un coach ne peut pas avoir 2 cours en même temps dans le même centre
+        unique_together = [['coach', 'date', 'start_time', 'tenant_id']]
 
     def __str__(self):
         return f"{self.title} - {self.date} {self.start_time}"
@@ -122,6 +135,9 @@ class Booking(models.Model):
     checked_in = models.BooleanField(default=False, verbose_name="Présent")
     check_in_time = models.DateTimeField(null=True, blank=True, verbose_name="Heure d'arrivée")
     
+    # ✅ Multi-tenant
+    tenant_id = models.CharField(max_length=100, verbose_name="ID du centre", db_index=True)
+    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -146,3 +162,10 @@ class Booking(models.Model):
         self.check_in_time = timezone.now()
         self.status = 'COMPLETED'
         self.save()
+    
+    def save(self, *args, **kwargs):
+        # ✅ Hériter le tenant_id du membre si non défini
+        if not self.tenant_id and self.member:
+            self.tenant_id = self.member.tenant_id
+        
+        super().save(*args, **kwargs)

@@ -14,32 +14,37 @@ from .serializers import (
     CourseListSerializer, CourseDetailSerializer, CourseCreateUpdateSerializer,
     BookingListSerializer, BookingDetailSerializer, BookingCreateSerializer
 )
+from authentication.mixins import CompleteTenantMixin
 
-class RoomViewSet(viewsets.ModelViewSet):
+
+class RoomViewSet(CompleteTenantMixin, viewsets.ModelViewSet):
     queryset = Room.objects.all()
     serializer_class = RoomSerializer
     permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter]
     search_fields = ['name', 'description']
     filterset_fields = ['is_active']
+    tenant_field = 'tenant_id'
 
 
-class CourseTypeViewSet(viewsets.ModelViewSet):
+class CourseTypeViewSet(CompleteTenantMixin, viewsets.ModelViewSet):
     queryset = CourseType.objects.all()
     serializer_class = CourseTypeSerializer
     permission_classes = [IsAuthenticated]
     filter_backends = [filters.SearchFilter]
     search_fields = ['name', 'description']
     filterset_fields = ['is_active']
+    tenant_field = 'tenant_id'
 
 
-class CourseViewSet(viewsets.ModelViewSet):
+class CourseViewSet(CompleteTenantMixin, viewsets.ModelViewSet):
     queryset = Course.objects.all()
     permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['status', 'course_type', 'coach', 'room', 'date']
     search_fields = ['title', 'description']
     ordering_fields = ['date', 'start_time']
+    tenant_field = 'tenant_id'
     
     def get_serializer_class(self):
         if self.action == 'list':
@@ -50,11 +55,11 @@ class CourseViewSet(viewsets.ModelViewSet):
     
     @action(detail=False, methods=['get'])
     def upcoming(self, request):
-        """Cours à venir (7 prochains jours)"""
+        """Cours à venir (7 prochains jours) du centre"""
         today = timezone.now().date()
         next_week = today + timedelta(days=7)
         
-        courses = Course.objects.filter(
+        courses = self.get_queryset().filter(
             date__gte=today,
             date__lte=next_week,
             status='SCHEDULED'
@@ -65,9 +70,9 @@ class CourseViewSet(viewsets.ModelViewSet):
     
     @action(detail=False, methods=['get'])
     def today(self, request):
-        """Cours d'aujourd'hui"""
+        """Cours d'aujourd'hui du centre"""
         today = timezone.now().date()
-        courses = Course.objects.filter(date=today).order_by('start_time')
+        courses = self.get_queryset().filter(date=today).order_by('start_time')
         serializer = CourseListSerializer(courses, many=True)
         return Response(serializer.data)
     
@@ -93,11 +98,13 @@ class CourseViewSet(viewsets.ModelViewSet):
     
     @action(detail=False, methods=['get'])
     def statistics(self, request):
-        """Statistiques des cours"""
-        total = Course.objects.count()
-        scheduled = Course.objects.filter(status='SCHEDULED').count()
-        completed = Course.objects.filter(status='COMPLETED').count()
-        cancelled = Course.objects.filter(status='CANCELLED').count()
+        """Statistiques des cours du centre"""
+        queryset = self.get_queryset()
+        
+        total = queryset.count()
+        scheduled = queryset.filter(status='SCHEDULED').count()
+        completed = queryset.filter(status='COMPLETED').count()
+        cancelled = queryset.filter(status='CANCELLED').count()
         
         return Response({
             'total': total,
@@ -107,13 +114,14 @@ class CourseViewSet(viewsets.ModelViewSet):
         })
 
 
-class BookingViewSet(viewsets.ModelViewSet):
+class BookingViewSet(CompleteTenantMixin, viewsets.ModelViewSet):
     queryset = Booking.objects.all()
     permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['status', 'member', 'course', 'checked_in']
     search_fields = ['member__first_name', 'member__last_name', 'course__title']
     ordering_fields = ['booking_date']
+    tenant_field = 'tenant_id'
     
     def get_serializer_class(self):
         if self.action == 'list':
@@ -153,10 +161,9 @@ class BookingViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def my_bookings(self, request):
         """Réservations de l'utilisateur connecté"""
-        # Récupérer le membre associé à l'utilisateur
         try:
-            member = request.user.member  # Assuming User has OneToOne with Member
-            bookings = Booking.objects.filter(member=member)
+            member = request.user.member_profile
+            bookings = self.get_queryset().filter(member=member)
             serializer = BookingListSerializer(bookings, many=True)
             return Response(serializer.data)
         except:
@@ -164,12 +171,14 @@ class BookingViewSet(viewsets.ModelViewSet):
     
     @action(detail=False, methods=['get'])
     def statistics(self, request):
-        """Statistiques des réservations"""
-        total = Booking.objects.count()
-        confirmed = Booking.objects.filter(status='CONFIRMED').count()
-        cancelled = Booking.objects.filter(status='CANCELLED').count()
-        completed = Booking.objects.filter(status='COMPLETED').count()
-        no_show = Booking.objects.filter(status='NO_SHOW').count()
+        """Statistiques des réservations du centre"""
+        queryset = self.get_queryset()
+        
+        total = queryset.count()
+        confirmed = queryset.filter(status='CONFIRMED').count()
+        cancelled = queryset.filter(status='CANCELLED').count()
+        completed = queryset.filter(status='COMPLETED').count()
+        no_show = queryset.filter(status='NO_SHOW').count()
         
         return Response({
             'total': total,
