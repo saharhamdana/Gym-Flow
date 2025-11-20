@@ -300,22 +300,14 @@ class MemberSelectionViewSet(viewsets.ReadOnlyModelViewSet):
     def get_queryset(self):
         user = self.request.user
         
-        # Si c'est un coach, ne montrer que SES membres
-        if user.role == 'COACH':
-            # Récupérer les IDs des membres qui ont des programmes avec ce coach
-            member_ids = TrainingProgram.objects.filter(
-                coach=user,
-                status='active'
-            ).values_list('member_id', flat=True).distinct()
-            
-            # Retourner uniquement ces membres
-            return Member.objects.filter(
-                id__in=member_ids,
-                status='ACTIVE'
-            ).order_by('first_name', 'last_name')
+        # Pour admin/réceptionniste/coach : tous les membres actifs
+        # Un coach peut créer un programme pour n'importe quel membre
+        queryset = Member.objects.filter(status='ACTIVE').order_by('first_name', 'last_name')
         
-        # Pour admin/réceptionniste : tous les membres actifs
-        return Member.objects.filter(status='ACTIVE').order_by('first_name', 'last_name')
+        print(f"[DEBUG] User: {user.email}, Role: {user.role}")
+        print(f"[DEBUG] Membres actifs trouvés: {queryset.count()}")
+        
+        return queryset
     
     def get_serializer_class(self):
         from rest_framework import serializers

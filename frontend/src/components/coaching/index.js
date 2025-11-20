@@ -6,3 +6,6 @@ export { default as Step2SelectMember } from './Step2SelectMember';
 export { default as Step3Configuration } from './Step3Configuration';
 export { default as Step4Sessions } from './Step4Sessions';
 export { default as Step5Summary } from './Step5Summary';
+export { default as CoachLayout } from './CoachLayout';
+export { default as EditProgramForm } from './EditProgramForm';
+export { default as ProgramDetails } from './ProgramDetails';

@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import CoachLayout from '../../components/coaching/CoachLayout';
 import coachingService from '../../services/coachingService';
 import { 
-  ArrowLeft, User, Calendar, Target, Clock, 
-  Edit, Download, Copy, Trash2, CheckCircle 
+  User, Calendar, Target, Clock, 
+  Edit, Download
 } from 'lucide-react';
 
 const ProgramDetails = () => {
@@ -54,47 +55,38 @@ const ProgramDetails = () => {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
+      <CoachLayout>
+        <div className="flex justify-center items-center min-h-screen">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
+      </CoachLayout>
     );
   }
 
   if (error || !program) {
     return (
-      <div className="min-h-screen bg-gray-50 p-8">
-        <div className="max-w-4xl mx-auto">
-          <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
-            <p className="text-red-700">{error || 'Programme introuvable'}</p>
-            <button
-              onClick={() => navigate('/coaching/programs')}
-              className="mt-4 text-blue-600 hover:text-blue-700"
-            >
-              Retour à la liste
-            </button>
-          </div>
+      <CoachLayout>
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+          <p className="text-red-700">{error || 'Programme introuvable'}</p>
+          <button
+            onClick={() => navigate('/coaching/programs')}
+            className="mt-4 text-blue-600 hover:text-blue-700"
+          >
+            Retour à la liste
+          </button>
         </div>
-      </div>
+      </CoachLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* Header */}
-        <button
-          onClick={() => navigate('/coaching/programs')}
-          className="flex items-center text-gray-600 hover:text-gray-900 mb-6"
-        >
-          <ArrowLeft className="w-5 h-5 mr-2" />
-          Retour à la liste
-        </button>
-
+    <CoachLayout>
+      <div className="space-y-6">
         {/* Titre et actions */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <div className="flex justify-between items-start mb-4">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              <h1 className="text-3xl font-bold mb-2" style={{ color: '#00357a' }}>
                 {program.title}
               </h1>
               {getStatusBadge(program.status)}
@@ -121,13 +113,13 @@ const ProgramDetails = () => {
 
           {/* Informations du membre */}
           {program.member_details && (
-            <div className="flex items-center gap-3 p-4 bg-blue-50 rounded-lg">
-              <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
+            <div className="flex items-center gap-3 p-4 rounded-lg" style={{ backgroundColor: '#00357a' + '10' }}>
+              <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg" style={{ backgroundColor: '#00357a' }}>
                 {program.member_details.user?.first_name?.[0]}
                 {program.member_details.user?.last_name?.[0]}
               </div>
               <div>
-                <p className="font-semibold text-gray-900">
+                <p className="font-semibold" style={{ color: '#00357a' }}>
                   {program.member_details.user?.first_name} {program.member_details.user?.last_name}
                 </p>
                 <p className="text-sm text-gray-600">{program.member_details.user?.email}</p>
@@ -137,11 +129,11 @@ const ProgramDetails = () => {
         </div>
 
         {/* Grille d'informations */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <div className="flex items-center gap-3 mb-2">
-              <Calendar className="w-6 h-6 text-purple-600" />
-              <h3 className="font-semibold text-gray-900">Période</h3>
+              <Calendar className="w-6 h-6" style={{ color: '#9b0e16' }} />
+              <h3 className="font-semibold" style={{ color: '#00357a' }}>Période</h3>
             </div>
             <p className="text-gray-600">
               Du {new Date(program.start_date).toLocaleDateString('fr-FR')}
@@ -152,24 +144,24 @@ const ProgramDetails = () => {
 
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <div className="flex items-center gap-3 mb-2">
-              <Clock className="w-6 h-6 text-blue-600" />
-              <h3 className="font-semibold text-gray-900">Durée</h3>
+              <Clock className="w-6 h-6" style={{ color: '#9b0e16' }} />
+              <h3 className="font-semibold" style={{ color: '#00357a' }}>Durée</h3>
             </div>
             <p className="text-gray-600">{program.duration_weeks} semaines</p>
           </div>
 
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <div className="flex items-center gap-3 mb-2">
-              <Target className="w-6 h-6 text-green-600" />
-              <h3 className="font-semibold text-gray-900">Sessions</h3>
+              <Target className="w-6 h-6" style={{ color: '#9b0e16' }} />
+              <h3 className="font-semibold" style={{ color: '#00357a' }}>Sessions</h3>
             </div>
             <p className="text-gray-600">{program.workout_sessions?.length || 0} séances</p>
           </div>
         </div>
 
         {/* Objectifs */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Objectifs</h2>
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <h2 className="text-xl font-semibold mb-4" style={{ color: '#00357a' }}>Objectifs</h2>
           <p className="text-gray-700 mb-4">{program.goal}</p>
           
           {(program.target_weight || program.target_body_fat) && (
@@ -177,13 +169,13 @@ const ProgramDetails = () => {
               {program.target_weight && (
                 <div className="p-4 bg-gray-50 rounded-lg">
                   <p className="text-sm text-gray-600">Poids cible</p>
-                  <p className="text-lg font-semibold text-gray-900">{program.target_weight} kg</p>
+                  <p className="text-lg font-semibold" style={{ color: '#00357a' }}>{program.target_weight} kg</p>
                 </div>
               )}
               {program.target_body_fat && (
                 <div className="p-4 bg-gray-50 rounded-lg">
                   <p className="text-sm text-gray-600">Masse grasse cible</p>
-                  <p className="text-lg font-semibold text-gray-900">{program.target_body_fat}%</p>
+                  <p className="text-lg font-semibold" style={{ color: '#00357a' }}>{program.target_body_fat}%</p>
                 </div>
               )}
             </div>
@@ -192,7 +184,7 @@ const ProgramDetails = () => {
 
         {/* Sessions d'entraînement */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">
+          <h2 className="text-xl font-semibold mb-4" style={{ color: '#00357a' }}>
             Sessions d'entraînement
           </h2>
           
@@ -201,7 +193,7 @@ const ProgramDetails = () => {
               {program.workout_sessions.map((session) => (
                 <div key={session.id} className="p-4 bg-gray-50 rounded-lg">
                   <div className="flex justify-between items-start mb-2">
-                    <h3 className="font-semibold text-gray-900">{session.title}</h3>
+                    <h3 className="font-semibold" style={{ color: '#00357a' }}>{session.title}</h3>
                     <span className="text-sm text-gray-600">
                       Semaine {session.week_number} - Jour {session.day_of_week}
                     </span>
@@ -222,13 +214,13 @@ const ProgramDetails = () => {
 
         {/* Notes */}
         {program.notes && (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mt-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Notes du coach</h2>
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <h2 className="text-xl font-semibold mb-4" style={{ color: '#00357a' }}>Notes du coach</h2>
             <p className="text-gray-700 whitespace-pre-wrap">{program.notes}</p>
           </div>
         )}
       </div>
-    </div>
+    </CoachLayout>
   );
 };
 

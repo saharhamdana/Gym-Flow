@@ -17,6 +17,7 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'changez-moi-en-production')
 
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
+
 # ✅ Configuration Email SÉCURISÉE
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
@@ -137,6 +138,11 @@ CORS_ALLOWED_ORIGINS = [
     "http://powerfit.gymflow.com:5173",
     "http://titangym.gymflow.com:5173",
     "http://moveup.gymflow.com:5173",
+    "http://powerfit.gymflow.com",      
+    "http://titangym.gymflow.com",
+    "http://moveup.gymflow.com",
+    "http://gymflow.com",
+    "http://www.gymflow.com",
 ]
 
 CORS_ALLOWED_ORIGIN_REGEXES = [
@@ -161,18 +167,42 @@ CORS_ALLOW_HEADERS = [
     'x-tenant-subdomain',
 ]
 
-# 🍪 Configuration des cookies pour sous-domaines
-SESSION_COOKIE_DOMAIN = '.gymflow.com'
+# # 🍪 Configuration des cookies pour sous-domaines
+# SESSION_COOKIE_DOMAIN = '.gymflow.com'
 SESSION_COOKIE_SAMESITE = 'Lax'
 SESSION_COOKIE_HTTPONLY = True
 
-CSRF_COOKIE_DOMAIN = '.gymflow.com'
+# CSRF_COOKIE_DOMAIN = '.gymflow.com'
 CSRF_COOKIE_SAMESITE = 'Lax'
-CSRF_TRUSTED_ORIGINS = [
-    'http://*.gymflow.com',
-    'https://*.gymflow.com',
-    'http://localhost:5173',
-]
+# CSRF_TRUSTED_ORIGINS = [
+#     'http://*.gymflow.com',
+#     'https://*.gymflow.com',
+#     'http://localhost:5173',
+# ]
+# 🍪 Cookies + CSRF configuration pour DEV / PROD
+
+if DEBUG:
+    # 💻 Mode développement : accès Admin OK
+    SESSION_COOKIE_DOMAIN = None
+    CSRF_COOKIE_DOMAIN = None
+    CSRF_TRUSTED_ORIGINS = [
+        "http://localhost:8000",
+        "http://127.0.0.1:8000",
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ]
+else:
+    # 🌐 Production multi-tenant
+    SESSION_COOKIE_DOMAIN = ".gymflow.com"
+    CSRF_COOKIE_DOMAIN = ".gymflow.com"
+    CSRF_TRUSTED_ORIGINS = [
+        "https://gymflow.com",
+        "https://www.gymflow.com",
+        "https://powerfit.gymflow.com",
+        "https://titangym.gymflow.com",
+        "https://moveup.gymflow.com",
+        "https://api.gymflow.com",
+    ]
 
 # 📝 Configuration REST Framework
 REST_FRAMEWORK = {

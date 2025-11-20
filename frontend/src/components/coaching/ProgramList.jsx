@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import coachingService from '../../services/coachingService';
+import CoachLayout from '../../components/coaching/CoachLayout';
 import { 
   Calendar, User, Target, Download, Copy, 
-  Edit, Trash2, Plus, Search, Filter ,ArrowLeft
+  Edit, Trash2, Plus, Search, Filter 
 } from 'lucide-react';
-import api from '../../api/axiosInstance';  
+
 const ProgramList = () => {
   const [programs, setPrograms] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -31,8 +31,6 @@ const ProgramList = () => {
       if (filters.member) params.member = filters.member;
 
       const response = await coachingService.getPrograms(params);
-      
-      // Gérer la pagination Django REST Framework
       const programsData = response.data?.results || response.data || [];
       
       if (Array.isArray(programsData)) {
@@ -112,29 +110,31 @@ const ProgramList = () => {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
+      <CoachLayout>
+        <div className="flex justify-center items-center min-h-screen">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
+      </CoachLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-white">
-      <div className="min-w-100xl mx-auto px-40 py-8">
-        <button
-        onClick={() => navigate('/coach')}
-        className="flex items-center text-gray-600 hover:text-gray-900 mb-4"
-        >
-          <ArrowLeft className="w-5 h-5 mr-2" />
-          Retour au tableau de bord
-        </button>
-
+    <CoachLayout>
+      <div className="space-y-6">
         {/* Header Section */}
-        <div className="flex justify-between items-center mb-8 mt-10">
-          <h1 className="text-3xl font-bold text-gray-900">Programmes d'Entraînement</h1>
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold" style={{ color: '#00357a' }}>
+              Programmes d'Entraînement
+            </h1>
+            <p className="text-gray-600 mt-1">
+              Gérez vos programmes personnalisés
+            </p>
+          </div>
           <Link
             to="/coaching/programs/create"
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2"
+            className="text-white px-4 py-2 rounded-lg hover:opacity-90 flex items-center gap-2"
+            style={{ backgroundColor: '#9b0e16' }}
           >
             <Plus size={20} />
             Nouveau Programme
@@ -142,9 +142,8 @@ const ProgramList = () => {
         </div>
 
         {/* Filters Section */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Search Input */}
             <div className="relative lg:col-span-2">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
               <input
@@ -156,7 +155,6 @@ const ProgramList = () => {
               />
             </div>
 
-            {/* Status Filter */}
             <div>
               <select
                 value={filters.status}
@@ -171,7 +169,6 @@ const ProgramList = () => {
               </select>
             </div>
 
-            {/* Filter Button */}
             <div>
               <button
                 onClick={loadPrograms}
@@ -191,13 +188,16 @@ const ProgramList = () => {
               <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Target size={32} className="text-gray-400" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Aucun programme trouvé</h3>
+              <h3 className="text-lg font-semibold mb-2" style={{ color: '#00357a' }}>
+                Aucun programme trouvé
+              </h3>
               <p className="text-gray-500 mb-6">
                 Commencez par créer votre premier programme d'entraînement
               </p>
               <Link
                 to="/coaching/programs/create"
-                className="inline-flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                className="inline-flex items-center gap-2 px-6 py-2.5 text-white font-medium rounded-lg hover:opacity-90 transition-colors"
+                style={{ backgroundColor: '#9b0e16' }}
               >
                 <Plus size={20} />
                 Créer un programme
@@ -212,27 +212,24 @@ const ProgramList = () => {
                 className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-all duration-200 flex flex-col"
               >
                 <div className="p-6 flex-1 flex flex-col">
-                  {/* Card Header */}
                   <div className="flex items-start justify-between gap-3 mb-4">
-                    <h3 className="text-lg font-semibold text-gray-900 line-clamp-2 flex-1">
+                    <h3 className="text-lg font-semibold line-clamp-2 flex-1" style={{ color: '#00357a' }}>
                       {program.title}
                     </h3>
                     {getStatusBadge(program.status)}
                   </div>
 
-                  {/* Description */}
                   {program.description && (
                     <p className="text-sm text-gray-600 mb-4 line-clamp-2">
                       {program.description}
                     </p>
                   )}
 
-                  {/* Info List */}
                   <div className="space-y-3 mb-4 flex-1">
                     {program.member_details?.user && (
                       <div className="flex items-center gap-2 text-sm text-gray-600">
-                        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-                          <User size={16} className="text-blue-600" />
+                        <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#00357a', color: 'white' }}>
+                          <User size={16} />
                         </div>
                         <span className="font-medium">
                           {program.member_details.user.first_name} {program.member_details.user.last_name}
@@ -259,7 +256,6 @@ const ProgramList = () => {
                     )}
                   </div>
 
-                  {/* Sessions Count */}
                   <div className="flex items-center justify-between py-3 px-4 bg-gray-50 rounded-lg mb-4">
                     <span className="text-sm text-gray-600">Sessions d'entraînement</span>
                     <span className="text-sm font-semibold text-gray-900">
@@ -267,11 +263,11 @@ const ProgramList = () => {
                     </span>
                   </div>
 
-                  {/* Actions */}
                   <div className="grid grid-cols-2 gap-2 pt-4 border-t border-gray-100">
                     <Link
                       to={`/coaching/programs/${program.id}`}
-                      className="col-span-2 bg-blue-600 text-white px-4 py-2.5 rounded-lg hover:bg-blue-700 text-center text-sm font-medium transition-colors"
+                      className="col-span-2 text-white px-4 py-2.5 rounded-lg hover:opacity-90 text-center text-sm font-medium transition-colors"
+                      style={{ backgroundColor: '#00357a' }}
                     >
                       Voir Détails
                     </Link>
@@ -314,7 +310,7 @@ const ProgramList = () => {
           </div>
         )}
       </div>
-    </div>
+    </CoachLayout>
   );
 };
 

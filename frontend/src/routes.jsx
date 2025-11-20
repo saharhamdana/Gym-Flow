@@ -13,8 +13,8 @@ import MemberDashboard from "@/pages/member/MemberDashboard";
 import MemberProgress from "@/pages/member/MemberProgress";
 import MemberBookings from "@/pages/member/MemberBookings";
 
-// ⭐ NOUVEAUX IMPORTS COACH
-import CoachPanel from "@/pages/coach/CoachPanel";
+// ⭐ IMPORTS COACH - Utiliser CoachDashboard au lieu de CoachPanel
+import CoachDashboard from "@/components/coaching/CoachDashboard";
 import CoachMembers from "@/pages/coach/CoachMembers";
 import CoachSchedule from "@/pages/coach/CoachSchedule";
 import CoachExercises from "@/pages/coach/CoachExercises";
@@ -121,13 +121,13 @@ export const routes = [
     element: <MemberLayout><MemberProgress /></MemberLayout>,
   },
   // ==========================================
-  // ⭐ NOUVELLES ROUTES COACH
+  // ⭐ ROUTES COACH - UTILISER CoachDashboard
   // ==========================================
   {
     name: "Coach Dashboard",
     path: "/coach",
-    element: <CoachPanel />,
-    hidden: true // Caché de la navbar
+    element: <CoachDashboard />,
+    hidden: true
   },
   {
     name: "Coach Members",

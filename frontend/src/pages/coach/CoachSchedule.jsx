@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import CoachLayout from '../../components/coaching/CoachLayout';
 import { coachAPI } from '../../api/coachAPI';
 import api from '../../api/axiosInstance';
 import { 
   Calendar, Clock, Users, MapPin, ChevronLeft, 
-  ChevronRight, ArrowLeft, Filter, Plus 
+  ChevronRight
 } from 'lucide-react';
 
 const CoachSchedule = () => {
@@ -22,16 +23,13 @@ const CoachSchedule = () => {
     try {
       setLoading(true);
       
-      // 1. Charger les cours collectifs (Course)
       let coursesData = [];
       try {
         coursesData = await coachAPI.getUpcomingSessions();
-        console.log('Cours collectifs:', coursesData);
       } catch (error) {
         console.error('Erreur chargement cours:', error);
       }
       
-      // 2. Charger les programmes avec leurs sessions
       let programSessions = [];
       try {
         const programsResponse = await api.get('/coaching/programs/', {
@@ -39,25 +37,20 @@ const CoachSchedule = () => {
         });
         
         const programs = programsResponse.data.results || programsResponse.data || [];
-        console.log('Programmes:', programs);
         
-        // Pour chaque programme, générer les sessions basées sur les WorkoutSessions
         for (const program of programs) {
           if (program.workout_sessions && program.workout_sessions.length > 0) {
             const programStartDate = new Date(program.start_date);
             
             program.workout_sessions.forEach(session => {
-              // Calculer la date de chaque session
               const weekOffset = (session.week_number - 1) * 7;
-              const dayOffset = session.day_of_week - 1; // 1=Lundi, 7=Dimanche
+              const dayOffset = session.day_of_week - 1;
               
               const sessionDate = new Date(programStartDate);
               sessionDate.setDate(sessionDate.getDate() + weekOffset + dayOffset);
               
-              // Ne garder que les sessions futures ou d'aujourd'hui
               if (sessionDate >= new Date().setHours(0, 0, 0, 0)) {
-                // Calculer l'heure de fin
-                const startHour = 9; // Heure par défaut
+                const startHour = 9;
                 const endHour = startHour + Math.floor(session.duration_minutes / 60);
                 const endMinute = session.duration_minutes % 60;
                 
@@ -78,18 +71,14 @@ const CoachSchedule = () => {
             });
           }
         }
-        
-        console.log('Sessions de programmes:', programSessions);
       } catch (error) {
         console.error('Erreur chargement programmes:', error);
       }
       
-      // 3. Fusionner et trier
       const allSessions = [...coursesData, ...programSessions].sort((a, b) => 
         new Date(a.date) - new Date(b.date)
       );
       
-      console.log('Toutes les sessions:', allSessions);
       setSessions(allSessions);
     } catch (error) {
       console.error('Erreur chargement sessions:', error);
@@ -141,64 +130,47 @@ const CoachSchedule = () => {
 
   const handleSessionClick = (session) => {
     if (session.type === 'program') {
-      // Rediriger vers la page du programme
       navigate(`/coaching/programs/${session.program_id}`);
     } else {
-      // Rediriger vers la page du cours
       navigate(`/admin/courses/${session.id}`);
     }
   };
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
+      <CoachLayout>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
+      </CoachLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <button
-            onClick={() => navigate('/coach')}
-            className="flex items-center text-gray-600 hover:text-gray-900 mb-4"
-          >
-            <ArrowLeft className="w-5 h-5 mr-2" />
-            Retour au tableau de bord
-          </button>
-          
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="bg-blue-100 p-3 rounded-lg">
-                <Calendar className="w-8 h-8 text-blue-600" />
-              </div>
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">Mon Planning</h1>
-                <p className="text-gray-600 mt-1">
-                  Cours collectifs et sessions privées
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-3">
-              <select
-                value={viewMode}
-                onChange={(e) => setViewMode(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="week">Vue semaine</option>
-                <option value="list">Vue liste</option>
-              </select>
-            </div>
+    <CoachLayout>
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold" style={{ color: '#00357a' }}>
+              Mon Planning
+            </h1>
+            <p className="text-gray-600 mt-1">
+              Cours collectifs et sessions privées
+            </p>
           </div>
+          <select
+            value={viewMode}
+            onChange={(e) => setViewMode(e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="week">Vue semaine</option>
+            <option value="list">Vue liste</option>
+          </select>
         </div>
-      </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Navigation semaine */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
           <div className="flex items-center justify-between">
             <button
               onClick={() => navigateWeek(-1)}
@@ -208,7 +180,7 @@ const CoachSchedule = () => {
             </button>
             
             <div className="text-center">
-              <h2 className="text-xl font-semibold text-gray-900">
+              <h2 className="text-xl font-semibold" style={{ color: '#00357a' }}>
                 Semaine du {weekDates[0].toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}
               </h2>
               <p className="text-sm text-gray-600 mt-1">
@@ -239,11 +211,11 @@ const CoachSchedule = () => {
                     today ? 'border-blue-500' : 'border-gray-200'
                   } overflow-hidden`}
                 >
-                  <div className={`p-4 ${today ? 'bg-blue-600 text-white' : 'bg-gray-50'}`}>
+                  <div className={`p-4`} style={today ? { backgroundColor: '#00357a', color: 'white' } : { backgroundColor: '#f9fafb' }}>
                     <p className={`text-sm font-medium ${today ? 'text-white' : 'text-gray-600'}`}>
                       {daysOfWeek[index]}
                     </p>
-                    <p className={`text-2xl font-bold ${today ? 'text-white' : 'text-gray-900'}`}>
+                    <p className={`text-2xl font-bold ${today ? 'text-white' : ''}`} style={!today ? { color: '#00357a' } : {}}>
                       {date.getDate()}
                     </p>
                   </div>
@@ -301,7 +273,7 @@ const CoachSchedule = () => {
             {sessions.length === 0 ? (
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
                 <Calendar className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                <h3 className="text-lg font-semibold mb-2" style={{ color: '#00357a' }}>
                   Aucune session à venir
                 </h3>
                 <p className="text-gray-600">
@@ -317,12 +289,8 @@ const CoachSchedule = () => {
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center space-x-3 mb-3">
-                        <div className={`px-3 py-2 rounded-lg ${
-                          session.type === 'program' ? 'bg-purple-100' : 'bg-blue-100'
-                        }`}>
-                          <span className={`font-semibold text-sm ${
-                            session.type === 'program' ? 'text-purple-700' : 'text-blue-700'
-                          }`}>
+                        <div className={`px-3 py-2 rounded-lg`} style={session.type === 'program' ? { backgroundColor: '#00357a' + '10' } : { backgroundColor: '#e0f2fe' }}>
+                          <span className={`font-semibold text-sm`} style={session.type === 'program' ? { color: '#00357a' } : { color: '#0369a1' }}>
                             {session.start_time} - {session.end_time}
                           </span>
                         </div>
@@ -338,7 +306,7 @@ const CoachSchedule = () => {
                         </span>
                       </div>
 
-                      <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                      <h3 className="text-xl font-semibold mb-2" style={{ color: '#00357a' }}>
                         {session.title}
                       </h3>
 
@@ -360,7 +328,8 @@ const CoachSchedule = () => {
 
                     <button
                       onClick={() => handleSessionClick(session)}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                      className="px-4 py-2 text-white rounded-lg hover:opacity-90 transition-colors text-sm font-medium"
+                      style={{ backgroundColor: '#9b0e16' }}
                     >
                       Voir détails
                     </button>
@@ -372,19 +341,19 @@ const CoachSchedule = () => {
         )}
 
         {/* Stats résumé */}
-        <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Sessions cette semaine</p>
-                <p className="text-3xl font-bold text-gray-900 mt-2">
+                <p className="text-3xl font-bold mt-2" style={{ color: '#00357a' }}>
                   {sessions.filter(s => {
                     const sessionDate = new Date(s.date);
                     return weekDates.some(d => d.toDateString() === sessionDate.toDateString());
                   }).length}
                 </p>
               </div>
-              <Calendar className="w-12 h-12 text-blue-600" />
+              <Calendar className="w-12 h-12" style={{ color: '#9b0e16' }} />
             </div>
           </div>
 
@@ -392,7 +361,7 @@ const CoachSchedule = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Sessions privées</p>
-                <p className="text-3xl font-bold text-gray-900 mt-2">
+                <p className="text-3xl font-bold mt-2" style={{ color: '#00357a' }}>
                   {sessions.filter(s => s.type === 'program').length}
                 </p>
               </div>
@@ -404,7 +373,7 @@ const CoachSchedule = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Cours collectifs</p>
-                <p className="text-3xl font-bold text-gray-900 mt-2">
+                <p className="text-3xl font-bold mt-2" style={{ color: '#00357a' }}>
                   {sessions.filter(s => s.type !== 'program').length}
                 </p>
               </div>
@@ -413,7 +382,7 @@ const CoachSchedule = () => {
           </div>
         </div>
       </div>
-    </div>
+    </CoachLayout>
   );
 };
 

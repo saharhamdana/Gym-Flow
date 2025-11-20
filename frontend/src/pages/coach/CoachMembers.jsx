@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import coachAPI from '@/api/coachAPI';  // ← Import corrigé
+import CoachLayout from '../../components/coaching/CoachLayout';
+import { coachAPI } from '../../api/coachAPI';
 import { 
-  Users, Search, Filter, TrendingUp, Calendar, 
-  Mail, Phone, Activity, ArrowLeft, Eye, AlertCircle
+  Users, Search, TrendingUp, Calendar, 
+  Activity, Eye, AlertCircle
 } from 'lucide-react';
 
 const CoachMembers = () => {
@@ -23,10 +24,7 @@ const CoachMembers = () => {
       setLoading(true);
       setError(null);
       
-      console.log('Chargement des membres...');
       const data = await coachAPI.getMyMembers();
-      console.log('Données reçues:', data);
-      
       setMembers(data);
     } catch (error) {
       console.error('Erreur chargement membres:', error);
@@ -42,7 +40,6 @@ const CoachMembers = () => {
     
     if (filterStatus === 'all') return matchesSearch;
     
-    // Filtrer par statut de progression
     if (filterStatus === 'on-track' && member.progress >= 50) return matchesSearch;
     if (filterStatus === 'needs-attention' && member.progress < 50) return matchesSearch;
     
@@ -50,10 +47,10 @@ const CoachMembers = () => {
   });
 
   const getProgressColor = (progress) => {
-    if (progress >= 75) return 'bg-green-600';
-    if (progress >= 50) return 'bg-blue-600';
-    if (progress >= 25) return 'bg-yellow-600';
-    return 'bg-red-600';
+    if (progress >= 75) return '#00a000';
+    if (progress >= 50) return '#00357a';
+    if (progress >= 25) return '#f59e0b';
+    return '#ef4444';
   };
 
   const getProgressLabel = (progress) => {
@@ -65,72 +62,60 @@ const CoachMembers = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Chargement des membres...</p>
+      <CoachLayout>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Chargement des membres...</p>
+          </div>
         </div>
-      </div>
+      </CoachLayout>
     );
   }
 
   if (error) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
-        <div className="bg-white rounded-lg shadow-sm border border-red-200 p-8 max-w-md">
+      <CoachLayout>
+        <div className="bg-white rounded-lg shadow-sm border border-red-200 p-8 max-w-md mx-auto">
           <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-gray-900 mb-2 text-center">
+          <h3 className="text-lg font-semibold text-center mb-2" style={{ color: '#00357a' }}>
             Erreur de chargement
           </h3>
           <p className="text-gray-600 text-center mb-4">{error}</p>
           <button
             onClick={loadMembers}
-            className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            className="w-full text-white px-4 py-2 rounded-lg hover:opacity-90 transition-colors"
+            style={{ backgroundColor: '#9b0e16' }}
           >
             Réessayer
           </button>
         </div>
-      </div>
+      </CoachLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <button
-            onClick={() => navigate('/coach')}
-            className="flex items-center text-gray-600 hover:text-gray-900 mb-4"
-          >
-            <ArrowLeft className="w-5 h-5 mr-2" />
-            Retour au tableau de bord
-          </button>
-          
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="bg-blue-100 p-3 rounded-lg">
-                <Users className="w-8 h-8 text-blue-600" />
-              </div>
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">Mes Membres</h1>
-                <p className="text-gray-600 mt-1">
-                  Gérez et suivez la progression de vos membres
-                </p>
-              </div>
-            </div>
-            <div className="bg-blue-50 px-4 py-2 rounded-lg">
-              <p className="text-sm text-blue-600 font-medium">
-                {filteredMembers.length} membre(s)
-              </p>
-            </div>
+    <CoachLayout>
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold" style={{ color: '#00357a' }}>
+              Mes Membres
+            </h1>
+            <p className="text-gray-600 mt-1">
+              Gérez et suivez la progression de vos membres
+            </p>
+          </div>
+          <div className="px-4 py-2 rounded-lg" style={{ backgroundColor: '#00357a' + '10' }}>
+            <p className="text-sm font-medium" style={{ color: '#00357a' }}>
+              {filteredMembers.length} membre(s)
+            </p>
           </div>
         </div>
-      </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Filtres */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="md:col-span-2 relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -159,7 +144,7 @@ const CoachMembers = () => {
         {filteredMembers.length === 0 ? (
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
             <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+            <h3 className="text-lg font-semibold mb-2" style={{ color: '#00357a' }}>
               Aucun membre trouvé
             </h3>
             <p className="text-gray-600">
@@ -174,9 +159,9 @@ const CoachMembers = () => {
                 className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow"
               >
                 {/* En-tête carte */}
-                <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-6">
+                <div className="p-6" style={{ background: 'linear-gradient(135deg, #00357a 0%, #004a9e 100%)' }}>
                   <div className="flex items-center space-x-4">
-                    <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center text-blue-600 font-bold text-xl">
+                    <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center font-bold text-xl" style={{ color: '#00357a' }}>
                       {member.member_name?.split(' ').map(n => n[0]).join('').slice(0, 2)}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -198,7 +183,7 @@ const CoachMembers = () => {
                       <Activity className="w-4 h-4 mr-2" />
                       <span className="font-medium">Programme actuel</span>
                     </div>
-                    <p className="text-gray-900 font-medium line-clamp-2">
+                    <p className="font-medium line-clamp-2" style={{ color: '#00357a' }}>
                       {member.title || 'Aucun programme'}
                     </p>
                   </div>
@@ -221,13 +206,16 @@ const CoachMembers = () => {
                         }`}>
                           {getProgressLabel(member.progress)}
                         </span>
-                        <span className="text-sm font-bold text-gray-900">{member.progress}%</span>
+                        <span className="text-sm font-bold" style={{ color: '#00357a' }}>{member.progress}%</span>
                       </div>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2">
                       <div
-                        className={`h-2 rounded-full transition-all duration-300 ${getProgressColor(member.progress)}`}
-                        style={{ width: `${member.progress}%` }}
+                        className="h-2 rounded-full transition-all duration-300"
+                        style={{ 
+                          width: `${member.progress}%`,
+                          backgroundColor: getProgressColor(member.progress)
+                        }}
                       />
                     </div>
                   </div>
@@ -236,7 +224,8 @@ const CoachMembers = () => {
                   <div className="flex gap-2 pt-4 border-t border-gray-100">
                     <button
                       onClick={() => navigate(`/coaching/programs/${member.id}`)}
-                      className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center text-sm font-medium"
+                      className="flex-1 text-white px-4 py-2 rounded-lg hover:opacity-90 transition-colors flex items-center justify-center text-sm font-medium"
+                      style={{ backgroundColor: '#9b0e16' }}
                     >
                       <Eye className="w-4 h-4 mr-2" />
                       Voir programme
@@ -250,16 +239,16 @@ const CoachMembers = () => {
 
         {/* Stats résumé */}
         {filteredMembers.length > 0 && (
-          <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600">Total membres</p>
-                  <p className="text-3xl font-bold text-gray-900 mt-2">
+                  <p className="text-3xl font-bold mt-2" style={{ color: '#00357a' }}>
                     {filteredMembers.length}
                   </p>
                 </div>
-                <Users className="w-12 h-12 text-blue-600" />
+                <Users className="w-12 h-12" style={{ color: '#9b0e16' }} />
               </div>
             </div>
 
@@ -267,7 +256,7 @@ const CoachMembers = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600">Progression moyenne</p>
-                  <p className="text-3xl font-bold text-gray-900 mt-2">
+                  <p className="text-3xl font-bold mt-2" style={{ color: '#00357a' }}>
                     {Math.round(filteredMembers.reduce((sum, m) => sum + m.progress, 0) / filteredMembers.length)}%
                   </p>
                 </div>
@@ -279,7 +268,7 @@ const CoachMembers = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600">Progrès satisfaisant</p>
-                  <p className="text-3xl font-bold text-gray-900 mt-2">
+                  <p className="text-3xl font-bold mt-2" style={{ color: '#00357a' }}>
                     {filteredMembers.filter(m => m.progress >= 50).length}
                   </p>
                 </div>
@@ -289,7 +278,7 @@ const CoachMembers = () => {
           </div>
         )}
       </div>
-    </div>
+    </CoachLayout>
   );
 };
 

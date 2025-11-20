@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import CoachLayout from '../../components/coaching/CoachLayout';
 import coachingService from '../../services/coachingService';
-import { ArrowLeft, Save, Loader } from 'lucide-react';
+import { Save, Loader } from 'lucide-react';
 
 const EditProgramForm = () => {
-  // ✅ TOUS LES HOOKS DOIVENT ÊTRE ICI, À L'INTÉRIEUR DU COMPOSANT
   const { id } = useParams();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
@@ -24,12 +24,10 @@ const EditProgramForm = () => {
     member: null
   });
 
-  // ✅ useEffect À L'INTÉRIEUR DU COMPOSANT
   useEffect(() => {
     loadProgram();
   }, [id]);
 
-  // ✅ TOUTES LES FONCTIONS À L'INTÉRIEUR DU COMPOSANT
   const loadProgram = async () => {
     try {
       setLoading(true);
@@ -82,14 +80,11 @@ const EditProgramForm = () => {
         notes: formData.notes
       };
 
-      console.log('Données envoyées:', updateData);
-      
       await coachingService.updateProgram(id, updateData);
       alert('Programme modifié avec succès !');
       navigate('/coaching/programs');
     } catch (err) {
       console.error('Erreur modification:', err);
-      console.error('Détails:', err.response?.data);
       setError(
         JSON.stringify(err.response?.data) ||
         err.response?.data?.message || 
@@ -100,38 +95,35 @@ const EditProgramForm = () => {
     }
   };
 
-  // ✅ CONDITION DE CHARGEMENT
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
-        <Loader className="animate-spin h-12 w-12 text-blue-600" />
-      </div>
+      <CoachLayout>
+        <div className="flex justify-center items-center min-h-screen">
+          <Loader className="animate-spin h-12 w-12 text-blue-600" />
+        </div>
+      </CoachLayout>
     );
   }
 
-  // ✅ RETURN DU JSX
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <button
-          onClick={() => navigate('/coaching/programs')}
-          className="mb-6 flex items-center text-gray-600 hover:text-gray-900"
-        >
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Retour aux programmes
-        </button>
-
-        <h1 className="text-3xl font-bold text-gray-900 mb-8">
-          Modifier le programme
-        </h1>
+    <CoachLayout>
+      <div className="max-w-4xl mx-auto space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold" style={{ color: '#00357a' }}>
+            Modifier le programme
+          </h1>
+          <p className="text-gray-600 mt-2">
+            Mettez à jour les informations du programme
+          </p>
+        </div>
 
         {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+          <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
             {error}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-md p-8 space-y-6">
+        <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 space-y-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Titre du programme *
@@ -290,7 +282,8 @@ const EditProgramForm = () => {
             <button
               type="submit"
               disabled={saving}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
+              className="px-6 py-2 text-white rounded-lg hover:opacity-90 disabled:opacity-50 flex items-center gap-2"
+              style={{ backgroundColor: '#9b0e16' }}
             >
               {saving ? (
                 <>
@@ -307,7 +300,7 @@ const EditProgramForm = () => {
           </div>
         </form>
       </div>
-    </div>
+    </CoachLayout>
   );
 };
 

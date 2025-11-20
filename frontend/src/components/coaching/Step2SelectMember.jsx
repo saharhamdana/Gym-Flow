@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Search, User, Mail, Phone, CheckCircle } from 'lucide-react';
 import coachingService from '../../services/coachingService';
-import api from '../../api/axiosInstance';  
-
 
 const Step2SelectMember = ({ formData, updateFormData }) => {
   const [members, setMembers] = useState([]);
@@ -16,13 +14,19 @@ const Step2SelectMember = ({ formData, updateFormData }) => {
 
   const fetchMembers = async () => {
     try {
+      // ← CHANGÉ : récupérer response.data
       const response = await coachingService.getMembers();
+      console.log('🔍 Réponse complète:', response);
+      console.log('📦 Données:', response.data);
 
-      // Gérer la pagination Django comme dans ProgramList
+      // Gérer la pagination Django
       const membersData = response.data?.results || response.data || [];
+      console.log('✅ Membres extraits:', membersData);
+      
       setMembers(membersData);
     } catch (err) {
-      console.error('Erreur lors du chargement des membres:', err);
+      console.error('❌ Erreur lors du chargement des membres:', err);
+      console.error('❌ Détails:', err.response?.data);
       setError('Impossible de charger la liste des membres');
     } finally {
       setLoading(false);
@@ -54,6 +58,12 @@ const Step2SelectMember = ({ formData, updateFormData }) => {
     return (
       <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
         {error}
+        <button 
+          onClick={fetchMembers}
+          className="mt-2 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+        >
+          Réessayer
+        </button>
       </div>
     );
   }
@@ -63,6 +73,16 @@ const Step2SelectMember = ({ formData, updateFormData }) => {
       <h2 className="text-2xl font-bold text-gray-900 mb-6">
         Sélectionner un membre
       </h2>
+
+      {/* Debug info - À RETIRER EN PRODUCTION */}
+      {members.length === 0 && !loading && (
+        <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <p className="text-yellow-800">⚠️ Aucun membre trouvé dans la base de données</p>
+          <p className="text-sm text-yellow-700 mt-1">
+            Vérifiez que des membres avec status ACTIVE existent
+          </p>
+        </div>
+      )}
 
       {/* Barre de recherche */}
       <div className="relative">
@@ -104,6 +124,9 @@ const Step2SelectMember = ({ formData, updateFormData }) => {
           <div className="text-center py-12 text-gray-500">
             <User className="w-12 h-12 mx-auto mb-4 text-gray-400" />
             <p>Aucun membre trouvé</p>
+            {searchTerm && (
+              <p className="text-sm mt-2">Essayez un autre terme de recherche</p>
+            )}
           </div>
         ) : (
           filteredMembers.map(member => {

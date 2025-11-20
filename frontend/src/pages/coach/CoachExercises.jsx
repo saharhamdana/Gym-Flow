@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import CoachLayout from '../../components/coaching/CoachLayout';
 import coachingService from '../../services/coachingService';
 import { 
-  Dumbbell, Search, Filter, Plus, Edit2, Trash2, 
-  Eye, ArrowLeft, Grid, List, Tag 
+  Dumbbell, Search, Grid, List, Tag, Eye
 } from 'lucide-react';
 
 const CoachExercises = () => {
@@ -14,7 +14,7 @@ const CoachExercises = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('');
   const [filterDifficulty, setFilterDifficulty] = useState('');
-  const [viewMode, setViewMode] = useState('grid'); // 'grid' ou 'list'
+  const [viewMode, setViewMode] = useState('grid');
 
   useEffect(() => {
     loadData();
@@ -67,60 +67,45 @@ const CoachExercises = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
+      <CoachLayout>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
+      </CoachLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <button
-            onClick={() => navigate('/coach')}
-            className="flex items-center text-gray-600 hover:text-gray-900 mb-4"
-          >
-            <ArrowLeft className="w-5 h-5 mr-2" />
-            Retour au tableau de bord
-          </button>
-          
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="bg-blue-100 p-3 rounded-lg">
-                <Dumbbell className="w-8 h-8 text-blue-600" />
-              </div>
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">Bibliothèque d'Exercices</h1>
-                <p className="text-gray-600 mt-1">
-                  Gérez votre collection d'exercices
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-3">
-              <div className="flex bg-gray-100 rounded-lg p-1">
-                <button
-                  onClick={() => setViewMode('grid')}
-                  className={`p-2 rounded ${viewMode === 'grid' ? 'bg-white shadow' : ''}`}
-                >
-                  <Grid className="w-5 h-5" />
-                </button>
-                <button
-                  onClick={() => setViewMode('list')}
-                  className={`p-2 rounded ${viewMode === 'list' ? 'bg-white shadow' : ''}`}
-                >
-                  <List className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
+    <CoachLayout>
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold" style={{ color: '#00357a' }}>
+              Bibliothèque d'Exercices
+            </h1>
+            <p className="text-gray-600 mt-1">
+              Gérez votre collection d'exercices
+            </p>
+          </div>
+          <div className="flex bg-gray-100 rounded-lg p-1">
+            <button
+              onClick={() => setViewMode('grid')}
+              className={`p-2 rounded ${viewMode === 'grid' ? 'bg-white shadow' : ''}`}
+            >
+              <Grid className="w-5 h-5" />
+            </button>
+            <button
+              onClick={() => setViewMode('list')}
+              className={`p-2 rounded ${viewMode === 'list' ? 'bg-white shadow' : ''}`}
+            >
+              <List className="w-5 h-5" />
+            </button>
           </div>
         </div>
-      </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Filtres */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="md:col-span-2 relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -156,7 +141,7 @@ const CoachExercises = () => {
             </select>
           </div>
 
-          <div className="mt-4 flex items-center justify-between">
+          <div className="mt-4">
             <p className="text-sm text-gray-600">
               {filteredExercises.length} exercice(s) trouvé(s)
             </p>
@@ -167,10 +152,10 @@ const CoachExercises = () => {
         {filteredExercises.length === 0 ? (
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
             <Dumbbell className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+            <h3 className="text-lg font-semibold mb-2" style={{ color: '#00357a' }}>
               Aucun exercice trouvé
             </h3>
-            <p className="text-gray-600 mb-4">
+            <p className="text-gray-600">
               {searchTerm || filterCategory || filterDifficulty
                 ? 'Essayez de modifier vos critères de recherche'
                 : 'Commencez par créer votre premier exercice'}
@@ -183,7 +168,6 @@ const CoachExercises = () => {
                 key={exercise.id}
                 className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow"
               >
-                {/* Image */}
                 {exercise.image ? (
                   <img
                     src={exercise.image}
@@ -196,7 +180,6 @@ const CoachExercises = () => {
                   </div>
                 )}
 
-                {/* Contenu */}
                 <div className="p-6">
                   <div className="flex items-center justify-between mb-3">
                     {getDifficultyBadge(exercise.difficulty)}
@@ -208,7 +191,7 @@ const CoachExercises = () => {
                     )}
                   </div>
 
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  <h3 className="text-lg font-semibold mb-2" style={{ color: '#00357a' }}>
                     {exercise.name}
                   </h3>
 
@@ -222,10 +205,10 @@ const CoachExercises = () => {
                     </p>
                   )}
 
-                  {/* Actions */}
                   <div className="flex gap-2 pt-4 border-t border-gray-100">
                     <button
-                      className="flex-1 bg-blue-50 text-blue-600 px-3 py-2 rounded-lg hover:bg-blue-100 transition-colors flex items-center justify-center text-sm font-medium"
+                      className="flex-1 text-white px-3 py-2 rounded-lg hover:opacity-90 transition-colors flex items-center justify-center text-sm font-medium"
+                      style={{ backgroundColor: '#00357a' }}
                     >
                       <Eye className="w-4 h-4 mr-2" />
                       Détails
@@ -244,7 +227,6 @@ const CoachExercises = () => {
                 className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow"
               >
                 <div className="flex items-start space-x-6">
-                  {/* Image miniature */}
                   {exercise.image ? (
                     <img
                       src={exercise.image}
@@ -257,10 +239,9 @@ const CoachExercises = () => {
                     </div>
                   )}
 
-                  {/* Contenu */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center space-x-3 mb-2">
-                      <h3 className="text-xl font-semibold text-gray-900">
+                      <h3 className="text-xl font-semibold" style={{ color: '#00357a' }}>
                         {exercise.name}
                       </h3>
                       {getDifficultyBadge(exercise.difficulty)}
@@ -283,9 +264,8 @@ const CoachExercises = () => {
                     )}
                   </div>
 
-                  {/* Actions */}
                   <div className="flex flex-col gap-2">
-                    <button className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+                    <button className="p-2 hover:bg-blue-50 rounded-lg transition-colors" style={{ color: '#00357a' }}>
                       <Eye className="w-5 h-5" />
                     </button>
                   </div>
@@ -297,8 +277,8 @@ const CoachExercises = () => {
 
         {/* Stats catégories */}
         {filteredExercises.length > 0 && (
-          <div className="mt-8 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <h3 className="text-lg font-semibold mb-4" style={{ color: '#00357a' }}>
               Répartition par catégorie
             </h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -306,7 +286,7 @@ const CoachExercises = () => {
                 const count = filteredExercises.filter(e => e.category === category.id).length;
                 return (
                   <div key={category.id} className="text-center p-4 bg-gray-50 rounded-lg">
-                    <p className="text-2xl font-bold text-gray-900">{count}</p>
+                    <p className="text-2xl font-bold" style={{ color: '#00357a' }}>{count}</p>
                     <p className="text-sm text-gray-600 mt-1">{category.name}</p>
                   </div>
                 );
@@ -315,7 +295,7 @@ const CoachExercises = () => {
           </div>
         )}
       </div>
-    </div>
+    </CoachLayout>
   );
 };
 
