@@ -39,12 +39,8 @@ def create_test_users():
     print("\n" + "=" * 80)
     print("1️⃣  CRÉATION DES ADMINISTRATEURS")
     print("=" * 80)
-<<<<<<< HEAD
-    
-=======
-    User.objects.filter(username='admin').delete()
 
->>>>>>> 940638d ( modification dans le design du coach panel)
+
     admins_data = [
         {
             'username': 'admin',
@@ -300,4 +296,5 @@ def create_test_users():
 
 if __name__ == '__main__':
     create_test_users()
+
 
