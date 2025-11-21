@@ -1,12 +1,14 @@
-# bookings/views.py
+# Fichier: backend/bookings/views.py
 
 from rest_framework import viewsets, status, filters
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.exceptions import PermissionDenied
 from django_filters.rest_framework import DjangoFilterBackend
 from django.utils import timezone
 from datetime import datetime, timedelta
+import logging
 
 from .models import Room, CourseType, Course, Booking
 from .serializers import (
@@ -16,8 +18,67 @@ from .serializers import (
 )
 from authentication.mixins import CompleteTenantMixin
 
+logger = logging.getLogger('bookings.views')
 
-class RoomViewSet(CompleteTenantMixin, viewsets.ModelViewSet):
+
+class BaseTenantViewSet(CompleteTenantMixin, viewsets.ModelViewSet):
+    """
+    ✅ Classe de base pour tous les ViewSets avec injection automatique du tenant_id
+    """
+    
+    def create(self, request, *args, **kwargs):
+        """✅ Override create pour injecter tenant_id AVANT validation"""
+        logger.debug(f"🔍 create() appelé - {self.__class__.__name__}")
+        logger.debug(f"📦 request.data = {request.data}")
+        
+        # ✅ Déterminer le tenant_id
+        tenant_id = self._get_tenant_id(request)
+        
+        if not tenant_id:
+            logger.error("❌ Aucun tenant_id trouvé!")
+            raise PermissionDenied("Impossible de créer cette ressource : aucun centre associé.")
+        
+        # ✅ Valider les données (sans tenant_id)
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        # ✅ Sauvegarder avec tenant_id
+        logger.debug(f"✅ Sauvegarde avec tenant_id={tenant_id}")
+        self.perform_create(serializer, tenant_id=tenant_id)
+        
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+    
+    def perform_create(self, serializer, tenant_id=None):
+        """✅ Sauvegarder avec le tenant_id"""
+        if tenant_id:
+            logger.debug(f"✅ perform_create: sauvegarde avec tenant_id={tenant_id}")
+            serializer.save(tenant_id=tenant_id)
+        else:
+            logger.error("❌ perform_create appelé sans tenant_id!")
+            serializer.save()
+    
+    def _get_tenant_id(self, request):
+        """✅ Méthode utilitaire pour récupérer le tenant_id"""
+        gym_center = getattr(request, 'gym_center', None)
+        
+        if gym_center:
+            logger.debug(f"✅ tenant_id depuis gym_center: {gym_center.tenant_id}")
+            return gym_center.tenant_id
+        
+        tenant_id = getattr(request, 'tenant_id', None)
+        if tenant_id:
+            logger.debug(f"✅ tenant_id depuis request: {tenant_id}")
+            return tenant_id
+        
+        if request.user.is_authenticated and hasattr(request.user, 'tenant_id'):
+            logger.debug(f"✅ tenant_id depuis user: {request.user.tenant_id}")
+            return request.user.tenant_id
+        
+        return None
+
+
+class RoomViewSet(BaseTenantViewSet):
     queryset = Room.objects.all()
     serializer_class = RoomSerializer
     permission_classes = [IsAuthenticated]
@@ -27,7 +88,7 @@ class RoomViewSet(CompleteTenantMixin, viewsets.ModelViewSet):
     tenant_field = 'tenant_id'
 
 
-class CourseTypeViewSet(CompleteTenantMixin, viewsets.ModelViewSet):
+class CourseTypeViewSet(BaseTenantViewSet):
     queryset = CourseType.objects.all()
     serializer_class = CourseTypeSerializer
     permission_classes = [IsAuthenticated]
@@ -37,7 +98,7 @@ class CourseTypeViewSet(CompleteTenantMixin, viewsets.ModelViewSet):
     tenant_field = 'tenant_id'
 
 
-class CourseViewSet(CompleteTenantMixin, viewsets.ModelViewSet):
+class CourseViewSet(BaseTenantViewSet):
     queryset = Course.objects.all()
     permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
@@ -114,7 +175,7 @@ class CourseViewSet(CompleteTenantMixin, viewsets.ModelViewSet):
         })
 
 
-class BookingViewSet(CompleteTenantMixin, viewsets.ModelViewSet):
+class BookingViewSet(BaseTenantViewSet):
     queryset = Booking.objects.all()
     permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
@@ -129,6 +190,16 @@ class BookingViewSet(CompleteTenantMixin, viewsets.ModelViewSet):
         elif self.action == 'create':
             return BookingCreateSerializer
         return BookingDetailSerializer
+    
+    def perform_create(self, serializer, tenant_id=None):
+        """✅ Le tenant_id est déjà géré dans Booking.save()"""
+        # Le modèle Booking hérite automatiquement le tenant_id du membre
+        booking = serializer.save()
+        
+        # ⚠️ SÉCURITÉ : Vérifier que le tenant_id a bien été assigné
+        if not booking.tenant_id and tenant_id:
+            booking.tenant_id = tenant_id
+            booking.save(update_fields=['tenant_id'])
     
     @action(detail=True, methods=['post'])
     def cancel(self, request, pk=None):

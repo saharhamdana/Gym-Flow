@@ -1,4 +1,4 @@
-// Fichier: frontend/src/pages/admin/MemberCreate.jsx
+// Fichier: frontend/src/pages/admin/members/MemberCreate.jsx
 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -28,14 +28,14 @@ const MemberCreate = () => {
         first_name: '',
         last_name: '',
         email: '',
-        password: '',  // Nouveau champ pour le mot de passe
+        password: '',  // ✅ Password obligatoire
         phone: '',
         date_of_birth: '',
         gender: 'M',
         address: '',
         emergency_contact_name: '',
         emergency_contact_phone: '',
-        status: 'ACTIVE',
+        status: 'INACTIVE',  // ✅ INACTIVE par défaut (sera activé lors de l'abonnement)
         height: '',
         weight: '',
         medical_conditions: '',
@@ -66,31 +66,14 @@ const MemberCreate = () => {
         setError(null);
 
         try {
-            // Créer un FormData pour supporter l'upload de fichier
-            // Créer d'abord l'utilisateur
-            const userData = {
-                email: formData.email,
-                password: formData.password,
-                username: formData.email.split('@')[0], // Générer un nom d'utilisateur à partir de l'email
-                first_name: formData.first_name,
-                last_name: formData.last_name,
-                role: 'MEMBER' // Définir le rôle comme MEMBER
-            };
-
-            // Créer l'utilisateur
-            const userResponse = await api.post('auth/register/', userData);
-            const userId = userResponse.data.user.id;
-
-            // Créer le membre avec l'ID de l'utilisateur
+            // ✅ Créer un FormData pour supporter l'upload de fichier
             const formDataToSend = new FormData();
             
-            // Ajouter l'ID de l'utilisateur
-            formDataToSend.append('user', userId);
-            
-            // Ajouter les champs obligatoires
+            // ✅ Ajouter les champs OBLIGATOIRES
             formDataToSend.append('first_name', formData.first_name);
             formDataToSend.append('last_name', formData.last_name);
             formDataToSend.append('email', formData.email);
+            formDataToSend.append('password', formData.password);  // ✅ Password obligatoire
             formDataToSend.append('phone', formData.phone);
             formDataToSend.append('date_of_birth', formData.date_of_birth);
             formDataToSend.append('gender', formData.gender);
@@ -98,42 +81,67 @@ const MemberCreate = () => {
             formDataToSend.append('emergency_contact_phone', formData.emergency_contact_phone);
             formDataToSend.append('status', formData.status);
 
-            // Ajouter les champs optionnels
-            if (formData.address) formDataToSend.append('address', formData.address);
-            if (formData.height) formDataToSend.append('height', parseFloat(formData.height));
-            if (formData.weight) formDataToSend.append('weight', parseFloat(formData.weight));
-            if (formData.medical_conditions) formDataToSend.append('medical_conditions', formData.medical_conditions);
+            // ✅ Ajouter les champs OPTIONNELS (seulement s'ils ont une valeur)
+            if (formData.address) {
+                formDataToSend.append('address', formData.address);
+            }
+            if (formData.height) {
+                formDataToSend.append('height', parseFloat(formData.height));
+            }
+            if (formData.weight) {
+                formDataToSend.append('weight', parseFloat(formData.weight));
+            }
+            if (formData.medical_conditions) {
+                formDataToSend.append('medical_conditions', formData.medical_conditions);
+            }
             
-            // Ajouter la photo si présente
+            // ✅ Ajouter la photo si présente
             if (photoFile) {
                 formDataToSend.append('photo', photoFile);
             }
 
+            console.log('📤 Envoi des données membre...');
+            
+            // ✅ Envoyer la requête
             const response = await api.post('members/', formDataToSend, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
                 }
             });
             
+            console.log('✅ Membre créé avec succès:', response.data);
+            
             setSuccess(true);
             setTimeout(() => {
                 navigate(`/admin/members/${response.data.id}`);
             }, 1500);
-        } catch (err) {
-            console.error("Erreur complète:", err);
             
+        } catch (err) {
+            console.error("❌ Erreur complète:", err);
+            console.error("❌ Réponse serveur:", err.response?.data);
+            
+            // ✅ Meilleure gestion des erreurs
             if (err.response?.data) {
                 const errors = err.response.data;
                 let errorMessage = "Erreur de validation:\n";
                 
-                Object.keys(errors).forEach(key => {
-                    const errorValue = Array.isArray(errors[key]) ? errors[key][0] : errors[key];
-                    errorMessage += `• ${key}: ${errorValue}\n`;
-                });
+                // Si c'est un objet d'erreurs
+                if (typeof errors === 'object' && !Array.isArray(errors)) {
+                    Object.keys(errors).forEach(key => {
+                        const errorValue = Array.isArray(errors[key]) 
+                            ? errors[key].join(', ') 
+                            : errors[key];
+                        errorMessage += `• ${key}: ${errorValue}\n`;
+                    });
+                } else if (typeof errors === 'string') {
+                    errorMessage = errors;
+                } else {
+                    errorMessage = "Erreur inconnue lors de la création du membre";
+                }
                 
                 setError(errorMessage);
             } else {
-                setError("Erreur lors de la création du membre");
+                setError("Erreur réseau. Vérifiez votre connexion et que le serveur est démarré.");
             }
         } finally {
             setLoading(false);
@@ -165,7 +173,7 @@ const MemberCreate = () => {
 
             {success && (
                 <Alert color="green" className="mb-4">
-                    Membre créé avec succès ! Redirection...
+                    ✅ Membre créé avec succès ! Redirection...
                 </Alert>
             )}
 
@@ -219,6 +227,7 @@ const MemberCreate = () => {
                                 name="password"
                                 value={formData.password}
                                 onChange={handleChange}
+                                placeholder="Minimum 8 caractères"
                                 required
                             />
 
@@ -227,7 +236,7 @@ const MemberCreate = () => {
                                 name="phone"
                                 value={formData.phone}
                                 onChange={handleChange}
-                                placeholder="+216XXXXXXXX ou 0XXXXXXXXX"
+                                placeholder="+216XXXXXXXX"
                                 required
                             />
 
@@ -279,7 +288,7 @@ const MemberCreate = () => {
                                 name="emergency_contact_phone"
                                 value={formData.emergency_contact_phone}
                                 onChange={handleChange}
-                                placeholder="+216XXXXXXXX ou 0XXXXXXXXX"
+                                placeholder="+216XXXXXXXX"
                                 required
                             />
 
@@ -327,11 +336,14 @@ const MemberCreate = () => {
                                     value={formData.status}
                                     onChange={(value) => handleSelectChange('status', value)}
                                 >
+                                    <Option value="INACTIVE">Inactif (par défaut)</Option>
                                     <Option value="ACTIVE">Actif</Option>
-                                    <Option value="INACTIVE">Inactif</Option>
                                     <Option value="SUSPENDED">Suspendu</Option>
                                     <Option value="EXPIRED">Expiré</Option>
                                 </Select>
+                                <Typography variant="small" className="text-gray-600 mt-2">
+                                    💡 Le statut sera automatiquement mis à "Actif" lors de la souscription d'un abonnement
+                                </Typography>
                             </div>
                         </div>
 

@@ -28,6 +28,55 @@ class SubscriptionPlanViewSet(CompleteTenantMixin, viewsets.ModelViewSet):
     search_fields = ['name', 'description']
     tenant_field = 'tenant_id'
     
+    def create(self, request, *args, **kwargs):
+        """✅ Override create pour injecter tenant_id AVANT validation"""
+        import logging
+        logger = logging.getLogger('subscriptions.views')
+        
+        logger.debug("🔍 create() appelé - SubscriptionPlanViewSet")
+        logger.debug(f"🔍 request.data = {request.data}")
+        
+        # ✅ Déterminer le tenant_id
+        gym_center = getattr(request, 'gym_center', None)
+        tenant_id = getattr(request, 'tenant_id', None)
+        
+        if gym_center:
+            final_tenant_id = gym_center.tenant_id
+            logger.debug(f"✅ tenant_id depuis gym_center: {final_tenant_id}")
+        elif tenant_id:
+            final_tenant_id = tenant_id
+            logger.debug(f"✅ tenant_id depuis request: {final_tenant_id}")
+        elif request.user.tenant_id:
+            final_tenant_id = request.user.tenant_id
+            logger.debug(f"✅ tenant_id depuis user: {final_tenant_id}")
+        else:
+            logger.error("❌ Aucun tenant_id trouvé!")
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied("Impossible de créer ce plan : aucun centre associé.")
+        
+        # ✅ Valider les données (sans tenant_id)
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        # ✅ Sauvegarder avec tenant_id
+        logger.debug(f"✅ Sauvegarde avec tenant_id={final_tenant_id}")
+        self.perform_create(serializer, tenant_id=final_tenant_id)
+        
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+    
+    def perform_create(self, serializer, tenant_id=None):
+        """✅ Sauvegarder avec le tenant_id"""
+        import logging
+        logger = logging.getLogger('subscriptions.views')
+        
+        if tenant_id:
+            logger.debug(f"✅ perform_create: sauvegarde avec tenant_id={tenant_id}")
+            serializer.save(tenant_id=tenant_id)
+        else:
+            logger.error("❌ perform_create appelé sans tenant_id!")
+            serializer.save()
+    
     @action(detail=False, methods=['get'])
     def active(self, request):
         """Plans actifs du centre"""
@@ -54,6 +103,19 @@ class SubscriptionViewSet(CompleteTenantMixin, viewsets.ModelViewSet):
         elif self.action == 'create':
             return SubscriptionCreateSerializer
         return SubscriptionDetailSerializer
+    
+    def perform_create(self, serializer):
+        """✅ Le tenant_id est déjà géré dans Subscription.save()"""
+        # Le modèle Subscription hérite automatiquement le tenant_id du membre
+        subscription = serializer.save()
+        
+        # ⚠️ SÉCURITÉ : Vérifier que le tenant_id a bien été assigné
+        if not subscription.tenant_id:
+            from rest_framework.exceptions import ValidationError
+            raise ValidationError(
+                "Erreur: Le tenant_id n'a pas été assigné automatiquement. "
+                "Veuillez vérifier que le membre a bien un tenant_id."
+            )
     
     @action(detail=True, methods=['post'])
     def activate(self, request, pk=None):

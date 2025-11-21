@@ -8,6 +8,8 @@ class SubscriptionPlanSerializer(serializers.ModelSerializer):
     class Meta:
         model = SubscriptionPlan
         fields = '__all__'
+        # ✅ CORRECTION : tenant_id en lecture seule
+        read_only_fields = ['tenant_id']
 
 
 class SubscriptionListSerializer(serializers.ModelSerializer):

@@ -77,6 +77,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'authentication.middleware.SubdomainMiddleware',
     'authentication.middleware.TenantMiddleware',
+    'authentication.middleware.AdminTenantMiddleware',
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -229,13 +230,20 @@ SIMPLE_JWT = {
     'BLACKLIST_AFTER_ROTATION': True,
 }
 
-# 📊 Configuration Logging pour déboguer les emails
+# 📊 Configuration Logging pour DEBUG
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {message}',
+            'style': '{',
+        },
+    },
     'handlers': {
         'console': {
             'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
         },
     },
     'root': {
@@ -244,6 +252,23 @@ LOGGING = {
     },
     'loggers': {
         'django.core.mail': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+        # ✅ Logger pour les middlewares
+        'authentication.middleware': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+        # ✅ Logger pour les ViewSets
+        'bookings.views': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+        'subscriptions.views': {
             'handlers': ['console'],
             'level': 'DEBUG',
             'propagate': False,

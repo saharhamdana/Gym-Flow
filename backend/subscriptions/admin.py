@@ -9,6 +9,7 @@ class SubscriptionPlanAdmin(admin.ModelAdmin):
     list_display = ['name', 'duration_days', 'price', 'is_active', 'created_at']
     list_filter = ['is_active']
     search_fields = ['name', 'description']
+    tenant_field_name = 'tenant_id'
 
 @admin.register(Subscription)
 class SubscriptionAdmin(admin.ModelAdmin):
@@ -16,6 +17,7 @@ class SubscriptionAdmin(admin.ModelAdmin):
     list_filter = ['status', 'start_date', 'plan']
     search_fields = ['member__first_name', 'member__last_name', 'member__member_id']
     date_hierarchy = 'start_date'
+    tenant_field_name = 'tenant_id'
     
     actions = ['activate_subscriptions', 'cancel_subscriptions']
     

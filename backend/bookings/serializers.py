@@ -1,4 +1,4 @@
-# bookings/serializers.py
+# Fichier: backend/bookings/serializers.py
 
 from rest_framework import serializers
 from .models import Room, CourseType, Course, Booking
@@ -10,6 +10,8 @@ class RoomSerializer(serializers.ModelSerializer):
     class Meta:
         model = Room
         fields = '__all__'
+        # ✅ CORRECTION : tenant_id en lecture seule
+        read_only_fields = ['tenant_id']
     
     def get_courses_count(self, obj):
         return obj.courses.filter(status='SCHEDULED').count()
@@ -19,6 +21,8 @@ class CourseTypeSerializer(serializers.ModelSerializer):
     class Meta:
         model = CourseType
         fields = '__all__'
+        # ✅ CORRECTION : tenant_id en lecture seule
+        read_only_fields = ['tenant_id']
 
 
 class CourseListSerializer(serializers.ModelSerializer):
@@ -38,6 +42,7 @@ class CourseListSerializer(serializers.ModelSerializer):
             'date', 'start_time', 'end_time', 'max_participants',
             'available_spots', 'is_full', 'bookings_count', 'status'
         ]
+        read_only_fields = ['tenant_id']
     
     def get_bookings_count(self, obj):
         return obj.bookings.filter(status='CONFIRMED').count()
@@ -55,12 +60,15 @@ class CourseDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = Course
         fields = '__all__'
+        read_only_fields = ['tenant_id']
 
 
 class CourseCreateUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Course
         fields = '__all__'
+        # ✅ CORRECTION : tenant_id en lecture seule
+        read_only_fields = ['tenant_id']
     
     def validate(self, data):
         # Vérifier que end_time > start_time
@@ -90,6 +98,7 @@ class BookingListSerializer(serializers.ModelSerializer):
             'course_date', 'course_start_time', 'status', 'checked_in',
             'booking_date'
         ]
+        read_only_fields = ['tenant_id']
 
 
 class BookingDetailSerializer(serializers.ModelSerializer):
@@ -100,12 +109,15 @@ class BookingDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = Booking
         fields = '__all__'
+        read_only_fields = ['tenant_id']
 
 
 class BookingCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Booking
         fields = ['course', 'member', 'notes']
+        # ✅ tenant_id sera hérité du membre automatiquement
+        read_only_fields = ['tenant_id']
     
     def validate(self, data):
         course = data['course']

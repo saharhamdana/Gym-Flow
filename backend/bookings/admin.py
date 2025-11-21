@@ -8,12 +8,14 @@ class RoomAdmin(admin.ModelAdmin):
     list_display = ['name', 'capacity', 'is_active', 'created_at']
     list_filter = ['is_active']
     search_fields = ['name', 'description']
+    tenant_field_name = 'tenant_id'
 
 @admin.register(CourseType)
 class CourseTypeAdmin(admin.ModelAdmin):
     list_display = ['name', 'duration_minutes', 'color', 'is_active', 'created_at']
     list_filter = ['is_active']
     search_fields = ['name', 'description']
+    tenant_field_name = 'tenant_id'
 
 @admin.register(Course)
 class CourseAdmin(admin.ModelAdmin):
@@ -21,6 +23,7 @@ class CourseAdmin(admin.ModelAdmin):
     list_filter = ['status', 'course_type', 'date', 'coach']
     search_fields = ['title', 'description']
     date_hierarchy = 'date'
+    tenant_field_name = 'tenant_id'
 
     def available_spots(self, obj):
         return obj.available_spots
@@ -32,3 +35,4 @@ class BookingAdmin(admin.ModelAdmin):
     list_filter = ['status', 'checked_in', 'booking_date']
     search_fields = ['member__first_name', 'member__last_name', 'course__title']
     date_hierarchy = 'booking_date'
+    tenant_field_name = 'tenant_id'

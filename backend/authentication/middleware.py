@@ -68,6 +68,102 @@ class TenantMiddleware(MiddlewareMixin):
         return None
 
 
+class AdminTenantMiddleware(MiddlewareMixin):
+    """
+    ✅ Middleware pour détecter automatiquement le tenant_id
+    Priorité :
+    1. Header X-Tenant-Subdomain
+    2. Sous-domaine dans l'URL
+    3. Tenant de l'utilisateur connecté
+    4. Premier centre actif (fallback)
+    """
+    
+    def process_request(self, request):
+        import logging
+        logger = logging.getLogger('authentication.middleware')
+        
+        tenant_id = None
+        
+        # ✅ 1. Vérifier les headers (priorité la plus haute)
+        tenant_subdomain = request.headers.get('X-Tenant-Subdomain')
+        if tenant_subdomain:
+            logger.debug(f"🔍 Header X-Tenant-Subdomain détecté: {tenant_subdomain}")
+            try:
+                gym_center = GymCenter.objects.get(
+                    subdomain=tenant_subdomain,
+                    is_active=True
+                )
+                tenant_id = gym_center.tenant_id
+                request.gym_center = gym_center
+                request.subdomain = tenant_subdomain
+                logger.debug(f"✅ Gym center trouvé via header: {gym_center.name} (tenant_id={tenant_id})")
+            except GymCenter.DoesNotExist:
+                logger.warning(f"⚠️ Aucun centre trouvé pour subdomain: {tenant_subdomain}")
+        
+        # ✅ 2. Vérifier via le sous-domaine dans l'URL
+        if not tenant_id:
+            host = request.get_host().split(':')[0]
+            parts = host.split('.')
+            
+            if len(parts) >= 3 and parts[0] not in ['www', 'api', 'admin']:
+                subdomain = parts[0]
+                logger.debug(f"🔍 Sous-domaine détecté dans URL: {subdomain}")
+                try:
+                    gym_center = GymCenter.objects.get(
+                        subdomain=subdomain,
+                        is_active=True
+                    )
+                    tenant_id = gym_center.tenant_id
+                    if not hasattr(request, 'gym_center'):
+                        request.gym_center = gym_center
+                        request.subdomain = subdomain
+                    logger.debug(f"✅ Gym center trouvé via URL: {gym_center.name} (tenant_id={tenant_id})")
+                except GymCenter.DoesNotExist:
+                    logger.warning(f"⚠️ Aucun centre trouvé pour subdomain URL: {subdomain}")
+        
+        # ✅ 3. Vérifier le tenant de l'utilisateur connecté
+        if not tenant_id and request.user.is_authenticated:
+            user_tenant_id = getattr(request.user, 'tenant_id', None)
+            if user_tenant_id:
+                tenant_id = user_tenant_id
+                logger.debug(f"✅ Tenant trouvé via utilisateur: {request.user.email} (tenant_id={tenant_id})")
+                # Essayer de charger le gym_center correspondant
+                try:
+                    gym_center = GymCenter.objects.get(
+                        tenant_id=tenant_id,
+                        is_active=True
+                    )
+                    if not hasattr(request, 'gym_center'):
+                        request.gym_center = gym_center
+                        request.subdomain = gym_center.subdomain
+                except GymCenter.DoesNotExist:
+                    logger.warning(f"⚠️ Aucun centre trouvé pour tenant_id: {tenant_id}")
+        
+        # ✅ 4. FALLBACK : Utiliser le premier centre actif (pour développement)
+        if not tenant_id:
+            logger.debug("🔄 Aucun tenant trouvé, utilisation du fallback...")
+            try:
+                first_center = GymCenter.objects.filter(is_active=True).first()
+                if first_center:
+                    tenant_id = first_center.tenant_id
+                    if not hasattr(request, 'gym_center'):
+                        request.gym_center = first_center
+                        request.subdomain = first_center.subdomain
+                    logger.debug(f"✅ Fallback: {first_center.name} (tenant_id={tenant_id})")
+            except Exception as e:
+                logger.error(f"❌ Erreur lors du fallback: {e}")
+        
+        # ✅ Stocker dans la requête
+        request.tenant_id = tenant_id
+        
+        if tenant_id:
+            logger.debug(f"✅ tenant_id final assigné: {tenant_id}")
+        else:
+            logger.warning("⚠️ Aucun tenant_id n'a pu être déterminé!")
+        
+        return None
+
+
 class TenantAccessControlMiddleware(MiddlewareMixin):
     """
     Middleware pour contrôler l'accès des utilisateurs selon leur tenant_id.
