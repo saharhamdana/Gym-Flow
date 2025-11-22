@@ -505,39 +505,70 @@ def coach_my_members(request):
     """
     user = request.user
     
-    # Debug: afficher les informations utilisateur
-    print(f"[DEBUG] User: {user.email}, Role: {user.role}")
+    # 🔍 DEBUG - Informations utilisateur
+    print("\n" + "="*80)
+    print("🔍 DEBUG coach_my_members")
+    print("="*80)
+    print(f"User: {user.email}")
+    print(f"Role: {user.role}")
+    print(f"Tenant ID: {user.tenant_id}")
+    print(f"Is authenticated: {user.is_authenticated}")
     
+    # Vérifier le rôle
     if user.role != 'COACH':
-        return Response({'error': 'Access denied. Coach role required.'}, status=403)
+        print(f"❌ Access denied - User role is {user.role}, not COACH")
+        return Response({
+            'error': 'Access denied. Coach role required.',
+            'user_role': user.role
+        }, status=403)
     
     try:
+        # 🔍 DEBUG - Compter tous les programmes du coach
+        all_programs = TrainingProgram.objects.filter(coach=user)
+        print(f"\n📊 Total programmes du coach: {all_programs.count()}")
+        
+        for prog in all_programs:
+            print(f"  - ID: {prog.id}, Titre: {prog.title}, Status: {prog.status}, Member: {prog.member.full_name if prog.member else 'None'}")
+        
         # Récupérer les programmes actifs du coach avec optimisation des requêtes
         programs = TrainingProgram.objects.filter(
             coach=user,
             status='active'
         ).select_related('member').order_by('-created_at')
         
-        print(f"[DEBUG] Found {programs.count()} active programs for coach {user.email}")
+        print(f"\n✅ Programmes ACTIFS trouvés: {programs.count()}")
         
         members_data = []
-        seen_members = set()  # Pour éviter les doublons si un membre a plusieurs programmes
+        seen_members = set()  # Pour éviter les doublons
         
         for program in programs:
             try:
                 member = program.member
                 
+                # 🔍 DEBUG - Détails du programme
+                print(f"\n📋 Programme ID: {program.id}")
+                print(f"   Titre: {program.title}")
+                print(f"   Status: {program.status}")
+                print(f"   Dates: {program.start_date} → {program.end_date}")
+                
                 # Vérifier que le membre existe
                 if not member:
-                    print(f"[WARNING] Program {program.id} has no member")
+                    print(f"   ⚠️ WARNING: Aucun membre assigné")
                     continue
+                
+                print(f"   Membre: {member.full_name}")
+                print(f"   Membre ID: {member.id}")
+                print(f"   Membre email: {member.email}")
+                print(f"   Membre tenant_id: {member.tenant_id}")
                 
                 # Éviter les doublons (un membre peut avoir plusieurs programmes actifs)
                 if member.id in seen_members:
+                    print(f"   ℹ️ Membre déjà traité (doublon évité)")
                     continue
                 seen_members.add(member.id)
                 
                 # Calculer la progression basée sur les dates
+                from datetime import date
                 total_days = (program.end_date - program.start_date).days
                 elapsed_days = (date.today() - program.start_date).days
                 
@@ -546,11 +577,13 @@ def coach_my_members(request):
                 else:
                     progress = 0
                 
-                # Utiliser la propriété full_name du modèle Member
+                print(f"   📊 Progression: {progress}% ({elapsed_days}/{total_days} jours)")
+                
+                # Construire l'objet membre
                 member_dict = {
-                    'id': program.id,
+                    'id': program.id,  # ID du programme
                     'member_id': member.id,
-                    'member_name': member.full_name,  # Propriété définie dans le modèle
+                    'member_name': member.full_name,
                     'member_email': member.email,
                     'member_phone': member.phone,
                     'title': program.title,
@@ -563,23 +596,26 @@ def coach_my_members(request):
                 }
                 
                 members_data.append(member_dict)
-                print(f"[DEBUG] Added member: {member.full_name} (ID: {member.id})")
+                print(f"   ✅ Membre ajouté à la réponse")
                 
             except Exception as prog_error:
-                print(f"[ERROR] Error processing program {program.id}: {str(prog_error)}")
+                print(f"   ❌ ERROR processing program {program.id}: {str(prog_error)}")
                 import traceback
                 traceback.print_exc()
                 continue
         
-        print(f"[DEBUG] Returning {len(members_data)} members")
+        print(f"\n📤 Returning {len(members_data)} members")
+        print("="*80 + "\n")
+        
         return Response(members_data)
     
     except Exception as e:
+        print(f"\n❌ ERROR in coach_my_members: {str(e)}")
         import traceback
-        print(f"[ERROR] Error in coach_my_members: {str(e)}")
         print(traceback.format_exc())
+        print("="*80 + "\n")
         
-        # Retourner une liste vide au lieu d'une erreur 500 pour éviter de casser le frontend
+        # Retourner une liste vide au lieu d'une erreur 500
         return Response([])
 
 

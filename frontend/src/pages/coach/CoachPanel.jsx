@@ -2,77 +2,91 @@ import React, { useState, useEffect } from 'react';
 import { 
   Calendar, Users, Dumbbell, FileText, BarChart3, 
   Settings, LogOut, Bell, Search, Clock, TrendingUp,
-  ArrowRight, Activity, Eye
+  ArrowRight, Activity, Eye, Plus, ChevronRight,
+  Target, Award, Zap
 } from 'lucide-react';
 
-// Simuler les données
-const mockStats = {
-  sessions_today: 3,
-  total_members: 12,
-  completed_sessions: 45,
-  satisfaction: 4.5
-};
-
-const mockUpcomingSessions = [
-  {
-    id: 1,
-    title: "CrossFit Débutant",
-    start_time: "09:00",
-    room: "Salle A",
-    participants_count: 8,
-    max_capacity: 10
-  },
-  {
-    id: 2,
-    title: "Yoga Flow",
-    start_time: "11:00",
-    room: "Salle B",
-    participants_count: 12,
-    max_capacity: 15
-  },
-  {
-    id: 3,
-    title: "HIIT Avancé",
-    start_time: "14:00",
-    room: "Salle A",
-    participants_count: 15,
-    max_capacity: 15
-  }
-];
-
-const mockMembers = [
-  {
-    id: 1,
-    member_name: "Marie Dubois",
-    title: "Programme Perte de Poids",
-    progress: 65
-  },
-  {
-    id: 2,
-    member_name: "Jean Martin",
-    title: "Programme Force",
-    progress: 80
-  },
-  {
-    id: 3,
-    member_name: "Sophie Bernard",
-    title: "Programme Tonification",
-    progress: 45
-  }
-];
-
 const CoachPanel = () => {
-  const [stats] = useState(mockStats);
-  const [upcomingSessions] = useState(mockUpcomingSessions);
-  const [members] = useState(mockMembers);
-  const [profilePhoto] = useState(null);
+  const [stats, setStats] = useState({
+    sessions_today: 0,
+    total_members: 0,
+    completed_sessions: 0,
+    satisfaction: 0
+  });
+  const [upcomingSessions, setUpcomingSessions] = useState([]);
+  const [members, setMembers] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [activeMenu, setActiveMenu] = useState('dashboard');
 
-  // Simuler l'utilisateur
   const user = {
     first_name: "Thomas",
     last_name: "Durand",
     email: "thomas.durand@gym.com"
+  };
+
+  useEffect(() => {
+    loadDashboardData();
+  }, []);
+
+  const loadDashboardData = async () => {
+    try {
+      setLoading(true);
+      
+      // ✅ Charger les vraies données depuis l'API
+      const token = localStorage.getItem('token');
+      const baseURL = 'http://localhost:8000';
+      
+      // Configuration des headers avec tenant
+      const headers = {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      };
+
+      // 1. Charger les statistiques du coach
+      const statsResponse = await fetch(`${baseURL}/api/coaching/coach/dashboard-stats/`, {
+        headers
+      });
+      
+      if (statsResponse.ok) {
+        const statsData = await statsResponse.json();
+        setStats(statsData);
+      }
+
+      // 2. Charger les sessions à venir
+      const sessionsResponse = await fetch(`${baseURL}/api/coaching/coach/upcoming-sessions/`, {
+        headers
+      });
+      
+      if (sessionsResponse.ok) {
+        const sessionsData = await sessionsResponse.json();
+        setUpcomingSessions(sessionsData.slice(0, 5)); // Limiter à 5
+      }
+
+      // 3. Charger les membres avec progression
+      const membersResponse = await fetch(`${baseURL}/api/coaching/coach/my-members/`, {
+        headers
+      });
+      
+      if (membersResponse.ok) {
+        const membersData = await membersResponse.json();
+        setMembers(membersData.slice(0, 5)); // Limiter à 5
+      }
+
+    } catch (error) {
+      console.error('Erreur chargement dashboard:', error);
+      
+      // En cas d'erreur, afficher des données vides
+      setStats({
+        sessions_today: 0,
+        total_members: 0,
+        completed_sessions: 0,
+        satisfaction: 0
+      });
+      setUpcomingSessions([]);
+      setMembers([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleLogout = () => {
@@ -83,38 +97,32 @@ const CoachPanel = () => {
     {
       id: 'dashboard',
       label: 'Tableau de Bord',
-      icon: BarChart3,
-      color: '#00357a'
+      icon: BarChart3
     },
     {
       id: 'schedule',
       label: 'Planning',
-      icon: Calendar,
-      color: '#00357a'
+      icon: Calendar
     },
     {
       id: 'members',
       label: 'Mes Membres',
-      icon: Users,
-      color: '#00357a'
+      icon: Users
     },
     {
       id: 'programs',
       label: 'Programmes',
-      icon: Dumbbell,
-      color: '#00357a'
+      icon: Dumbbell
     },
     {
       id: 'exercises',
       label: 'Exercices',
-      icon: FileText,
-      color: '#00357a'
+      icon: FileText
     },
     {
       id: 'settings',
       label: 'Paramètres',
-      icon: Settings,
-      color: '#00357a'
+      icon: Settings
     }
   ];
 
@@ -122,6 +130,24 @@ const CoachPanel = () => {
     setActiveMenu(item.id);
     alert(`Navigation vers: ${item.label}`);
   };
+
+  const getProgressColor = (progress) => {
+    if (progress >= 75) return '#00a000';
+    if (progress >= 50) return '#00357a';
+    if (progress >= 25) return '#f59e0b';
+    return '#ef4444';
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Chargement...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50/50 flex">
@@ -139,11 +165,7 @@ const CoachPanel = () => {
         <div className="p-6 border-b border-gray-200">
           <div className="flex items-center space-x-3">
             <div className="w-14 h-14 rounded-full flex items-center justify-center font-bold text-lg overflow-hidden flex-shrink-0" style={{ backgroundColor: '#00357a', color: 'white' }}>
-              {profilePhoto ? (
-                <img src={profilePhoto} alt="Profile" className="w-full h-full object-cover" />
-              ) : (
-                `${user.first_name[0]}${user.last_name[0]}`
-              )}
+              {`${user.first_name[0]}${user.last_name[0]}`}
             </div>
             <div className="flex-1 min-w-0">
               <p className="font-semibold text-gray-900 truncate">
@@ -236,7 +258,7 @@ const CoachPanel = () => {
 
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+              <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-gray-600">Sessions Aujourd'hui</p>
@@ -250,7 +272,7 @@ const CoachPanel = () => {
                 </div>
               </div>
 
-              <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+              <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-gray-600">Membres Actifs</p>
@@ -264,7 +286,7 @@ const CoachPanel = () => {
                 </div>
               </div>
 
-              <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+              <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-gray-600">Sessions Complétées</p>
@@ -278,7 +300,7 @@ const CoachPanel = () => {
                 </div>
               </div>
 
-              <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+              <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-gray-600">Satisfaction</p>
@@ -287,7 +309,7 @@ const CoachPanel = () => {
                     </p>
                   </div>
                   <div className="bg-yellow-100 p-3 rounded-lg">
-                    <TrendingUp className="w-6 h-6 text-yellow-600" />
+                    <Award className="w-6 h-6 text-yellow-600" />
                   </div>
                 </div>
               </div>
@@ -296,29 +318,29 @@ const CoachPanel = () => {
             {/* Actions Rapides */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <button
-                onClick={() => alert('Navigation vers Nouveau Programme')}
+                onClick={() => alert('Créer un nouveau programme')}
                 className="flex items-center justify-between p-5 bg-gradient-to-r from-[#00357a] to-blue-700 text-white rounded-xl hover:shadow-lg transition-all"
               >
                 <div className="flex items-center">
-                  <Dumbbell className="w-5 h-5 mr-3" />
+                  <Plus className="w-5 h-5 mr-3" />
                   <span className="font-medium">Nouveau Programme</span>
                 </div>
                 <ArrowRight className="w-5 h-5" />
               </button>
 
               <button
-                onClick={() => alert('Navigation vers Planning')}
+                onClick={() => alert('Voir le planning')}
                 className="flex items-center justify-between p-5 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-xl hover:shadow-lg transition-all"
               >
                 <div className="flex items-center">
                   <Calendar className="w-5 h-5 mr-3" />
-                  <span className="font-medium">Planning</span>
+                  <span className="font-medium">Mon Planning</span>
                 </div>
                 <ArrowRight className="w-5 h-5" />
               </button>
 
               <button
-                onClick={() => alert('Navigation vers Mes Membres')}
+                onClick={() => alert('Voir tous les membres')}
                 className="flex items-center justify-between p-5 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl hover:shadow-lg transition-all"
               >
                 <div className="flex items-center">
@@ -335,44 +357,42 @@ const CoachPanel = () => {
                 <h3 className="text-lg font-semibold" style={{ color: '#00357a' }}>
                   Sessions à Venir
                 </h3>
-                <button className="text-sm font-medium flex items-center" style={{ color: '#9b0e16' }}>
-                  Voir tout <ArrowRight className="w-4 h-4 ml-1" />
+                <button 
+                  onClick={() => alert('Voir toutes les sessions')}
+                  className="text-sm font-medium flex items-center hover:opacity-80 transition-opacity" 
+                  style={{ color: '#9b0e16' }}
+                >
+                  Voir tout <ChevronRight className="w-4 h-4 ml-1" />
                 </button>
               </div>
               <div className="divide-y divide-gray-100">
-                {upcomingSessions.length > 0 ? (
-                  upcomingSessions.map((session) => (
-                    <div key={session.id} className="px-6 py-4 hover:bg-gray-50 transition-colors">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-4">
-                          <div className="bg-blue-100 px-3 py-2 rounded-lg">
-                            <span className="text-blue-700 font-semibold text-sm">
-                              {session.start_time}
-                            </span>
-                          </div>
-                          <div>
-                            <h4 className="font-semibold text-gray-900">{session.title}</h4>
-                            <p className="text-sm text-gray-600">
-                              {session.room} • {session.participants_count}/{session.max_capacity} participants
-                            </p>
-                          </div>
+                {upcomingSessions.map((session) => (
+                  <div key={session.id} className="px-6 py-4 hover:bg-gray-50 transition-colors">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-4">
+                        <div className="bg-blue-100 px-3 py-2 rounded-lg">
+                          <span className="text-blue-700 font-semibold text-sm">
+                            {session.start_time}
+                          </span>
                         </div>
-                        <button 
-                          onClick={() => alert(`Voir détails de ${session.title}`)}
-                          className="px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium flex items-center"
-                          style={{ backgroundColor: '#00357a', color: 'white' }}
-                        >
-                          <Eye className="w-4 h-4 mr-2" />
-                          Détails
-                        </button>
+                        <div>
+                          <h4 className="font-semibold text-gray-900">{session.title}</h4>
+                          <p className="text-sm text-gray-600">
+                            {session.room} • {session.participants_count}/{session.max_capacity} participants
+                          </p>
+                        </div>
                       </div>
+                      <button 
+                        onClick={() => alert(`Voir détails de ${session.title}`)}
+                        className="px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium flex items-center"
+                        style={{ backgroundColor: '#00357a', color: 'white' }}
+                      >
+                        <Eye className="w-4 h-4 mr-2" />
+                        Détails
+                      </button>
                     </div>
-                  ))
-                ) : (
-                  <div className="px-6 py-8 text-center text-gray-500">
-                    Aucune session à venir
                   </div>
-                )}
+                ))}
               </div>
             </div>
 
@@ -382,40 +402,81 @@ const CoachPanel = () => {
                 <h3 className="text-lg font-semibold" style={{ color: '#00357a' }}>
                   Progrès des Membres
                 </h3>
-                <button className="text-sm font-medium flex items-center" style={{ color: '#9b0e16' }}>
-                  Gérer programmes <ArrowRight className="w-4 h-4 ml-1" />
+                <button 
+                  onClick={() => alert('Gérer les programmes')}
+                  className="text-sm font-medium flex items-center hover:opacity-80 transition-opacity" 
+                  style={{ color: '#9b0e16' }}
+                >
+                  Gérer programmes <ChevronRight className="w-4 h-4 ml-1" />
                 </button>
               </div>
               <div className="p-6 space-y-4">
-                {members.length > 0 ? (
-                  members.map((program) => (
-                    <div key={program.id} className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h4 className="font-medium text-gray-900">{program.member_name}</h4>
-                          <p className="text-sm text-gray-600">{program.title}</p>
-                        </div>
-                        <span className="text-sm font-semibold text-gray-900">
-                          {program.progress}%
-                        </span>
+                {members.map((member) => (
+                  <div key={member.id} className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h4 className="font-medium text-gray-900">{member.member_name}</h4>
+                        <p className="text-sm text-gray-600">{member.title}</p>
                       </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2.5">
-                        <div 
-                          className="h-2.5 rounded-full transition-all duration-300"
-                          style={{ 
-                            width: `${program.progress}%`,
-                            backgroundColor: '#00357a'
-                          }}
-                        />
+                      <div className="flex items-center space-x-3">
+                        <span className="text-sm font-semibold text-gray-900">
+                          {member.progress}%
+                        </span>
+                        <button
+                          onClick={() => alert(`Voir programme de ${member.member_name}`)}
+                          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                        >
+                          <Eye className="w-4 h-4" style={{ color: '#00357a' }} />
+                        </button>
                       </div>
                     </div>
-                  ))
-                ) : (
-                  <div className="text-center py-8 text-gray-500">
-                    <Dumbbell className="w-12 h-12 mx-auto mb-3 text-gray-400" />
-                    <p>Aucun membre assigné</p>
+                    <div className="w-full bg-gray-200 rounded-full h-2.5">
+                      <div 
+                        className="h-2.5 rounded-full transition-all duration-300"
+                        style={{ 
+                          width: `${member.progress}%`,
+                          backgroundColor: getProgressColor(member.progress)
+                        }}
+                      />
+                    </div>
                   </div>
-                )}
+                ))}
+              </div>
+            </div>
+
+            {/* Quick Stats Row */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 border border-blue-200">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="font-semibold text-blue-900">Programmes Actifs</h4>
+                  <Target className="w-6 h-6 text-blue-600" />
+                </div>
+                <p className="text-3xl font-bold text-blue-900">{members.length}</p>
+                <p className="text-sm text-blue-700 mt-1">En cours de réalisation</p>
+              </div>
+
+              <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6 border border-green-200">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="font-semibold text-green-900">Taux de Réussite</h4>
+                  <Zap className="w-6 h-6 text-green-600" />
+                </div>
+                <p className="text-3xl font-bold text-green-900">
+                  {Math.round(members.reduce((sum, m) => sum + m.progress, 0) / members.length)}%
+                </p>
+                <p className="text-sm text-green-700 mt-1">Progression moyenne</p>
+              </div>
+
+              <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-6 border border-purple-200">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="font-semibold text-purple-900">Prochaine Session</h4>
+                  <Clock className="w-6 h-6 text-purple-600" />
+                </div>
+                <p className="text-2xl font-bold text-purple-900">
+                  {upcomingSessions[0].start_time}
+                </p>
+                <p className="text-sm text-purple-700 mt-1">
+                  {upcomingSessions[0].title}
+                </p>
               </div>
             </div>
           </div>
