@@ -10,6 +10,7 @@ urlpatterns = [
     path('api/members/', include('members.urls')),
     path('api/bookings/', include('bookings.urls')),
     path('api/coaching/', include('coaching.urls')), 
+    path('api/members-portal/', include('members.portal_urls')),
 ]
 
 # Servir les fichiers média en développement

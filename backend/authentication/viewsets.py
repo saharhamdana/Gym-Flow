@@ -15,6 +15,26 @@ class UserFilter(filters.FilterSet):
         model = User
         fields = ['role']
 
+
+# ✅ NOUVELLE PERMISSION PERSONNALISÉE
+class IsAdminRole(permissions.BasePermission):
+    """
+    Permission personnalisée pour vérifier si l'utilisateur a le rôle ADMIN.
+    Plus flexible que IsAdminUser qui vérifie is_staff.
+    """
+    def has_permission(self, request, view):
+        # Vérifier que l'utilisateur est authentifié
+        if not request.user or not request.user.is_authenticated:
+            return False
+        
+        # Autoriser les superusers
+        if request.user.is_superuser:
+            return True
+        
+        # Autoriser les utilisateurs avec le rôle ADMIN
+        return request.user.role == User.Role.ADMIN
+
+
 class UserViewSet(viewsets.ModelViewSet):
     """
     ViewSet pour gérer les utilisateurs.
@@ -61,10 +81,17 @@ class UserViewSet(viewsets.ModelViewSet):
     
     def get_permissions(self):
         """
+        ✅ CORRECTION : Utiliser IsAdminRole au lieu de IsAdminUser
+        
         Permissions selon l'action:
         - List/Retrieve: Tous les utilisateurs authentifiés
-        - Create/Update/Delete: Seulement les admins
+        - Create/Update/Delete: Seulement les utilisateurs avec role=ADMIN
         """
         if self.action in ['create', 'update', 'partial_update', 'destroy']:
-            self.permission_classes = [permissions.IsAuthenticated, permissions.IsAdminUser]
+            # ✅ Utiliser notre permission personnalisée
+            self.permission_classes = [permissions.IsAuthenticated, IsAdminRole]
+        else:
+            # Lecture accessible à tous les utilisateurs authentifiés
+            self.permission_classes = [permissions.IsAuthenticated]
+        
         return super().get_permissions()

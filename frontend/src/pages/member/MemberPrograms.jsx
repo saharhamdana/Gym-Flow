@@ -76,20 +76,17 @@ const MemberPrograms = () => {
 
     if (loading) {
         return (
-            <MemberLayout>
                 <div className="flex items-center justify-center min-h-screen">
                     <div className="text-center">
                         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
                         <p className="text-gray-600">Chargement de vos programmes...</p>
                     </div>
                 </div>
-            </MemberLayout>
         );
     }
 
     if (error) {
         return (
-            <MemberLayout>
                 <div className="bg-white rounded-lg shadow-sm border border-red-200 p-8 max-w-md mx-auto">
                     <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
                     <h3 className="text-lg font-semibold text-center mb-2" style={{ color: '#00357a' }}>
@@ -104,12 +101,10 @@ const MemberPrograms = () => {
                         Réessayer
                     </button>
                 </div>
-            </MemberLayout>
         );
     }
 
     return (
-        <MemberLayout>
             <div className="space-y-6">
                 {/* Header */}
                 <div>
@@ -261,7 +256,6 @@ const MemberPrograms = () => {
                     </div>
                 )}
             </div>
-        </MemberLayout>
     );
 };
 

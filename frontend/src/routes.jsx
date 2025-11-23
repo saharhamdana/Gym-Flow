@@ -12,6 +12,7 @@ import MemberLayout from "@/components/member/MemberLayout";
 import MemberDashboard from "@/pages/member/MemberDashboard";
 import MemberProgress from "@/pages/member/MemberProgress";
 import MemberBookings from "@/pages/member/MemberBookings";
+import MemberCourses from "@/pages/member/MemberCourses"; // ⭐ AJOUTEZ CET IMPORT
 
 // ⭐ IMPORTS COACH - Utiliser CoachDashboard au lieu de CoachPanel
 import CoachDashboard from "@/components/coaching/CoachDashboard";
@@ -110,7 +111,7 @@ export const routes = [
   {
     name: "Member Programs",
     path: "/portal/programs",
-    element: <MemberLayout><MyPrograms /></MemberLayout>,
+    element: <MemberLayout><MemberPrograms /></MemberLayout>,
   },
   {
     name: "Member Bookings",
@@ -118,20 +119,21 @@ export const routes = [
     element: <MemberLayout><MemberBookings /></MemberLayout>,
   },
   {
+    name: "Member Courses", // ⭐ NOUVELLE ROUTE AJOUTÉE
+    path: "/portal/courses",
+    element: <MemberLayout><MemberCourses /></MemberLayout>,
+  },
+  {
     name: "Member Progress",
     path: "/portal/progress",
-    element: <MemberLayout><MemberProgress /></MemberLayout>,
+    element: <MemberLayout><MemberProgress /></MemberLayout>, // ⭐ CORRIGÉ: Ajout de MemberLayout
   },
   {
     name: "Member Program Detail",
     path: "/portal/programs/:id",
-    element: <MemberProgramDetail />,
+    element: <MemberLayout><MemberProgramDetail /></MemberLayout>, // ⭐ CORRIGÉ: Ajout de MemberLayout
   },
-  {
-    name: "Member Programs",
-    path: "/portal/programs/",
-    element: <MemberPrograms/>,
-  },
+  
   // ==========================================
   // ⭐ ROUTES COACH - UTILISER CoachDashboard
   // ==========================================
@@ -165,6 +167,7 @@ export const routes = [
     element: <CoachSettings />,
     hidden: true
   },
+
   // ==========================================
   // ROUTES ADMIN - DASHBOARD & PROFILE
   // ==========================================

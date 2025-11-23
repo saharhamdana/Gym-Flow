@@ -13,119 +13,131 @@ import ForgotPassword from "./pages/auth/ForgotPassword";
 import ResetPassword from "./pages/auth/ResetPassword";
 
 
-
 function App() {
   const { pathname } = useLocation();
+
   const isAdminRoute = (path) => path.startsWith('/admin/');
   const isCoachRoute = (path) => path.startsWith('/coach');
+  const isPortalRoute = (path) => path.startsWith('/portal');   // ✅ AJOUT
 
   return (
     <>
-
-      {/* Navbar - cachée sur sign-in, sign-up, admin et coach */}
-      {!(pathname === '/sign-in' || pathname === '/sign-up' || isAdminRoute(pathname) || isCoachRoute(pathname)) && (
+      {/* ================= NAVBAR =================== */}
+      {/* Cachée sur sign-in, sign-up, admin, coach et portal */}
+      {!(
+        pathname === '/sign-in' ||
+        pathname === '/sign-up' ||
+        isAdminRoute(pathname) ||
+        isCoachRoute(pathname) ||
+        isPortalRoute(pathname)     // ✅ AJOUT
+      ) && (
         <Navbar routes={routes}/>
       )}
       
-      {/* Routes avec wrapper pleine largeur */}
-      <div className={`w-full min-h-screen ${
-        !(pathname === '/sign-in' || pathname === '/sign-up' || pathname === '/' || isCoachRoute(pathname)) ? 'pt-24' : ''
-      }`}>
-
-
+      {/* ================= CONTENU =================== */}
+      <div
+        className={`w-full min-h-screen ${
+          !(
+            pathname === '/sign-in' ||
+            pathname === '/sign-up' ||
+            pathname === '/' ||
+            isCoachRoute(pathname) ||
+            isPortalRoute(pathname)    // ✅ AJOUT pour enlever le padding du portal
+          )
+            ? 'pt-24'
+            : ''
+        }`}
+      >
         <Routes>
-          {/* Routes de base depuis routes.jsx */}
-          {routes.map(
-            ({ path, element }, key) => {
-              if (!element) return null;
 
+          {/* LOOP DES ROUTES DE routes.jsx */}
+          {routes.map(({ path, element }, key) => {
+            if (!element) return null;
 
-                // Routes Admin
-                if (isAdminRoute(path)) {
-                    return (
-                        <Route 
-                            key={key} 
-                            exact 
-                            path={path} 
-                            element={
-                                <RequireAdminOrReceptionistOrCoach>
-                                    <AdminLayout>
-                                        {element}
-                                    </AdminLayout>
-                                </RequireAdminOrReceptionistOrCoach>
-                            } 
-                        />
-                    );
-                }
-
-                // Routes Coach - AVEC PROTECTION
-                if (isCoachRoute(path)) {
-                    return (
-                        <Route 
-                            key={key} 
-                            exact 
-                            path={path} 
-                            element={
-                                <RequireCoach>
-                                    {element}
-                                </RequireCoach>
-                            } 
-                        />
-                    );
-                }
-
-                // Routes membres protégées
-                if (path === '/profile' || path === '/my-programs') {
-                    return (
-                        <Route 
-                            key={key} 
-                            exact 
-                            path={path} 
-                            element={<RequireAuth>{element}</RequireAuth>} 
-                        />
-                    );
-                }
-
-                // Routes publiques
-                return <Route key={key} exact path={path} element={element} />;
-
-           
+            // ========== ADMIN ==========
+            if (isAdminRoute(path)) {
+              return (
+                <Route
+                  key={key}
+                  exact
+                  path={path}
+                  element={
+                    <RequireAdminOrReceptionistOrCoach>
+                      <AdminLayout>{element}</AdminLayout>
+                    </RequireAdminOrReceptionistOrCoach>
+                  }
+                />
+              );
             }
-          )}
-          
-          {/* Routes Coaching (hors du système de routes principal) */}
-          <Route 
-            path="/coaching/programs" 
+
+            // ========== COACH ==========
+            if (isCoachRoute(path)) {
+              return (
+                <Route
+                  key={key}
+                  exact
+                  path={path}
+                  element={
+                    <RequireCoach>
+                      {element}
+                    </RequireCoach>
+                  }
+                />
+              );
+            }
+
+            // ========== MEMBRES ==========
+            if (path === '/profile' || path === '/my-programs') {
+              return (
+                <Route
+                  key={key}
+                  exact
+                  path={path}
+                  element={<RequireAuth>{element}</RequireAuth>}
+                />
+              );
+            }
+
+            // ========== PUBLIC ==========
+            return <Route key={key} exact path={path} element={element} />;
+          })}
+
+          {/* ====== ROUTES COACHING ====== */}
+          <Route
+            path="/coaching/programs"
             element={
               <RequireAdminOrReceptionistOrCoach>
                 <ProgramList />
               </RequireAdminOrReceptionistOrCoach>
-            } 
+            }
           />
-          <Route 
-            path="/coaching/programs/create" 
+
+          <Route
+            path="/coaching/programs/create"
             element={
               <RequireAdminOrReceptionistOrCoach>
                 <CreateProgramForm />
               </RequireAdminOrReceptionistOrCoach>
-            } 
+            }
           />
-          
-          <Route path="*" element={<Navigate to="/" replace />} />
 
-          <Route path="/debug" element={<APIDebugTool />} />
           <Route path="/coaching/programs/:id/edit" element={<EditProgramForm />} />
           <Route path="/coaching/programs/:id" element={<ProgramDetails />} />
-
           <Route path="/coaching/programs" element={<ProgramList />} />
+
+          {/* ====== AUTH ====== */}
           <Route path="/forgot-password" element={<ForgotPassword />} /> 
           <Route path="/reset-password/:uid/:token" element={<ResetPassword />} />  
 
+          {/* ====== DEBUG ====== */}
+          <Route path="/debug" element={<APIDebugTool />} />
+
+          {/* Redirect unknown routes */}
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </div>
     </>
   );
 }
-   
-   
+
 export default App;
