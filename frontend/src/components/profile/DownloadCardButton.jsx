@@ -8,50 +8,66 @@ const DownloadCardButton = ({ memberId }) => {
     const handleDownload = async () => {
         setDownloading(true);
         try {
-            // S'assurer que le token est envoyé avec la requête
-            const token = localStorage.getItem('access_token');
-            if (!token) {
-                throw new Error('Non authentifié');
-            }
-
+            console.log(`🔄 Tentative de téléchargement pour le membre: ${memberId}`);
+            
             const response = await api.get(`members/generate-card/${memberId}/`, {
-                responseType: 'blob', // Important pour recevoir le fichier
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
+                responseType: 'blob',
             });
             
-            // Vérifier que nous avons reçu un blob
-            if (!(response.data instanceof Blob)) {
-                throw new Error('Réponse invalide du serveur');
+            console.log('✅ Réponse reçue:', response);
+            
+            // Vérifier le type de contenu
+            if (response.data.type === 'application/json') {
+                // C'est une erreur JSON, la lire
+                const errorText = await new Response(response.data).text();
+                const errorData = JSON.parse(errorText);
+                throw new Error(errorData.error || errorData.detail || 'Erreur inconnue');
+            }
+            
+            // Vérifier que c'est bien une image PNG
+            if (response.data.type !== 'image/png') {
+                console.warn('Type de contenu inattendu:', response.data.type);
             }
 
-            // Créer un URL pour le blob
-            const url = window.URL.createObjectURL(new Blob([response.data]));
-            
-            // Créer un lien temporaire et cliquer dessus pour télécharger
+            // Créer le lien de téléchargement
+            const url = window.URL.createObjectURL(response.data);
             const link = document.createElement('a');
             link.href = url;
-            link.setAttribute('download', `member_card_${memberId}.png`);
+            link.setAttribute('download', `carte_membre_${memberId}.png`);
             document.body.appendChild(link);
             link.click();
             
             // Nettoyer
-            link.parentNode.removeChild(link);
+            document.body.removeChild(link);
             window.URL.revokeObjectURL(url);
-        } catch (error) {
-            console.error('Erreur lors du téléchargement de la carte:', error);
             
-            // Message d'erreur plus spécifique
-            if (error.response?.status === 401) {
-                alert('Veuillez vous reconnecter pour télécharger la carte.');
-            } else if (error.response?.status === 403) {
-                alert('Vous n\'avez pas les droits pour télécharger cette carte.');
-            } else if (error.response?.status === 500) {
-                alert('Erreur lors de la génération de la carte. Veuillez réessayer plus tard.');
-            } else {
-                alert('Erreur lors du téléchargement de la carte. Veuillez réessayer.');
+            console.log('✅ Téléchargement réussi');
+            
+        } catch (error) {
+            console.error('❌ Erreur détaillée:', error);
+            
+            let errorMessage = 'Erreur lors du téléchargement de la carte.';
+            
+            if (error.response?.status === 403) {
+                if (error.response.data instanceof Blob) {
+                    // Essayer de lire l'erreur depuis le blob
+                    try {
+                        const errorText = await new Response(error.response.data).text();
+                        const errorData = JSON.parse(errorText);
+                        errorMessage = errorData.detail || errorData.error || 'Accès refusé.';
+                    } catch {
+                        errorMessage = 'Vous n\'avez pas les permissions pour télécharger cette carte.';
+                    }
+                } else {
+                    errorMessage = 'Accès refusé: permissions insuffisantes.';
+                }
+            } else if (error.response?.status === 404) {
+                errorMessage = 'Membre non trouvé.';
+            } else if (error.message) {
+                errorMessage = error.message;
             }
+            
+            alert(`❌ ${errorMessage}`);
         } finally {
             setDownloading(false);
         }
@@ -60,14 +76,14 @@ const DownloadCardButton = ({ memberId }) => {
     return (
         <Button
             size="sm"
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
             onClick={handleDownload}
             disabled={downloading}
         >
             {downloading ? (
                 <>
                     <Spinner className="h-4 w-4" />
-                    <span>Téléchargement...</span>
+                    <span>Génération...</span>
                 </>
             ) : (
                 <>

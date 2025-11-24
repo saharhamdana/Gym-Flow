@@ -16,6 +16,7 @@ import {
   ArrowLeftOnRectangleIcon,
   HomeIcon,
   UserGroupIcon,
+  CreditCardIcon, // 🆕 AJOUT DE CET IMPORT MANQUANT
 } from "@heroicons/react/24/solid";
 
 const MemberLayout = ({ children }) => {
@@ -59,6 +60,11 @@ const MemberLayout = ({ children }) => {
       icon: ClipboardDocumentListIcon,
     },
     {
+      label: "Mes Abonnement",
+      path: "/portal/subscription/plans",
+      icon: CreditCardIcon, // ✅ MAINTENANT DISPONIBLE
+    },
+    {
       label: "Mes Réservations",
       path: "/portal/bookings",
       icon: CalendarDaysIcon,
@@ -73,7 +79,6 @@ const MemberLayout = ({ children }) => {
       path: "/portal/progress",
       icon: ChartBarIcon,
     },
-    
   ];
 
   return (

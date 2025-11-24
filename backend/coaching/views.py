@@ -57,7 +57,7 @@ class ExerciseViewSet(viewsets.ModelViewSet):
 
 
 class TrainingProgramViewSet(viewsets.ModelViewSet):
-    """CRUD pour les programmes d'entraînement"""
+    """CRUD pour les programmes d'entraînement avec gestion automatique du tenant_id"""
     permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['member', 'coach', 'status']
@@ -65,46 +65,136 @@ class TrainingProgramViewSet(viewsets.ModelViewSet):
     ordering_fields = ['start_date', 'created_at', 'title']
     
     def get_queryset(self):
+        """
+        Retourne les programmes filtrés par tenant_id et selon le rôle de l'utilisateur
+        """
         queryset = TrainingProgram.objects.select_related(
             'member',
             'coach'
         ).prefetch_related('workout_sessions__exercises__exercise')
         
-        # Filtrer selon le rôle
+        # ✅ FILTRAGE PAR TENANT_ID
         user = self.request.user
+        tenant_id = self._get_tenant_id()
+        
+        if tenant_id:
+            queryset = queryset.filter(tenant_id=tenant_id)
+            print(f"[DEBUG] 🔍 Filtrage par tenant_id: {tenant_id}")
+        else:
+            print(f"[WARNING] ⚠️ Aucun tenant_id trouvé - retour de tous les programmes")
+        
+        # Filtrer selon le rôle
         if user.role == 'member':
             # Filtrer par email du membre
             queryset = queryset.filter(member__email=user.email)
+            print(f"[DEBUG] 👤 Filtrage membre: {user.email}")
         elif user.role == 'COACH':
             # Les coachs voient les programmes qu'ils ont créés
             queryset = queryset.filter(coach=user)
-        # Les admins et réceptionnistes voient tout
+            print(f"[DEBUG] 🏋️ Filtrage coach: {user.email}")
+        else:
+            print(f"[DEBUG] 🔧 Admin/réceptionniste - pas de filtre supplémentaire")
         
+        print(f"[DEBUG] 📊 Programmes trouvés: {queryset.count()}")
         return queryset
     
     def get_serializer_class(self):
+        """
+        Retourne le serializer approprié selon l'action
+        """
         if self.action in ['create', 'update', 'partial_update']:
             return TrainingProgramFullCreateSerializer
         return TrainingProgramSerializer
     
     def perform_create(self, serializer):
-        # Ajouter le coach automatiquement si pas fourni
-        if 'coach' not in serializer.validated_data:
-            serializer.save(coach=self.request.user)
-        else:
-            serializer.save()
+        """
+        Ajoute automatiquement le coach et le tenant_id lors de la création
+        """
+        user = self.request.user
+        tenant_id = self._get_tenant_id()
+        
+        print(f"[DEBUG] 🚀 Création programme - User: {user.email}, Tenant: {tenant_id}")
+        
+        # Vérifier que le tenant_id est disponible
+        if not tenant_id:
+            print(f"[WARNING] ⚠️ Aucun tenant_id trouvé - vérification du membre")
+            # Essayer de récupérer le tenant_id du membre
+            member = serializer.validated_data.get('member')
+            if member and hasattr(member, 'tenant_id') and member.tenant_id:
+                tenant_id = member.tenant_id
+                print(f"[DEBUG] ✅ Tenant_id récupéré du membre: {tenant_id}")
+        
+        if not tenant_id:
+            print(f"[ERROR] ❌ Aucun tenant_id disponible pour la création")
+            raise serializers.ValidationError({
+                "tenant_id": "Impossible de déterminer le tenant_id pour la création du programme"
+            })
+        
+        # Déterminer le coach
+        coach = serializer.validated_data.get('coach', user)
+        
+        # Sauvegarder avec le tenant_id
+        serializer.save(
+            coach=coach,
+            tenant_id=tenant_id
+        )
+        
+        print(f"[DEBUG] ✅ Programme créé avec tenant_id: {tenant_id}")
+    
+    def perform_update(self, serializer):
+        """
+        Empêche la modification du tenant_id lors des updates
+        """
+        # Supprimer tenant_id des données validées si présent
+        if 'tenant_id' in serializer.validated_data:
+            del serializer.validated_data['tenant_id']
+            print(f"[DEBUG] 🔒 Tenant_id supprimé des données de mise à jour")
+        
+        serializer.save()
+    
+    def _get_tenant_id(self):
+        """
+        Récupère le tenant_id depuis différentes sources
+        """
+        user = self.request.user
+        
+        # 1. Depuis l'utilisateur
+        tenant_id = getattr(user, 'tenant_id', None)
+        
+        # 2. Depuis les headers
+        if not tenant_id:
+            tenant_id = self.request.headers.get("Tenant-ID") or self.request.headers.get("X-Tenant-Subdomain")
+        
+        # 3. Depuis le middleware ou autres sources
+        if not tenant_id:
+            tenant_id = getattr(self.request, 'tenant_id', None)
+        
+        print(f"[DEBUG] 🏢 Tenant_id récupéré: {tenant_id}")
+        return tenant_id
+    
+    def get_serializer_context(self):
+        """
+        Passe la requête au serializer pour le contexte
+        """
+        context = super().get_serializer_context()
+        context['request'] = self.request
+        return context
     
     @action(detail=True, methods=['post'])
     def duplicate(self, request, pk=None):
-        """Dupliquer un programme existant"""
+        """Dupliquer un programme existant avec le même tenant_id"""
         original_program = self.get_object()
+        user = request.user
+        tenant_id = self._get_tenant_id()
+        
+        print(f"[DEBUG] 🔄 Duplication programme {original_program.id} - Tenant: {tenant_id}")
         
         # Créer une copie du programme
         new_program = TrainingProgram.objects.create(
             title=f"{original_program.title} (Copie)",
             description=original_program.description,
             member=original_program.member,
-            coach=request.user,
+            coach=user,
             status='draft',
             start_date=original_program.start_date,
             end_date=original_program.end_date,
@@ -112,7 +202,8 @@ class TrainingProgramViewSet(viewsets.ModelViewSet):
             goal=original_program.goal,
             target_weight=original_program.target_weight,
             target_body_fat=original_program.target_body_fat,
-            notes=original_program.notes
+            notes=original_program.notes,
+            tenant_id=tenant_id or original_program.tenant_id  # Conserver le tenant_id
         )
         
         # Copier les sessions d'entraînement
@@ -141,12 +232,20 @@ class TrainingProgramViewSet(viewsets.ModelViewSet):
                 )
         
         serializer = self.get_serializer(new_program)
+        print(f"[DEBUG] ✅ Programme dupliqué: {new_program.id}")
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     
     @action(detail=True, methods=['get'])
     def export_pdf(self, request, pk=None):
         """Exporter un programme en PDF"""
         program = self.get_object()
+        
+        # Vérifier que l'utilisateur a accès à ce programme
+        if not self._has_access_to_program(program):
+            return Response(
+                {'error': 'Accès non autorisé à ce programme'},
+                status=status.HTTP_403_FORBIDDEN
+            )
     
         sessions = program.workout_sessions.prefetch_related(
             'exercises__exercise__category'
@@ -178,7 +277,41 @@ class TrainingProgramViewSet(viewsets.ModelViewSet):
         response['Content-Disposition'] = f'attachment; filename="{filename}"'
     
         return response
-
+    
+    def _has_access_to_program(self, program):
+        """
+        Vérifie que l'utilisateur a accès au programme
+        """
+        user = self.request.user
+        tenant_id = self._get_tenant_id()
+        
+        # Vérifier le tenant_id
+        if tenant_id and program.tenant_id != tenant_id:
+            return False
+        
+        # Vérifier selon le rôle
+        if user.role == 'member':
+            return program.member.email == user.email
+        elif user.role == 'COACH':
+            return program.coach == user
+        
+        # Admin et réceptionniste ont accès
+        return True
+    
+    def list(self, request, *args, **kwargs):
+        """Override list pour ajouter des logs"""
+        print(f"[DEBUG] 📋 TrainingProgramViewSet.list() - User: {request.user.email}")
+        return super().list(request, *args, **kwargs)
+    
+    def retrieve(self, request, *args, **kwargs):
+        """Override retrieve pour ajouter des logs"""
+        print(f"[DEBUG] 🔍 TrainingProgramViewSet.retrieve() - User: {request.user.email}")
+        return super().retrieve(request, *args, **kwargs)
+    
+    def create(self, request, *args, **kwargs):
+        """Override create pour ajouter des logs"""
+        print(f"[DEBUG] 🆕 TrainingProgramViewSet.create() - User: {request.user.email}")
+        return super().create(request, *args, **kwargs)
 
 class WorkoutSessionViewSet(viewsets.ModelViewSet):
     """CRUD pour les sessions d'entraînement"""
@@ -627,16 +760,49 @@ def member_programs(request):
     """
     user = request.user
     
-    # Vérifier que l'utilisateur est un membre
-    if user.role != 'MEMBER':
+    print(f"🔍 DEBUG member_programs - User: {user.email}, Role: {getattr(user, 'role', 'Non défini')}")
+    
+    # ✅ CORRIGÉ: Vérifications de rôle plus flexibles
+    is_member = (
+        getattr(user, 'role', None) in ['MEMBER', 'member', 'Membre', 'membre'] or
+        hasattr(user, 'member_profile') or
+        hasattr(user, 'member') or
+        Member.objects.filter(email=user.email).exists()
+    )
+    
+    if not is_member:
+        print(f"❌ Accès refusé - User role: {getattr(user, 'role', 'Non défini')}")
         return Response(
-            {'error': 'Accès réservé aux membres'},
+            {
+                'error': 'Accès réservé aux membres',
+                'user_role': getattr(user, 'role', 'Non défini'),
+                'has_member_profile': hasattr(user, 'member_profile'),
+                'has_member': hasattr(user, 'member')
+            },
             status=status.HTTP_403_FORBIDDEN
         )
     
     try:
-        # Récupérer le profil membre
-        member = user.member_profile
+        # ✅ CORRIGÉ: Récupérer le membre de différentes manières
+        member = None
+        
+        if hasattr(user, 'member_profile') and user.member_profile:
+            member = user.member_profile
+            print(f"✅ Membre trouvé via member_profile: {member.full_name}")
+        elif hasattr(user, 'member') and user.member:
+            member = user.member
+            print(f"✅ Membre trouvé via member: {member.full_name}")
+        else:
+            # Essayer de trouver le membre par email
+            try:
+                member = Member.objects.get(email=user.email)
+                print(f"✅ Membre trouvé par email: {member.full_name}")
+            except Member.DoesNotExist:
+                print(f"❌ Aucun membre trouvé avec l'email: {user.email}")
+                return Response(
+                    {'error': 'Profil membre non trouvé'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
         
         # Récupérer tous les programmes du membre
         programs = TrainingProgram.objects.filter(
@@ -646,6 +812,8 @@ def member_programs(request):
         ).prefetch_related(
             'workout_sessions__exercises__exercise'
         ).order_by('-created_at')
+        
+        print(f"✅ Programmes trouvés: {programs.count()}")
         
         # Sérialiser les données
         serializer = TrainingProgramSerializer(programs, many=True)
@@ -660,7 +828,6 @@ def member_programs(request):
             {'error': 'Erreur lors de la récupération des programmes'},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
-
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])

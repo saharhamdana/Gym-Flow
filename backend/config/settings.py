@@ -275,3 +275,47 @@ LOGGING = {
         },
     },
 }
+
+
+
+# # ============================================================
+# # STRIPE CONFIGURATION
+# # ============================================================
+
+# import stripe
+
+# # Clés Stripe (Mode Test)
+# STRIPE_PUBLISHABLE_KEY = os.getenv(
+#     'STRIPE_PUBLISHABLE_KEY',
+#     'pk_test_...'  # Remplacer par votre clé publique test
+# )
+
+# STRIPE_SECRET_KEY = os.getenv(
+#     'STRIPE_SECRET_KEY',
+#     'sk_test_...'  # Remplacer par votre clé secrète test
+# )
+
+# STRIPE_WEBHOOK_SECRET = os.getenv(
+#     'STRIPE_WEBHOOK_SECRET',
+#     'whsec_...'  # Remplacer par votre webhook secret
+# )
+
+# # Initialiser Stripe
+# stripe.api_key = STRIPE_SECRET_KEY
+
+# # URL de retour après paiement
+# STRIPE_SUCCESS_URL = os.getenv(
+#     'STRIPE_SUCCESS_URL',
+#     'http://localhost:8000/portal/payment/success'
+# )
+
+# STRIPE_CANCEL_URL = os.getenv(
+#     'STRIPE_CANCEL_URL',
+#     'http://localhost:8000/portal/payment/cancel'
+# )
+
+# # Devise par défaut
+# STRIPE_CURRENCY = 'tnd'  # Dinar Tunisien
+
+# # Mode test
+# STRIPE_TEST_MODE = True

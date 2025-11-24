@@ -95,70 +95,75 @@ const CreateProgramForm = () => {
     setError('');
   };
 
-  const handleSubmit = async () => {
-    setLoading(true);
-    setError('');
+ const handleSubmit = async () => {
+  setLoading(true);
+  setError('');
 
-    try {
-      const programData = {
-        title: formData.title,
-        description: formData.description,
-        goal: formData.goal,
-        member: formData.member.id,
-        status: formData.status,
-        start_date: formData.start_date,
-        end_date: calculateEndDate(formData.start_date, formData.duration_weeks),
-        duration_weeks: formData.duration_weeks,
-        target_weight: formData.target_weight || null,
-        target_body_fat: formData.target_body_fat || null,
-        notes: formData.notes
+  try {
+    const programData = {
+      title: formData.title,
+      description: formData.description,
+      goal: formData.goal,
+      member: formData.member.id,
+      status: formData.status,
+      start_date: formData.start_date,
+      end_date: calculateEndDate(formData.start_date, formData.duration_weeks),
+      duration_weeks: formData.duration_weeks,
+      target_weight: formData.target_weight || null,
+      target_body_fat: formData.target_body_fat || null,
+      notes: formData.notes,
+      tenant_id: 1 // Add tenant_id to program as well if needed
+    };
+
+    const programResponse = await coachingService.createProgram(programData);
+    const programId = programResponse.data.id;
+
+    for (const session of formData.workout_sessions) {
+      const sessionData = {
+        program: programId,
+        title: session.title,
+        day_of_week: session.day_of_week,
+        week_number: session.week_number,
+        duration_minutes: session.duration_minutes,
+        notes: session.notes || '',
+        order: session.order,
+        tenant_id: 1 // ADD THIS LINE - FIXES THE ERROR
       };
 
-      const programResponse = await coachingService.createProgram(programData);
-      const programId = programResponse.data.id;
+      const sessionResponse = await coachingService.createWorkoutSession(sessionData);
+      const sessionId = sessionResponse.data.id;
 
-      for (const session of formData.workout_sessions) {
-        const sessionData = {
-          program: programId,
-          title: session.title,
-          day_of_week: session.day_of_week,
-          week_number: session.week_number,
-          duration_minutes: session.duration_minutes,
-          notes: session.notes || '',
-          order: session.order
+      for (const ex of session.exercises) {
+        const exerciseData = {
+          workout_session: sessionId,
+          exercise: typeof ex.exercise === 'object' ? ex.exercise.id : ex.exercise,
+          sets: parseInt(ex.sets) || 0,
+          reps: String(ex.reps || ''),
+          rest_seconds: parseInt(ex.rest_seconds) || 0,
+          weight: String(ex.weight || ''),
+          notes: ex.notes || '',
+          order: ex.order || 0
         };
-
-        const sessionResponse = await coachingService.createWorkoutSession(sessionData);
-        const sessionId = sessionResponse.data.id;
-
-        for (const ex of session.exercises) {
-          const exerciseData = {
-            workout_session: sessionId,
-            exercise: typeof ex.exercise === 'object' ? ex.exercise.id : ex.exercise,
-            sets: parseInt(ex.sets) || 0,
-            reps: String(ex.reps || ''),
-            rest_seconds: parseInt(ex.rest_seconds) || 0,
-            weight: String(ex.weight || ''),
-            notes: ex.notes || '',
-            order: ex.order || 0
-          };
-          
-          await api.post('coaching/workout-exercises/', exerciseData);
-        }
+        
+        await api.post('coaching/workout-exercises/', exerciseData);
       }
-
-      alert(`Programme "${formData.title}" créé avec succès !`);
-      navigate('/coaching/programs');
-    } catch (err) {
-      console.error('Erreur:', err);
-      setError(
-        JSON.stringify(err.response?.data) ||
-        'Une erreur est survenue lors de la création du programme'
-      );
-    } finally {
-      setLoading(false);
     }
-  };
+
+    alert(`Programme "${formData.title}" créé avec succès !`);
+    navigate('/coaching/programs');
+  } catch (err) {
+    console.error('Erreur:', err);
+    setError(
+      err.response?.data?.detail || 
+      err.response?.data?.message ||
+      JSON.stringify(err.response?.data) ||
+      'Une erreur est survenue lors de la création du programme'
+    );
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   const renderStepContent = () => {
     switch (currentStep) {

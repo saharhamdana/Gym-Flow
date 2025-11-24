@@ -46,6 +46,8 @@ class Exercise(models.Model):
         return self.name
 
 
+
+
 class TrainingProgram(models.Model):
     """Programme d'entraînement personnalisé"""
     STATUS_CHOICES = [
@@ -57,7 +59,6 @@ class TrainingProgram(models.Model):
     
     title = models.CharField(max_length=200)
     description = models.TextField()
-    # ✅ CORRECTION : Utiliser Member au lieu de User
     member = models.ForeignKey(Member, on_delete=models.CASCADE, related_name='training_programs')
     coach = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='coached_programs')
     
@@ -75,6 +76,9 @@ class TrainingProgram(models.Model):
     # Notes
     notes = models.TextField(blank=True, help_text="Notes du coach")
     
+    # ✅ AJOUT DU CHAMP TENANT_ID
+    tenant_id = models.CharField(max_length=100, verbose_name="ID du centre", db_index=True, null=True, blank=True)
+    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
@@ -83,6 +87,12 @@ class TrainingProgram(models.Model):
     
     def __str__(self):
         return f"{self.title} - {self.member.full_name}"
+    
+    def save(self, *args, **kwargs):
+        # ✅ Hériter automatiquement le tenant_id du membre si non défini
+        if not self.tenant_id and self.member:
+            self.tenant_id = self.member.tenant_id
+        super().save(*args, **kwargs)
 
 
 class WorkoutSession(models.Model):

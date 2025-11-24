@@ -252,11 +252,17 @@ class TrainingProgramFullCreateSerializer(serializers.ModelSerializer):
             'id', 'title', 'description', 'member', 'coach', 'status',
             'start_date', 'end_date', 'duration_weeks',
             'goal', 'target_weight', 'target_body_fat', 'notes',
-            'workout_sessions'
+            'workout_sessions', 'tenant_id'  # ✅ AJOUT: inclure tenant_id mais en lecture seule
         ]
+        read_only_fields = ['tenant_id']  # ✅ IMPORTANT: rendre tenant_id en lecture seule
     
     def create(self, validated_data):
         sessions_data = validated_data.pop('workout_sessions', [])
+        
+        # ✅ S'assurer que le tenant_id est défini depuis le contexte
+        request = self.context.get('request')
+        if request and hasattr(request.user, 'tenant_id') and request.user.tenant_id:
+            validated_data['tenant_id'] = request.user.tenant_id
         
         # Créer le programme
         program = TrainingProgram.objects.create(**validated_data)

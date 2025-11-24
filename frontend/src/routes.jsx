@@ -68,6 +68,8 @@ import {
 } from "./pages/subscriptions";
 import MemberPrograms from "./pages/member/MemberPrograms";
 import MemberProgramDetail from "./pages/member/MemberProgramDetail";
+import { element } from "prop-types";
+
 
 export const routes = [
   // ==========================================
@@ -133,7 +135,6 @@ export const routes = [
     path: "/portal/programs/:id",
     element: <MemberLayout><MemberProgramDetail /></MemberLayout>, // ⭐ CORRIGÉ: Ajout de MemberLayout
   },
-  
   // ==========================================
   // ⭐ ROUTES COACH - UTILISER CoachDashboard
   // ==========================================
