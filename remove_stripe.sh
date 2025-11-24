@@ -1,3 +1,14 @@
+#!/bin/bash
+echo "í·¹ Nettoyage de Stripe..."
+
+# Supprimer les dÃ©pendances
+sed -i '/stripe/d' backend/requirements.txt
+
+# Supprimer les clÃ©s du .env
+sed -i '/STRIPE_/d' backend/.env
+
+# CrÃ©er un nouveau .env.example sans Stripe
+cat > backend/.env.example << 'EOL'
 # ================================
 # DJANGO CONFIGURATION
 # ================================
@@ -33,3 +44,6 @@ FRONTEND_URL=http://localhost:5173
 # SECURITY
 # ================================
 PASSWORD_RESET_TIMEOUT=86400
+EOL
+
+echo "âœ… Stripe supprimÃ© !"
