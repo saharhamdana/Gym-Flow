@@ -1,5 +1,4 @@
 # backend/subscriptions/stripe_views.py
-# ✅ VERSION MULTI-TENANT avec gestion dynamique du sous-domaine
 
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
@@ -21,6 +20,7 @@ logger = logging.getLogger('stripe')
 def get_frontend_url(request):
     return "https://powerfit-gymflow.loca.lt"
 
+
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def create_payment_session(request, subscription_id):
@@ -30,14 +30,12 @@ def create_payment_session(request, subscription_id):
     try:
         user = request.user
         
-        # ✅ ÉTAPE 1: Vérifier que l'user est un MEMBER
         if user.role != 'MEMBER':
             return Response({
                 'error': 'Accès refusé',
                 'message': 'Seuls les membres peuvent effectuer des paiements'
             }, status=status.HTTP_403_FORBIDDEN)
         
-        # ✅ ÉTAPE 2: Récupérer le profil Member
         try:
             member = user.member_profile
             logger.info(f"🔍 User ID: {user.id} → Member ID: {member.id} ({member.member_id})")
@@ -47,7 +45,6 @@ def create_payment_session(request, subscription_id):
                 'message': 'Votre profil membre n\'existe pas. Contactez l\'administration.'
             }, status=status.HTTP_404_NOT_FOUND)
         
-        # ✅ ÉTAPE 3: Récupérer l'abonnement
         try:
             subscription = Subscription.objects.select_related('plan', 'member').get(
                 id=subscription_id,
@@ -62,33 +59,26 @@ def create_payment_session(request, subscription_id):
                 'message': 'Cet abonnement n\'existe pas ou ne vous appartient pas'
             }, status=status.HTTP_404_NOT_FOUND)
         
-        # ✅ ÉTAPE 4: Vérifier le statut
         if subscription.status != 'PENDING':
             return Response({
                 'error': 'Paiement non autorisé',
                 'message': f'Cet abonnement est déjà {subscription.get_status_display().lower()}'
             }, status=status.HTTP_400_BAD_REQUEST)
         
-        # ✅ ÉTAPE 5: Créer les URLs de redirection dynamiques
         frontend_url = get_frontend_url(request)
         success_url = f"{frontend_url}/portal/subscription/success?session_id={{CHECKOUT_SESSION_ID}}"
         cancel_url = f"{frontend_url}/portal/subscriptions"
         
-        print(f"🎯 URLs AVEC PORT:")
-        print(f"✅ {success_url}")
-        
-        # ✅ ÉTAPE 6: Créer la session Stripe
         session_data = StripeService.create_checkout_session(
             subscription=subscription,
             success_url=success_url,
             cancel_url=cancel_url
         )
         
-        # ✅ ÉTAPE 7: Sauvegarder le session_id
         subscription.stripe_session_id = session_data['session_id']
         subscription.save(update_fields=['stripe_session_id', 'updated_at'])
         
-        logger.info(f"✅ Session Stripe créée pour {member.member_id} (User ID: {user.id}, Member ID: {member.id})")
+        logger.info(f"✅ Session Stripe créée pour {member.member_id}")
         
         return Response({
             'session_id': session_data['session_id'],
@@ -121,7 +111,6 @@ def verify_payment(request):
                 'error': 'Session ID manquant'
             }, status=status.HTTP_400_BAD_REQUEST)
         
-        # ✅ Récupérer le Member via la relation
         try:
             member = user.member_profile
         except Member.DoesNotExist:
@@ -129,10 +118,8 @@ def verify_payment(request):
                 'error': 'Profil membre introuvable'
             }, status=status.HTTP_404_NOT_FOUND)
         
-        # ✅ Récupérer la session Stripe
         session = StripeService.retrieve_session(session_id)
         
-        # ✅ Récupérer l'abonnement via member
         try:
             subscription = Subscription.objects.select_related('plan').get(
                 stripe_session_id=session_id,
@@ -144,7 +131,6 @@ def verify_payment(request):
                 'error': 'Abonnement introuvable'
             }, status=status.HTTP_404_NOT_FOUND)
         
-        # ✅ Vérifier et activer si payé
         if session.payment_status == 'paid':
             if subscription.status != 'ACTIVE':
                 subscription.activate()
@@ -152,7 +138,13 @@ def verify_payment(request):
                 subscription.stripe_payment_intent_id = session.payment_intent
                 subscription.save(update_fields=['payment_method', 'stripe_payment_intent_id', 'updated_at'])
                 
-                logger.info(f"✅ Paiement confirmé - Abonnement {subscription.id} activé pour {member.member_id}")
+                logger.info(f"✅ Paiement confirmé - Abonnement {subscription.id} activé")
+                
+                # ✅ CRÉATION MANUELLE DE LA FACTURE ICI AUSSI
+                try:
+                    create_invoice_for_subscription(subscription, session.payment_intent)
+                except Exception as invoice_error:
+                    logger.error(f"❌ Erreur création facture manuelle: {str(invoice_error)}")
             
             return Response({
                 'success': True,
@@ -186,56 +178,151 @@ def verify_payment(request):
 @api_view(['POST'])
 def stripe_webhook(request):
     """
-    🔔 Webhook Stripe
+    🔔 Webhook Stripe - ✅ VERSION CORRIGÉE
     """
     payload = request.body
     sig_header = request.META.get('HTTP_STRIPE_SIGNATURE')
     
     try:
+        # ✅ Vérifier la signature du webhook
         event = StripeService.verify_webhook_signature(payload, sig_header)
         
-        logger.info(f"📥 Webhook reçu: {event['type']}")
+        logger.info(f"🔔 Webhook reçu: {event['type']}")
+        logger.info(f"📦 Event data: {event.get('data', {}).get('object', {}).get('id', 'N/A')}")
         
+        # ✅ TRAITER LES ÉVÉNEMENTS
         if event['type'] == 'checkout.session.completed':
             session = event['data']['object']
+            logger.info(f"✅ Traitement checkout.session.completed pour session: {session.get('id')}")
             handle_checkout_session_completed(session)
         
         elif event['type'] == 'payment_intent.succeeded':
             payment_intent = event['data']['object']
+            logger.info(f"✅ Traitement payment_intent.succeeded pour PI: {payment_intent.get('id')}")
             handle_payment_intent_succeeded(payment_intent)
+        
+        else:
+            logger.info(f"ℹ️ Événement ignoré: {event['type']}")
         
         return HttpResponse(status=200)
     
+    except ValueError as e:
+        logger.error(f"❌ Erreur webhook (ValueError): {str(e)}")
+        return HttpResponse(status=400)
     except Exception as e:
         logger.error(f"❌ Erreur webhook: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return HttpResponse(status=400)
+
+
+def create_invoice_for_subscription(subscription, payment_intent_id=''):
+    """
+    📄 Fonction utilitaire pour créer une facture
+    """
+    try:
+        from billing.models import Invoice
+        from billing.pdf_generator import generate_invoice_pdf
+        
+        logger.info(f"📄 Création facture pour subscription {subscription.id}...")
+        
+        # Créer la facture
+        invoice = Invoice.objects.create(
+            member=subscription.member,
+            subscription=subscription,
+            amount=subscription.amount_paid,
+            tax_rate=19,
+            company_name="GymFlow",
+            company_address="Avenue Habib Bourguiba, Tunis 1000, Tunisie",
+            company_tax_id="1234567M",
+            customer_name=subscription.member.full_name,
+            customer_email=subscription.member.email,
+            customer_address=subscription.member.address or '',
+            line_items=[{
+                'description': f"Abonnement {subscription.plan.name} - {subscription.plan.duration_days} jours",
+                'quantity': 1,
+                'unit_price': float(subscription.amount_paid),
+                'total': float(subscription.amount_paid)
+            }],
+            payment_method='Stripe',
+            stripe_payment_intent_id=payment_intent_id,
+            tenant_id=subscription.tenant_id,
+            status='PAID',
+            notes=f"Paiement en ligne via Stripe\nPayment Intent ID: {payment_intent_id}"
+        )
+        
+        logger.info(f"✅ Facture {invoice.invoice_number} créée")
+        
+        # Marquer comme payée
+        invoice.mark_as_paid(
+            payment_method='Stripe',
+            payment_intent_id=payment_intent_id
+        )
+        
+        # Générer le PDF
+        try:
+            pdf_path = generate_invoice_pdf(invoice)
+            invoice.pdf_file = pdf_path
+            invoice.save(update_fields=['pdf_file'])
+            logger.info(f"✅ PDF généré : {pdf_path}")
+        except Exception as pdf_error:
+            logger.error(f"❌ Erreur génération PDF: {str(pdf_error)}")
+        
+        logger.info(f"✅✅✅ FACTURE COMPLÈTE : {invoice.invoice_number}")
+        return invoice
+        
+    except Exception as e:
+        logger.error(f"❌ Erreur création facture: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise
 
 
 def handle_checkout_session_completed(session):
     """
-    ✅ Gérer la complétion d'une session
+    ✅ Gérer la complétion d'une session + CRÉER FACTURE AUTOMATIQUEMENT
     """
     try:
-        subscription_id = session['metadata'].get('subscription_id')
+        subscription_id = session.get('metadata', {}).get('subscription_id')
         
         if not subscription_id:
             logger.error("❌ subscription_id manquant dans metadata")
+            logger.error(f"📦 Session metadata: {session.get('metadata')}")
             return
         
-        subscription = Subscription.objects.select_related('member').get(id=subscription_id)
+        logger.info(f"🔍 Traitement subscription {subscription_id}...")
+        
+        subscription = Subscription.objects.select_related('member', 'plan').get(id=subscription_id)
         
         if subscription.status != 'ACTIVE':
+            # ✅ ÉTAPE 1: Activer l'abonnement
             subscription.activate()
             subscription.payment_method = 'Stripe'
             subscription.stripe_payment_intent_id = session.get('payment_intent')
             subscription.save(update_fields=['payment_method', 'stripe_payment_intent_id', 'updated_at'])
             
-            logger.info(f"✅ Webhook: Abonnement {subscription.id} activé pour {subscription.member.member_id}")
+            logger.info(f"✅ Abonnement {subscription.id} activé")
+            
+            # ✅ ÉTAPE 2: CRÉER LA FACTURE
+            try:
+                invoice = create_invoice_for_subscription(
+                    subscription, 
+                    session.get('payment_intent', '')
+                )
+                logger.info(f"✅✅ Facture créée avec succès: {invoice.invoice_number}")
+            except Exception as invoice_error:
+                logger.error(f"❌ Erreur création facture dans webhook: {str(invoice_error)}")
+                import traceback
+                traceback.print_exc()
+        else:
+            logger.info(f"ℹ️ Abonnement {subscription.id} déjà actif")
     
     except Subscription.DoesNotExist:
         logger.error(f"❌ Abonnement {subscription_id} introuvable")
     except Exception as e:
         logger.error(f"❌ Erreur handle_checkout_session_completed: {str(e)}")
+        import traceback
+        traceback.print_exc()
 
 
 def handle_payment_intent_succeeded(payment_intent):
@@ -243,13 +330,30 @@ def handle_payment_intent_succeeded(payment_intent):
     ✅ Gérer la réussite d'un PaymentIntent
     """
     try:
+        payment_intent_id = payment_intent.get('id')
+        logger.info(f"🔍 Traitement payment_intent {payment_intent_id}...")
+        
         subscription = Subscription.objects.filter(
-            stripe_payment_intent_id=payment_intent['id']
+            stripe_payment_intent_id=payment_intent_id
         ).first()
         
         if subscription and subscription.status != 'ACTIVE':
             subscription.activate()
-            logger.info(f"✅ Webhook: Abonnement {subscription.id} activé via payment_intent.succeeded")
+            logger.info(f"✅ Abonnement {subscription.id} activé via payment_intent.succeeded")
+            
+            # ✅ Créer facture si pas déjà créée
+            try:
+                from billing.models import Invoice
+                if not Invoice.objects.filter(subscription=subscription).exists():
+                    create_invoice_for_subscription(subscription, payment_intent_id)
+            except Exception as e:
+                logger.error(f"❌ Erreur création facture: {str(e)}")
+        elif subscription:
+            logger.info(f"ℹ️ Abonnement {subscription.id} déjà actif")
+        else:
+            logger.warning(f"⚠️ Aucun abonnement trouvé pour payment_intent {payment_intent_id}")
     
     except Exception as e:
         logger.error(f"❌ Erreur handle_payment_intent_succeeded: {str(e)}")
+        import traceback
+        traceback.print_exc()

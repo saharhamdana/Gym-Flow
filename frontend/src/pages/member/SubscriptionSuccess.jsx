@@ -4,9 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import MemberLayout from '../../components/member/MemberLayout';
 import { Card, CardBody, Typography, Button } from "@material-tailwind/react";
-import { CheckCircleIcon, XCircleIcon } from "@heroicons/react/24/solid";
+import { CheckCircleIcon, XCircleIcon, DocumentTextIcon } from "@heroicons/react/24/solid";
 import api from '../../api/axiosInstance';
-
 
 const SubscriptionSuccess = () => {
     const navigate = useNavigate();
@@ -17,38 +16,37 @@ const SubscriptionSuccess = () => {
 
     // ✅ Fonction de vérification du paiement
     const verifyPayment = async (sessionId) => {
-  try {
-    setLoading(true);
-    console.log('🔍 Vérification avec session_id:', sessionId);
+        try {
+            setLoading(true);
+            console.log('🔍 Vérification avec session_id:', sessionId);
 
-    // ✅ URL CORRECTE avec le double préfixe
-    // ✅ URL AVEC NOUVELLE STRUCTURE
-    const response = await api.get('subscriptions/verify-payment/', {
-      params: { session_id: sessionId }
-    });
+            // ✅ URL CORRECTE avec le double préfixe
+            const response = await api.get('subscriptions/verify-payment/', {
+                params: { session_id: sessionId }
+            });
 
-    console.log('✅ Réponse backend:', response.data);
+            console.log('✅ Réponse backend:', response.data);
 
-    if (response.data.success) {
-      setVerificationResult({
-        success: true,
-        subscription: response.data.subscription,
-        message: response.data.message
-      });
-    } else {
-      setVerificationResult({
-        success: false,
-        message: response.data.message || 'Paiement en attente'
-      });
-    }
+            if (response.data.success) {
+                setVerificationResult({
+                    success: true,
+                    subscription: response.data.subscription,
+                    message: response.data.message
+                });
+            } else {
+                setVerificationResult({
+                    success: false,
+                    message: response.data.message || 'Paiement en attente'
+                });
+            }
 
-  } catch (err) {
-    console.error('❌ Erreur vérification:', err);
-    setError(err.response?.data?.message || 'Erreur lors de la vérification du paiement');
-  } finally {
-    setLoading(false);
-  }
-};
+        } catch (err) {
+            console.error('❌ Erreur vérification:', err);
+            setError(err.response?.data?.message || 'Erreur lors de la vérification du paiement');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     // ✅ Fonction de vérification par ID d'abonnement
     const verifyWithSubscriptionId = async (subscriptionId) => {
@@ -100,8 +98,6 @@ const SubscriptionSuccess = () => {
         console.log('📌 Manuel Redirect:', manuelRedirect);
         console.log('📌 Saved Session ID:', savedSessionId);
         console.log('📌 Saved Subscription ID:', savedSubscriptionId);
-        console.log('📌 Full URL:', window.location.href);
-        console.log('📌 Referrer:', document.referrer);
 
         // ✅ PRIORITÉ 1: Session ID de l'URL
         if (sessionId) {
@@ -127,7 +123,6 @@ const SubscriptionSuccess = () => {
         // ✅ PRIORITÉ 5: Redirection manuelle depuis Stripe
         else if (manuelRedirect === 'true' || fromStripe === 'true') {
             console.log('🎯 Redirection manuelle depuis Stripe');
-            // Essayer de récupérer le dernier paiement
             const lastSubscriptionId = localStorage.getItem('pending_payment_subscription_id');
             if (lastSubscriptionId) {
                 verifyWithSubscriptionId(lastSubscriptionId);
@@ -143,7 +138,6 @@ const SubscriptionSuccess = () => {
         }
     }, []);
 
-    // ... RESTE DU CODE INCHANGÉ (loading, error, success displays) ...
     if (loading) {
         return (
             <MemberLayout>
@@ -258,23 +252,34 @@ const SubscriptionSuccess = () => {
                                 </div>
                             )}
 
-                            {/* Confirmation par email */}
+                            {/* Information facture */}
                             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-8">
-                                <Typography variant="small" className="text-blue-800">
-                                    📧 Un email de confirmation a été envoyé à votre adresse
-                                </Typography>
+                                <div className="flex items-center gap-3">
+                                    <DocumentTextIcon className="h-6 w-6 text-blue-600" />
+                                    <div>
+                                        <Typography variant="small" className="text-blue-800 font-semibold">
+                                            Votre facture est disponible
+                                        </Typography>
+                                        <Typography variant="small" className="text-blue-700">
+                                            Téléchargez votre facture depuis votre espace membre
+                                        </Typography>
+                                    </div>
+                                </div>
                             </div>
 
-                            {/* Actions */}
+                            {/* Actions PRINCIPALES - CHANGÉES ICI */}
                             <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                                {/* ✅ CHANGEMENT: Aller vers Mes Factures au lieu du Dashboard */}
                                 <Button
                                     color="blue"
                                     size="lg"
-                                    onClick={() => navigate('/portal/dashboard')}
+                                    onClick={() => navigate('/portal/invoices')}
                                     className="flex items-center justify-center gap-2"
                                 >
-                                    Aller au tableau de bord
+                                    <DocumentTextIcon className="h-5 w-5" />
+                                    Voir ma facture
                                 </Button>
+                                
                                 <Button
                                     variant="outlined"
                                     color="blue"
@@ -285,12 +290,38 @@ const SubscriptionSuccess = () => {
                                 </Button>
                             </div>
 
+                            {/* Actions secondaires */}
+                            <div className="flex gap-4 justify-center mt-4">
+                                <Button
+                                    variant="text"
+                                    color="gray"
+                                    size="sm"
+                                    onClick={() => navigate('/portal/dashboard')}
+                                >
+                                    Tableau de bord
+                                </Button>
+                                <Button
+                                    variant="text"
+                                    color="gray"
+                                    size="sm"
+                                    onClick={() => navigate('/portal/reservations')}
+                                >
+                                    Réserver un cours
+                                </Button>
+                            </div>
+
                             {/* Prochaines étapes */}
                             <div className="mt-12 text-left bg-gray-50 rounded-lg p-6">
                                 <Typography variant="h6" className="mb-4" style={{ color: '#00357a' }}>
                                     🎉 Prochaines étapes
                                 </Typography>
                                 <ul className="space-y-3">
+                                    <li className="flex items-start gap-3">
+                                        <DocumentTextIcon className="h-6 w-6 text-blue-500 flex-shrink-0 mt-0.5" />
+                                        <Typography variant="small" className="text-gray-700">
+                                            <strong>Téléchargez votre facture</strong> depuis la page "Mes Factures"
+                                        </Typography>
+                                    </li>
                                     <li className="flex items-start gap-3">
                                         <CheckCircleIcon className="h-6 w-6 text-green-500 flex-shrink-0 mt-0.5" />
                                         <Typography variant="small" className="text-gray-700">
@@ -301,12 +332,6 @@ const SubscriptionSuccess = () => {
                                         <CheckCircleIcon className="h-6 w-6 text-green-500 flex-shrink-0 mt-0.5" />
                                         <Typography variant="small" className="text-gray-700">
                                             Consultez vos programmes d'entraînement personnalisés
-                                        </Typography>
-                                    </li>
-                                    <li className="flex items-start gap-3">
-                                        <CheckCircleIcon className="h-6 w-6 text-green-500 flex-shrink-0 mt-0.5" />
-                                        <Typography variant="small" className="text-gray-700">
-                                            Suivez votre progression dans votre espace membre
                                         </Typography>
                                     </li>
                                 </ul>

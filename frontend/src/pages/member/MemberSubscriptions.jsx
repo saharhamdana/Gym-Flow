@@ -1,5 +1,5 @@
 // frontend/src/pages/member/MemberSubscriptions.jsx
-// ✅ VERSION COMPLÈTE avec affichage des abonnements
+// ✅ VERSION COMPLÈTE CORRIGÉE avec affichage de TOUS les abonnements actifs
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -137,7 +137,8 @@ const MemberSubscriptions = () => {
     );
   }
 
-  const activeSubscription = subscriptions.find(s => s.status === 'ACTIVE');
+  // ✅ CORRECTION : Utiliser filter() au lieu de find() pour obtenir TOUS les abonnements actifs
+  const activeSubscriptions = subscriptions.filter(s => s.status === 'ACTIVE');
   const pendingSubscriptions = subscriptions.filter(s => s.status === 'PENDING');
   const historySubscriptions = subscriptions.filter(s =>
     ['EXPIRED', 'CANCELLED'].includes(s.status)
@@ -196,102 +197,109 @@ const MemberSubscriptions = () => {
             </div>
             <div>
               <Typography variant="h4" color="blue-gray">
-                {activeSubscription ? 1 : 0}
+                {activeSubscriptions.length} {/* ✅ CORRIGÉ */}
               </Typography>
               <Typography variant="small" color="gray">
-                Actif
+                Actif(s) {/* ✅ CORRIGÉ */}
               </Typography>
             </div>
           </CardBody>
         </Card>
       </div>
 
-      {/* Abonnement actif */}
-      {activeSubscription && (
-        <Card className="border-l-4 border-green-500">
-          <CardBody>
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <div className="p-3 bg-green-100 rounded-full">
-                  <CheckCircleIcon className="h-8 w-8 text-green-600" />
+      {/* ✅ CORRECTION : Section Abonnements Actifs (peut en afficher plusieurs) */}
+      {activeSubscriptions.length > 0 && (
+        <div className="space-y-4">
+          <Typography variant="h5" style={{ color: '#00357a' }}>
+            ✅ Abonnements Actifs
+          </Typography>
+          {activeSubscriptions.map((subscription) => (
+            <Card key={subscription.id} className="border-l-4 border-green-500">
+              <CardBody>
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-3 bg-green-100 rounded-full">
+                      <CheckCircleIcon className="h-8 w-8 text-green-600" />
+                    </div>
+                    <div>
+                      <Typography variant="h5" style={{ color: '#00357a' }}>
+                        Abonnement Actif
+                      </Typography>
+                      <Typography variant="small" className="text-gray-600">
+                        {subscription.plan_name}
+                      </Typography>
+                    </div>
+                  </div>
+                  <Chip
+                    value="Actif"
+                    color="green"
+                    icon={<CheckCircleIcon className="h-4 w-4" />}
+                  />
                 </div>
-                <div>
-                  <Typography variant="h5" style={{ color: '#00357a' }}>
-                    Abonnement Actif
-                  </Typography>
-                  <Typography variant="small" className="text-gray-600">
-                    {activeSubscription.plan_name}
-                  </Typography>
-                </div>
-              </div>
-              <Chip
-                value="Actif"
-                color="green"
-                icon={<CheckCircleIcon className="h-4 w-4" />}
-              />
-            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-              <div className="p-4 bg-gray-50 rounded-lg">
-                <Typography variant="small" className="text-gray-600 mb-1">
-                  Date de fin
-                </Typography>
-                <div className="flex items-center gap-2">
-                  <CalendarIcon className="h-5 w-5" style={{ color: '#9b0e16' }} />
-                  <Typography className="font-semibold">
-                    {new Date(activeSubscription.end_date).toLocaleDateString('fr-FR')}
-                  </Typography>
-                </div>
-              </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                  <div className="p-4 bg-gray-50 rounded-lg">
+                    <Typography variant="small" className="text-gray-600 mb-1">
+                      Date de fin
+                    </Typography>
+                    <div className="flex items-center gap-2">
+                      <CalendarIcon className="h-5 w-5" style={{ color: '#9b0e16' }} />
+                      <Typography className="font-semibold">
+                        {new Date(subscription.end_date).toLocaleDateString('fr-FR')}
+                      </Typography>
+                    </div>
+                  </div>
 
-              <div className="p-4 bg-gray-50 rounded-lg">
-                <Typography variant="small" className="text-gray-600 mb-1">
-                  Jours restants
-                </Typography>
-                <div className="flex items-center gap-2">
-                  <ClockIcon className="h-5 w-5" style={{ color: '#9b0e16' }} />
-                  <Typography className="font-semibold">
-                    {activeSubscription.days_remaining} jours
-                  </Typography>
-                </div>
-              </div>
+                  <div className="p-4 bg-gray-50 rounded-lg">
+                    <Typography variant="small" className="text-gray-600 mb-1">
+                      Jours restants
+                    </Typography>
+                    <div className="flex items-center gap-2">
+                      <ClockIcon className="h-5 w-5" style={{ color: '#9b0e16' }} />
+                      <Typography className="font-semibold">
+                        {subscription.days_remaining} jours
+                      </Typography>
+                    </div>
+                  </div>
 
-              <div className="p-4 bg-gray-50 rounded-lg">
-                <Typography variant="small" className="text-gray-600 mb-1">
-                  Montant payé
-                </Typography>
-                <div className="flex items-center gap-2">
-                  <BanknotesIcon className="h-5 w-5" style={{ color: '#9b0e16' }} />
-                  <Typography className="font-semibold">
-                    {parseFloat(activeSubscription.amount_paid).toFixed(3)} TND
-                  </Typography>
+                  <div className="p-4 bg-gray-50 rounded-lg">
+                    <Typography variant="small" className="text-gray-600 mb-1">
+                      Montant payé
+                    </Typography>
+                    <div className="flex items-center gap-2">
+                      <BanknotesIcon className="h-5 w-5" style={{ color: '#9b0e16' }} />
+                      <Typography className="font-semibold">
+                        {parseFloat(subscription.amount_paid).toFixed(3)} TND
+                      </Typography>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
 
-            {/* Barre de progression */}
-            {activeSubscription.days_remaining !== undefined && (
-              <div className="mb-2">
-                <div className="flex justify-between text-sm mb-1">
-                  <Typography variant="small" color="gray">
-                    Progression
-                  </Typography>
-                  <Typography variant="small" color="gray">
-                    {activeSubscription.days_remaining} jours restants
-                  </Typography>
-                </div>
-                <Progress
-                  value={Math.min(100, (activeSubscription.days_remaining / 30) * 100)}
-                  color={
-                    activeSubscription.days_remaining > 7 ? "green" :
-                      activeSubscription.days_remaining > 3 ? "amber" : "red"
-                  }
-                  className="h-2"
-                />
-              </div>
-            )}
-          </CardBody>
-        </Card>
+                {/* Barre de progression */}
+                {subscription.days_remaining !== undefined && (
+                  <div className="mb-2">
+                    <div className="flex justify-between text-sm mb-1">
+                      <Typography variant="small" color="gray">
+                        Progression
+                      </Typography>
+                      <Typography variant="small" color="gray">
+                        {subscription.days_remaining} jours restants
+                      </Typography>
+                    </div>
+                    <Progress
+                      value={Math.min(100, (subscription.days_remaining / 30) * 100)}
+                      color={
+                        subscription.days_remaining > 7 ? "green" :
+                        subscription.days_remaining > 3 ? "amber" : "red"
+                      }
+                      className="h-2"
+                    />
+                  </div>
+                )}
+              </CardBody>
+            </Card>
+          ))}
+        </div>
       )}
 
       {/* Abonnements en attente de paiement */}

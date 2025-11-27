@@ -65,6 +65,11 @@ const MemberLayout = ({ children }) => {
       icon: CreditCardIcon,
     },
     {
+      label: "Mes Factures",
+      path: "/portal/invoices",
+      icon: ClipboardDocumentListIcon,
+    },
+    {
       label: "Mes Réservations",
       path: "/portal/bookings",
       icon: CalendarDaysIcon,

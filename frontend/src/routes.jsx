@@ -73,6 +73,7 @@ import MemberSubscriptions from "./pages/member/MemberSubscriptions";
 import PaymentSuccess from "./pages/member/PaymentSuccess";
 import SubscriptionSuccess from "./pages/member/SubscriptionSuccess";
 import SubscriptionCancel from "./pages/member/SubscriptionCancel";
+import MemberInvoices from "./pages/member/MemberInvoices";
 
 
 export const routes = [
@@ -158,6 +159,16 @@ export const routes = [
     name: "Member Payment Cancel",
     path: "/portal/subscription/cancel",
     element: <MemberLayout><SubscriptionCancel /></MemberLayout>,
+  },
+  {
+    name: "Invoices",
+    path: "/portal/invoices",
+    element: <MemberInvoices />,
+  },
+  {
+    name: " Invoice Detail",
+    path: "/portal/invoices/:invoiceId",
+    element: <MemberInvoices />,
   },
 
   // ==========================================
