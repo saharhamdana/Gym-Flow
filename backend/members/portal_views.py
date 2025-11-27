@@ -20,100 +20,119 @@ from coaching.serializers import TrainingProgramSerializer
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
+def my_subscriptions(request):
+    """📋 Liste des abonnements du membre connecté"""
+    try:
+        user = request.user
+        
+        # ✅ Vérifier le rôle
+        if user.role != 'MEMBER':
+            return Response({
+                'error': 'Accès refusé',
+                'message': 'Cette fonctionnalité est réservée aux membres'
+            }, status=status.HTTP_403_FORBIDDEN)
+        
+        # ✅ Récupérer le profil Member
+        try:
+            member = user.member_profile
+            print(f"✅ User ID: {user.id} → Member ID: {member.id}")
+        except Member.DoesNotExist:
+            return Response({
+                'error': 'Profil membre introuvable'
+            }, status=status.HTTP_404_NOT_FOUND)
+        
+        # ✅ CORRECTION : Filtrer par member (pas juste tenant_id)
+        subscriptions = Subscription.objects.filter(
+            member=member,  # ⭐ FILTRE CRUCIAL
+            tenant_id=request.tenant_id
+        ).select_related('plan').order_by('-created_at')
+        
+        print(f"✅ Abonnements trouvés pour {member.member_id}: {subscriptions.count()}")
+        
+        # Sérialiser
+        serializer = SubscriptionDetailSerializer(subscriptions, many=True)
+        
+        return Response(serializer.data)
+        
+    except Exception as e:
+        print(f"❌ Erreur my_subscriptions: {str(e)}")
+        return Response({
+            'error': 'Erreur serveur',
+            'message': str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def member_dashboard(request):
     """
-    📊 Dashboard complet du membre
-    Retourne toutes les infos essentielles en une seule requête
+    📊 Dashboard membre avec toutes les infos
+    
+    ✅ CORRECTION: Utilise user.member_profile
     """
-    user = request.user
-    
-    # Vérifier que l'utilisateur est bien un membre
-    if user.role != 'MEMBER':
-        return Response(
-            {'error': 'Accès réservé aux membres'},
-            status=status.HTTP_403_FORBIDDEN
-        )
-    
     try:
-        member = user.member_profile
-    except Member.DoesNotExist:
-        return Response(
-            {'error': 'Profil membre non trouvé'},
-            status=status.HTTP_404_NOT_FOUND
-        )
-    
-    today = timezone.now().date()
-    
-    # 1️⃣ ABONNEMENT ACTUEL
-    active_subscription = Subscription.objects.filter(
-        member=member,
-        status='ACTIVE',
-        end_date__gte=today
-    ).select_related('plan').first()
-    
-    # 2️⃣ PROCHAINS COURS RÉSERVÉS (5 prochains)
-    upcoming_bookings = Booking.objects.filter(
-        member=member,
-        course__date__gte=today,
-        status='CONFIRMED'
-    ).select_related('course__course_type', 'course__coach', 'course__room').order_by('course__date', 'course__start_time')[:5]
-    
-    # 3️⃣ HISTORIQUE RÉCENT (10 derniers cours)
-    past_bookings = Booking.objects.filter(
-        member=member,
-        course__date__lt=today
-    ).select_related('course').order_by('-course__date')[:10]
-    
-    # 4️⃣ PROGRAMME D'ENTRAÎNEMENT ACTUEL
-    current_program = TrainingProgram.objects.filter(
-        member=member,
-        status='active'
-    ).select_related('coach').prefetch_related('workout_sessions').first()
-    
-    # 5️⃣ DERNIÈRES MESURES PHYSIQUES
-    latest_measurement = MemberMeasurement.objects.filter(
-        member=member
-    ).order_by('-date').first()
-    
-    # 6️⃣ STATISTIQUES PERSONNELLES
-    total_bookings = Booking.objects.filter(member=member).count()
-    attended_bookings = Booking.objects.filter(member=member, checked_in=True).count()
-    attendance_rate = (attended_bookings / total_bookings * 100) if total_bookings > 0 else 0
-    
-    # 7️⃣ PROCHAINE EXPIRATION ABONNEMENT
-    expiring_soon = None
-    if active_subscription:
-        days_remaining = (active_subscription.end_date - today).days
-        if days_remaining <= 7:
-            expiring_soon = {
-                'days_remaining': days_remaining,
+        user = request.user
+        
+        # ✅ Vérifier le rôle
+        if user.role != 'MEMBER':
+            return Response({
+                'error': 'Accès refusé'
+            }, status=status.HTTP_403_FORBIDDEN)
+        
+        # ✅ Récupérer le Member via la relation
+        try:
+            member = user.member_profile
+        except Member.DoesNotExist:
+            return Response({
+                'error': 'Profil membre introuvable'
+            }, status=status.HTTP_404_NOT_FOUND)
+        
+        today = timezone.now().date()
+        
+        # ✅ Abonnement actif via member
+        active_subscription = Subscription.objects.filter(
+            member=member,  # ✅ Pas member_id=user.id !
+            status='ACTIVE',
+            end_date__gte=today
+        ).select_related('plan').first()
+        
+        # ✅ Abonnements en attente via member
+        pending_subscriptions = Subscription.objects.filter(
+            member=member,
+            status='PENDING'
+        ).select_related('plan')
+        
+        # Statistiques
+        total_subscriptions = Subscription.objects.filter(member=member).count()
+        
+        return Response({
+            'member': {
+                'id': member.id,
+                'member_id': member.member_id,
+                'full_name': member.full_name,
+                'email': member.email,
+                'status': member.status,
+            },
+            'active_subscription': {
+                'id': active_subscription.id,
+                'plan_name': active_subscription.plan.name,
                 'end_date': active_subscription.end_date,
-                'plan_name': active_subscription.plan.name
+                'days_remaining': active_subscription.days_remaining,
+            } if active_subscription else None,
+            'pending_subscriptions': SubscriptionListSerializer(pending_subscriptions, many=True).data,
+            'statistics': {
+                'total_subscriptions': total_subscriptions,
             }
-    
-    return Response({
-        'member': MemberDetailSerializer(member, context={'request': request}).data,
-        'subscription': {
-            'active': active_subscription is not None,
-            'plan': active_subscription.plan.name if active_subscription else None,
-            'end_date': active_subscription.end_date if active_subscription else None,
-            'days_remaining': active_subscription.days_remaining if active_subscription else 0,
-            'status': active_subscription.status if active_subscription else None,
-        } if active_subscription else None,
-        'upcoming_bookings': BookingDetailSerializer(upcoming_bookings, many=True).data,
-        'past_bookings': BookingDetailSerializer(past_bookings, many=True).data,
-        'current_program': TrainingProgramSerializer(current_program).data if current_program else None,
-        'latest_measurement': MemberMeasurementSerializer(latest_measurement).data if latest_measurement else None,
-        'statistics': {
-            'total_bookings': total_bookings,
-            'attended_bookings': attended_bookings,
-            'attendance_rate': round(attendance_rate, 1),
-        },
-        'alerts': {
-            'expiring_soon': expiring_soon
-        }
-    })
-
+        })
+        
+    except Exception as e:
+        print(f"❌ Erreur member_dashboard: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return Response({
+            'error': 'Erreur serveur',
+            'message': str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])

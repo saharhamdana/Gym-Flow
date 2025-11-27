@@ -1,7 +1,7 @@
 # backend/members/portal_urls.py
 
 from django.urls import path
-from . import portal_views
+from members import portal_views
 
 urlpatterns = [
     # Dashboard
@@ -20,6 +20,7 @@ urlpatterns = [
     path('progress/', portal_views.my_progress, name='my-progress'),
     
     # Abonnements
-    path('subscription-plans/', portal_views.subscription_plans_list, name='subscription-plans'),
-    path('subscriptions/history/', portal_views.my_subscription_history, name='subscription-history'),
+    path('subscriptions/', portal_views.my_subscriptions, name='my-subscriptions'),
+    path('subscriptions/history/', portal_views.my_subscription_history, name='my-subscription-history'),
+    path('subscriptions/plans/', portal_views.subscription_plans_list, name='subscription-plans'),
 ]

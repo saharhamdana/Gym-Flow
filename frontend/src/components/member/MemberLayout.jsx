@@ -60,9 +60,9 @@ const MemberLayout = ({ children }) => {
       icon: ClipboardDocumentListIcon,
     },
     {
-      label: "Mes Abonnement",
-      path: "/portal/subscription/plans",
-      icon: CreditCardIcon, // ✅ MAINTENANT DISPONIBLE
+      label: "Mes Abonnements", // Correction orthographique
+      path: "/portal/subscriptions", // Chemin corrigé
+      icon: CreditCardIcon,
     },
     {
       label: "Mes Réservations",
@@ -103,8 +103,8 @@ const MemberLayout = ({ children }) => {
               className="border-2 border-[#00357a]"
             />
             <div className="flex-1 min-w-0">
-              <Typography 
-                variant="small" 
+              <Typography
+                variant="small"
                 className="font-semibold text-gray-900 truncate"
                 style={{ color: "#00357a" }}
               >
@@ -131,7 +131,7 @@ const MemberLayout = ({ children }) => {
               </ListItem>
             </Link>
           ))}
-          
+
           {/* Déconnexion */}
           <ListItem className="mt-4" onClick={handleLogout}>
             <ListItemPrefix>
