@@ -15,10 +15,12 @@ class SubscriptionPlan(models.Model):
     
     # ✅ Multi-tenant
     tenant_id = models.CharField(max_length=100, verbose_name="ID du centre", db_index=True)
+
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
+
     class Meta:
         ordering = ['duration_days']
         verbose_name = "Plan d'abonnement"
@@ -51,6 +53,9 @@ class Subscription(models.Model):
     amount_paid = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0)])
     payment_date = models.DateTimeField(null=True, blank=True)
     payment_method = models.CharField(max_length=50, blank=True, help_text="Espèces, Carte, Virement, etc.")
+
+    stripe_session_id = models.CharField(max_length=255, blank=True, null=True, db_index=True)
+    stripe_payment_intent_id = models.CharField(max_length=255, blank=True, null=True, db_index=True)
     
     notes = models.TextField(blank=True)
     

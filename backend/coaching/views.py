@@ -760,49 +760,16 @@ def member_programs(request):
     """
     user = request.user
     
-    print(f"🔍 DEBUG member_programs - User: {user.email}, Role: {getattr(user, 'role', 'Non défini')}")
-    
-    # ✅ CORRIGÉ: Vérifications de rôle plus flexibles
-    is_member = (
-        getattr(user, 'role', None) in ['MEMBER', 'member', 'Membre', 'membre'] or
-        hasattr(user, 'member_profile') or
-        hasattr(user, 'member') or
-        Member.objects.filter(email=user.email).exists()
-    )
-    
-    if not is_member:
-        print(f"❌ Accès refusé - User role: {getattr(user, 'role', 'Non défini')}")
+    # Vérifier que l'utilisateur est un membre
+    if user.role != 'MEMBER':
         return Response(
-            {
-                'error': 'Accès réservé aux membres',
-                'user_role': getattr(user, 'role', 'Non défini'),
-                'has_member_profile': hasattr(user, 'member_profile'),
-                'has_member': hasattr(user, 'member')
-            },
+            {'error': 'Accès réservé aux membres'},
             status=status.HTTP_403_FORBIDDEN
         )
     
     try:
-        # ✅ CORRIGÉ: Récupérer le membre de différentes manières
-        member = None
-        
-        if hasattr(user, 'member_profile') and user.member_profile:
-            member = user.member_profile
-            print(f"✅ Membre trouvé via member_profile: {member.full_name}")
-        elif hasattr(user, 'member') and user.member:
-            member = user.member
-            print(f"✅ Membre trouvé via member: {member.full_name}")
-        else:
-            # Essayer de trouver le membre par email
-            try:
-                member = Member.objects.get(email=user.email)
-                print(f"✅ Membre trouvé par email: {member.full_name}")
-            except Member.DoesNotExist:
-                print(f"❌ Aucun membre trouvé avec l'email: {user.email}")
-                return Response(
-                    {'error': 'Profil membre non trouvé'},
-                    status=status.HTTP_404_NOT_FOUND
-                )
+        # Récupérer le profil membre
+        member = user.member_profile
         
         # Récupérer tous les programmes du membre
         programs = TrainingProgram.objects.filter(
@@ -812,8 +779,6 @@ def member_programs(request):
         ).prefetch_related(
             'workout_sessions__exercises__exercise'
         ).order_by('-created_at')
-        
-        print(f"✅ Programmes trouvés: {programs.count()}")
         
         # Sérialiser les données
         serializer = TrainingProgramSerializer(programs, many=True)
@@ -828,6 +793,7 @@ def member_programs(request):
             {'error': 'Erreur lors de la récupération des programmes'},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
+
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])

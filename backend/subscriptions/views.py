@@ -85,17 +85,25 @@ class SubscriptionPlanViewSet(CompleteTenantMixin, viewsets.ModelViewSet):
         return Response(serializer.data)
 
 
-class SubscriptionViewSet(CompleteTenantMixin, viewsets.ModelViewSet):
-    """
-    ViewSet pour les abonnements avec isolation tenant
-    """
+class SubscriptionViewSet(viewsets.ModelViewSet):
+    """ViewSet pour les abonnements - VERSION SIMPLIFIÉE"""
+    
     queryset = Subscription.objects.all()
     permission_classes = [IsAuthenticated]
-    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    filterset_fields = ['status', 'member', 'plan']
-    search_fields = ['member__first_name', 'member__last_name', 'member__member_id']
-    ordering_fields = ['start_date', 'end_date', 'created_at']
-    tenant_field = 'tenant_id'
+    
+    def get_queryset(self):
+        """Filtrer par membre si role=MEMBER"""
+        user = self.request.user
+        
+        if user.role == 'MEMBER':
+            try:
+                member = user.member_profile
+                return Subscription.objects.filter(member=member).select_related('plan', 'member')
+            except Member.DoesNotExist:
+                return Subscription.objects.none()
+        
+        # Pour admin/coach : tous les abonnements
+        return Subscription.objects.all().select_related('plan', 'member')
     
     def get_serializer_class(self):
         if self.action == 'list':
@@ -103,78 +111,52 @@ class SubscriptionViewSet(CompleteTenantMixin, viewsets.ModelViewSet):
         elif self.action == 'create':
             return SubscriptionCreateSerializer
         return SubscriptionDetailSerializer
+
+
+# @action(detail=False, methods=['post'])
+# def verify_payment(self, request):
+#     """
+#     Vérifier un paiement Stripe après redirection
+#     """
+#     from .stripe_service import StripeService
     
-    def perform_create(self, serializer):
-        """✅ Le tenant_id est déjà géré dans Subscription.save()"""
-        # Le modèle Subscription hérite automatiquement le tenant_id du membre
-        subscription = serializer.save()
-        
-        # ⚠️ SÉCURITÉ : Vérifier que le tenant_id a bien été assigné
-        if not subscription.tenant_id:
-            from rest_framework.exceptions import ValidationError
-            raise ValidationError(
-                "Erreur: Le tenant_id n'a pas été assigné automatiquement. "
-                "Veuillez vérifier que le membre a bien un tenant_id."
-            )
+#     session_id = request.data.get('session_id')
     
-    @action(detail=True, methods=['post'])
-    def activate(self, request, pk=None):
-        """Activer un abonnement manuellement"""
-        subscription = self.get_object()
-        
-        if subscription.status == 'ACTIVE':
-            return Response(
-                {'error': 'Cet abonnement est déjà actif'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        
-        subscription.activate()
-        serializer = self.get_serializer(subscription)
-        return Response(serializer.data)
+#     if not session_id:
+#         return Response(
+#             {'error': 'session_id manquant'},
+#             status=status.HTTP_400_BAD_REQUEST
+#         )
     
-    @action(detail=True, methods=['post'])
-    def cancel(self, request, pk=None):
-        """Annuler un abonnement"""
-        subscription = self.get_object()
+#     try:
+#         # Récupérer la session Stripe
+#         session = StripeService.retrieve_session(session_id)
         
-        if subscription.status == 'CANCELLED':
-            return Response(
-                {'error': 'Cet abonnement est déjà annulé'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+#         # Récupérer l'abonnement depuis les metadata
+#         subscription_id = session.metadata.get('subscription_id')
+#         subscription = Subscription.objects.get(id=subscription_id)
         
-        subscription.cancel()
-        serializer = self.get_serializer(subscription)
-        return Response(serializer.data)
-    
-    @action(detail=False, methods=['get'])
-    def expiring_soon(self, request):
-        """Abonnements qui expirent dans les 7 prochains jours"""
-        from datetime import timedelta
-        today = timezone.now().date()
-        end_date = today + timedelta(days=7)
+#         # Vérifier si le paiement est réussi
+#         if session.payment_status == 'paid' and subscription.status != 'ACTIVE':
+#             subscription.activate()
+#             subscription.stripe_session_id = session_id
+#             subscription.save()
         
-        subscriptions = self.get_queryset().filter(
-            status='ACTIVE',
-            end_date__range=[today, end_date]
-        )
+#         return Response({
+#             'success': True,
+#             'subscription_id': subscription.id,
+#             'plan_name': subscription.plan.name,
+#             'duration_days': subscription.plan.duration_days,
+#             'start_date': subscription.start_date,
+#             'end_date': subscription.end_date,
+#             'amount_paid': subscription.amount_paid,
+#             'days_remaining': subscription.days_remaining,
+#             'status': subscription.status
+#         })
         
-        serializer = SubscriptionListSerializer(subscriptions, many=True)
-        return Response(serializer.data)
-    
-    @action(detail=False, methods=['get'])
-    def statistics(self, request):
-        """Statistiques des abonnements du centre"""
-        queryset = self.get_queryset()
-        
-        total = queryset.count()
-        active = queryset.filter(status='ACTIVE').count()
-        expired = queryset.filter(status='EXPIRED').count()
-        cancelled = queryset.filter(status='CANCELLED').count()
-        
-        return Response({
-            'total': total,
-            'active': active,
-            'expired': expired,
-            'cancelled': cancelled,
-        })
+#     except Exception as e:
+#         logger.error(f"Erreur vérification paiement: {str(e)}")
+#         return Response(
+#             {'error': str(e)},
+#             status=status.HTTP_500_INTERNAL_SERVER_ERROR
+#         )

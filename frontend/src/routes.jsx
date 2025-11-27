@@ -69,6 +69,11 @@ import {
 import MemberPrograms from "./pages/member/MemberPrograms";
 import MemberProgramDetail from "./pages/member/MemberProgramDetail";
 import { element } from "prop-types";
+import MemberSubscriptions from "./pages/member/MemberSubscriptions";
+import PaymentSuccess from "./pages/member/PaymentSuccess";
+import SubscriptionSuccess from "./pages/member/SubscriptionSuccess";
+import SubscriptionCancel from "./pages/member/SubscriptionCancel";
+import MemberInvoices from "./pages/member/MemberInvoices";
 
 
 export const routes = [
@@ -77,7 +82,7 @@ export const routes = [
   // ==========================================
   {
     name: "home",
-    path: "/", 
+    path: "/",
     element: <Home />,
   },
   {
@@ -135,6 +140,37 @@ export const routes = [
     path: "/portal/programs/:id",
     element: <MemberLayout><MemberProgramDetail /></MemberLayout>, // ⭐ CORRIGÉ: Ajout de MemberLayout
   },
+  {
+    name: "Member Dashboard",
+    path: "/portal",
+    element: <MemberLayout><MemberDashboard /></MemberLayout>,
+  },
+  {
+    name: "Member Subscriptions",
+    path: "/portal/subscriptions",
+    element: <MemberLayout><MemberSubscriptions /></MemberLayout>,
+  },
+  {
+    name: "Member Payment Success",
+    path: "/portal/subscription/success",
+    element: <SubscriptionSuccess />,
+  },
+  {
+    name: "Member Payment Cancel",
+    path: "/portal/subscription/cancel",
+    element: <MemberLayout><SubscriptionCancel /></MemberLayout>,
+  },
+  {
+    name: "Invoices",
+    path: "/portal/invoices",
+    element: <MemberInvoices />,
+  },
+  {
+    name: " Invoice Detail",
+    path: "/portal/invoices/:invoiceId",
+    element: <MemberInvoices />,
+  },
+
   // ==========================================
   // ⭐ ROUTES COACH - UTILISER CoachDashboard
   // ==========================================
@@ -187,12 +223,12 @@ export const routes = [
   // ==========================================
   // ROUTES ADMIN - PROGRAMMES & EXERCICES
   // ==========================================
-  { 
+  {
     name: "Créer Programme",
     path: "/admin/programs/create",
     element: <ProgramBuilder />,
   },
-  { 
+  {
     name: "Gérer Exercices",
     path: "/admin/exercises",
     element: <ExerciseList />,
@@ -207,7 +243,7 @@ export const routes = [
     element: <MemberList />,
   },
   {
-    path: "/admin/members/create", 
+    path: "/admin/members/create",
     element: <MemberCreate />,
     hidden: true
   },

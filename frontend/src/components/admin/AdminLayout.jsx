@@ -80,6 +80,11 @@ const Sidebar = () => {
             path: "/admin/bookings",
             icon: ClipboardDocumentCheckIcon,
         },
+        {
+            label: "Factures",
+            path: "/portal/invoices",
+            icon: ClipboardDocumentListIcon,
+        },
     ];
 
     return (
