@@ -70,20 +70,20 @@ const MemberDashboard = () => {
 
   if (loading) {
     return (
-      <MemberLayout>
+      
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
             <Typography className="text-gray-600">Chargement...</Typography>
           </div>
         </div>
-      </MemberLayout>
+    
     );
   }
 
   if (error || !dashboardData) {
     return (
-      <MemberLayout>
+     
         <div className="bg-red-50 border border-red-200 rounded-lg p-8 text-center">
           <Typography variant="h5" color="red" className="mb-4">
             {error || 'Erreur de chargement'}
@@ -92,7 +92,7 @@ const MemberDashboard = () => {
             Réessayer
           </Button>
         </div>
-      </MemberLayout>
+     
     );
   }
 

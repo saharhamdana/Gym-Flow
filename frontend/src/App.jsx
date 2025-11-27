@@ -1,8 +1,11 @@
+// File: frontend/src/App.jsx
+
 import React from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { Navbar } from "@/widgets/layout";
 import routes from "./routes";
 import AdminLayout from "@/components/admin/AdminLayout";
+import ReceptionistLayout from "@/components/receptionist/ReceptionistLayout"; // ⭐ AJOUT
 
 import { RequireAuth, RequireAdminOrReceptionistOrCoach, RequireCoach } from "./utils/AuthGuard"; 
 import { ProgramList, CreateProgramForm } from "./components/coaching";
@@ -18,18 +21,20 @@ function App() {
 
   const isAdminRoute = (path) => path.startsWith('/admin/');
   const isCoachRoute = (path) => path.startsWith('/coach');
-  const isPortalRoute = (path) => path.startsWith('/portal');   // ✅ AJOUT
+  const isPortalRoute = (path) => path.startsWith('/portal');
+  const isReceptionistRoute = (path) => path.startsWith('/receptionist'); // ⭐ AJOUT
 
   return (
     <>
       {/* ================= NAVBAR =================== */}
-      {/* Cachée sur sign-in, sign-up, admin, coach et portal */}
+      {/* Cachée sur sign-in, sign-up, admin, coach, portal ET réceptionniste */}
       {!(
         pathname === '/sign-in' ||
         pathname === '/sign-up' ||
         isAdminRoute(pathname) ||
         isCoachRoute(pathname) ||
-        isPortalRoute(pathname)     // ✅ AJOUT
+        isPortalRoute(pathname) ||
+        isReceptionistRoute(pathname)     // ⭐ AJOUT
       ) && (
         <Navbar routes={routes}/>
       )}
@@ -42,7 +47,8 @@ function App() {
             pathname === '/sign-up' ||
             pathname === '/' ||
             isCoachRoute(pathname) ||
-            isPortalRoute(pathname)    // ✅ AJOUT pour enlever le padding du portal
+            isPortalRoute(pathname) ||
+            isReceptionistRoute(pathname)    // ⭐ AJOUT
           )
             ? 'pt-24'
             : ''
@@ -70,6 +76,22 @@ function App() {
               );
             }
 
+            // ========== RÉCEPTIONNISTE ========== ⭐ AJOUT
+            if (isReceptionistRoute(path)) {
+              return (
+                <Route
+                  key={key}
+                  exact
+                  path={path}
+                  element={
+                    <RequireAdminOrReceptionistOrCoach>
+                      <ReceptionistLayout>{element}</ReceptionistLayout>
+                    </RequireAdminOrReceptionistOrCoach>
+                  }
+                />
+              );
+            }
+
             // ========== COACH ==========
             if (isCoachRoute(path)) {
               return (
@@ -87,7 +109,7 @@ function App() {
             }
 
             // ========== MEMBRES ==========
-            if (path === '/profile' || path === '/my-programs') {
+            if (isPortalRoute(path)) {
               return (
                 <Route
                   key={key}

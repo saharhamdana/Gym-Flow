@@ -112,6 +112,44 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
             return SubscriptionCreateSerializer
         return SubscriptionDetailSerializer
 
+    # ✅ AJOUTEZ CETTE ACTION POUR L'ANNULATION
+    @action(detail=True, methods=['post'])
+    def cancel(self, request, pk=None):
+        """
+        Annuler un abonnement
+        """
+        subscription = self.get_object()
+        
+        # Vérifier si l'abonnement peut être annulé
+        if subscription.status == 'CANCELLED':
+            return Response(
+                {'error': 'Cet abonnement est déjà annulé.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        if subscription.status not in ['ACTIVE', 'PENDING']:
+            return Response(
+                {'error': 'Seuls les abonnements actifs ou en attente peuvent être annulés.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Annuler l'abonnement
+        subscription.status = 'CANCELLED'
+        subscription.cancelled_at = timezone.now()
+        subscription.save()
+        
+        # Log l'action
+        import logging
+        logger = logging.getLogger('subscriptions.views')
+        logger.info(f"Abonnement {subscription.id} annulé par l'utilisateur {request.user.id}")
+        
+        return Response({
+            'success': True,
+            'message': 'Abonnement annulé avec succès.',
+            'subscription_id': subscription.id,
+            'status': subscription.status
+        })
+
 
 # @action(detail=False, methods=['post'])
 # def verify_payment(self, request):

@@ -4,11 +4,12 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   Card,
-  CardHeader,
   CardBody,
   Typography,
   Button,
   Chip,
+  Alert,
+  Spinner,
 } from '@material-tailwind/react';
 import {
   ArrowLeftIcon,
@@ -19,6 +20,7 @@ import {
   CalendarIcon,
   ClockIcon,
 } from '@heroicons/react/24/outline';
+import PageContainer from '@/components/admin/PageContainer';
 import {
   getSubscription,
   activateSubscription,
@@ -30,6 +32,7 @@ export function SubscriptionDetail() {
   const { subscriptionId } = useParams();
   const [subscription, setSubscription] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     fetchSubscription();
@@ -40,8 +43,10 @@ export function SubscriptionDetail() {
       setLoading(true);
       const data = await getSubscription(subscriptionId);
       setSubscription(data);
+      setError(null);
     } catch (error) {
       console.error('Error fetching subscription:', error);
+      setError('Impossible de charger les détails de l\'abonnement');
     } finally {
       setLoading(false);
     }
@@ -100,56 +105,56 @@ export function SubscriptionDetail() {
 
   if (loading) {
     return (
-      <div className="mt-12 text-center">
-        <Typography>Chargement...</Typography>
-      </div>
+      <PageContainer>
+        <div className="flex justify-center items-center h-96">
+          <Spinner color="blue" className="h-12 w-12" />
+        </div>
+      </PageContainer>
+    );
+  }
+
+  if (error) {
+    return (
+      <PageContainer>
+        <Alert color="red">{error}</Alert>
+      </PageContainer>
     );
   }
 
   if (!subscription) {
     return (
-      <div className="mt-12 text-center">
-        <Typography>Abonnement introuvable</Typography>
-      </div>
+      <PageContainer>
+        <Alert color="red">Abonnement introuvable</Alert>
+      </PageContainer>
     );
   }
 
   return (
-    <div className="mt-12 mb-8">
-      <Button
-        variant="text"
-        className="flex items-center gap-2 mb-6"
-        onClick={() => navigate('/admin/subscriptions')}
-      >
-        <ArrowLeftIcon className="h-4 w-4" />
-        Retour
-      </Button>
+    <PageContainer>
+      <div className="flex items-center gap-4 mb-6">
+        <Button
+          variant="text"
+          className="flex items-center gap-2"
+          onClick={() => navigate('/admin/subscriptions')}
+        >
+          <ArrowLeftIcon className="h-4 w-4" /> Retour
+        </Button>
+        <Typography variant="h4" color="blue-gray">
+          Détails de l'Abonnement
+        </Typography>
+        <Chip
+          value={getStatusLabel(subscription.status)}
+          color={getStatusColor(subscription.status)}
+        />
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Info */}
-        <Card className="lg:col-span-2">
-          <CardHeader
-            variant="gradient"
-            style={{ background: 'linear-gradient(87deg, #00357a 0, #0056b3 100%)' }}
-            className="mb-8 p-6"
-          >
-            <div className="flex items-center justify-between">
-              <Typography variant="h6" color="white">
-                Détails de l'Abonnement
-              </Typography>
-              <Chip
-                size="sm"
-                variant="gradient"
-                value={getStatusLabel(subscription.status)}
-                color={getStatusColor(subscription.status)}
-              />
-            </div>
-          </CardHeader>
-
+        <Card className="lg:col-span-2 shadow-lg">
           <CardBody className="flex flex-col gap-6">
             {/* Member Info */}
             <div className="flex items-start gap-4 p-4 bg-gray-50 rounded-lg">
-              <div className="p-3 rounded-full" style={{ backgroundColor: '#00357a' }}>
+              <div className="p-3 rounded-full bg-blue-600">
                 <UserIcon className="h-6 w-6 text-white" />
               </div>
               <div className="flex-1">
@@ -158,8 +163,7 @@ export function SubscriptionDetail() {
                 </Typography>
                 <Typography
                   variant="h5"
-                  style={{ color: '#00357a' }}
-                  className="cursor-pointer hover:underline"
+                  className="text-blue-600 cursor-pointer hover:underline"
                   onClick={() =>
                     navigate(`/admin/members/${subscription.member_details.id}`)
                   }
@@ -179,7 +183,7 @@ export function SubscriptionDetail() {
                 <Typography variant="small" color="gray">
                   Plan d'Abonnement
                 </Typography>
-                <Typography variant="h6" style={{ color: '#00357a' }}>
+                <Typography variant="h6" className="text-blue-600">
                   {subscription.plan_details.name}
                 </Typography>
                 <Typography variant="small">
@@ -191,7 +195,7 @@ export function SubscriptionDetail() {
                 <Typography variant="small" color="gray">
                   Montant Payé
                 </Typography>
-                <Typography variant="h5" style={{ color: '#00357a' }}>
+                <Typography variant="h5" className="text-blue-600">
                   {formatPrice(subscription.amount_paid)}
                 </Typography>
               </div>
@@ -200,7 +204,7 @@ export function SubscriptionDetail() {
             {/* Dates */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="flex items-start gap-3 p-4 border rounded-lg">
-                <CalendarIcon className="h-5 w-5" style={{ color: '#00357a' }} />
+                <CalendarIcon className="h-5 w-5 text-blue-600" />
                 <div>
                   <Typography variant="small" color="gray">
                     Date de Début
@@ -212,7 +216,7 @@ export function SubscriptionDetail() {
               </div>
 
               <div className="flex items-start gap-3 p-4 border rounded-lg">
-                <CalendarIcon className="h-5 w-5" style={{ color: '#00357a' }} />
+                <CalendarIcon className="h-5 w-5 text-blue-600" />
                 <div>
                   <Typography variant="small" color="gray">
                     Date de Fin
@@ -240,7 +244,7 @@ export function SubscriptionDetail() {
 
             {/* Payment Info */}
             <div className="flex items-start gap-4 p-4 bg-gray-50 rounded-lg">
-              <div className="p-3 rounded-full" style={{ backgroundColor: '#00357a' }}>
+              <div className="p-3 rounded-full bg-blue-600">
                 <CreditCardIcon className="h-6 w-6 text-white" />
               </div>
               <div className="flex-1">
@@ -273,8 +277,7 @@ export function SubscriptionDetail() {
             <div className="flex gap-4 pt-4 border-t">
               {subscription.status === 'PENDING' && (
                 <Button
-                  style={{ backgroundColor: '#10b981' }}
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-2 bg-green-500"
                   onClick={handleActivate}
                   fullWidth
                 >
@@ -298,17 +301,12 @@ export function SubscriptionDetail() {
         </Card>
 
         {/* Timeline / History */}
-        <Card>
-          <CardHeader
-            variant="gradient"
-            style={{ backgroundColor: '#00357a' }}
-            className="p-6"
-          >
-            <Typography variant="h6" color="white">
+        <Card className="shadow-lg">
+          <CardBody className="flex flex-col gap-4">
+            <Typography variant="h6" className="text-blue-gray-800 mb-4">
               Historique
             </Typography>
-          </CardHeader>
-          <CardBody className="flex flex-col gap-4">
+            
             <div className="flex items-start gap-3">
               <div className="w-2 h-2 rounded-full bg-blue-500 mt-2"></div>
               <div>
@@ -349,7 +347,7 @@ export function SubscriptionDetail() {
           </CardBody>
         </Card>
       </div>
-    </div>
+    </PageContainer>
   );
 }
 

@@ -4,7 +4,6 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Card,
-  CardHeader,
   CardBody,
   Typography,
   Input,
@@ -12,6 +11,8 @@ import {
   Button,
   Select,
   Option,
+  Alert,
+  Spinner,
 } from '@material-tailwind/react';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import { createSubscription, getSubscriptionPlans } from '@/services/subscriptionService';
@@ -19,7 +20,6 @@ import api from '@/api/axiosInstance';
 
 export function SubscriptionCreate() {
   const navigate = useNavigate();
-  // Initialisation à [] pour éviter les erreurs .map() au premier rendu
   const [plans, setPlans] = useState([]);
   const [members, setMembers] = useState([]); 
   const [selectedPlan, setSelectedPlan] = useState(null);
@@ -32,7 +32,9 @@ export function SubscriptionCreate() {
     notes: '',
   });
   const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     fetchPlans();
@@ -41,18 +43,18 @@ export function SubscriptionCreate() {
 
   const fetchPlans = async () => {
     try {
+      setLoading(true);
       const response = await getSubscriptionPlans();
       
-      // 🎯 CORRECTION #1: Gérer la pagination DRF pour les plans.
       const data = Array.isArray(response.results) ? response.results : response;
-
-      // Votre logique de filtrage devient valide maintenant que 'data' est un tableau
       setPlans(data.filter((plan) => plan.is_active));
       
     } catch (error) {
       console.error('Error fetching plans:', error);
-      // Assurez-vous que l'état est toujours un tableau en cas d'erreur
-      setPlans([]); 
+      setError('Impossible de charger les plans');
+      setPlans([]);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -60,21 +62,17 @@ export function SubscriptionCreate() {
     try {
       const response = await api.get('members/');
 
-      // 🎯 CORRECTION #2: Gérer la pagination DRF pour les membres.
-      // Si DRF renvoie { count: N, results: [...] }, on utilise response.data.results
       if (response.data && Array.isArray(response.data.results)) {
         setMembers(response.data.results);
       } else if (response.data && Array.isArray(response.data)) {
-        // Fallback si l'API retourne directement un tableau
         setMembers(response.data);
       } else {
-        // Cas inattendu
-        setMembers([]); 
+        setMembers([]);
         console.warn('Unexpected API response structure for members:', response.data);
       }
     } catch (error) {
       console.error('Error fetching members:', error);
-      // Assurez-vous que l'état est toujours un tableau en cas d'erreur
+      setError('Impossible de charger les membres');
       setMembers([]);
     }
   };
@@ -134,16 +132,17 @@ export function SubscriptionCreate() {
       return;
     }
 
-    setLoading(true);
+    setSubmitting(true);
+    setError(null);
 
     try {
       await createSubscription(formData);
       navigate('/admin/subscriptions');
     } catch (error) {
       console.error('Error creating subscription:', error);
-      alert("Erreur lors de la création de l'abonnement");
+      setError("Erreur lors de la création de l'abonnement");
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
 
@@ -154,32 +153,37 @@ export function SubscriptionCreate() {
     }).format(price);
   };
 
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-96">
+        <Spinner color="blue" className="h-12 w-12" />
+      </div>
+    );
+  }
+
   return (
-    <div className="mt-12 mb-8">
-      <Button
-        variant="text"
-        className="flex items-center gap-2 mb-6"
-        onClick={() => navigate('/admin/subscriptions')}
-      >
-        <ArrowLeftIcon className="h-4 w-4" />
-        Retour
-      </Button>
+    <div>
+      {/* Header simple sans PageContainer */}
+      <div className="flex items-center gap-4 mb-6">
+        <Button
+          variant="text"
+          className="flex items-center gap-2"
+          onClick={() => navigate('/admin/subscriptions')}
+        >
+          <ArrowLeftIcon className="h-4 w-4" /> Retour
+        </Button>
+        <Typography variant="h4" color="blue-gray">
+          Nouvel Abonnement
+        </Typography>
+      </div>
+
+      {error && <Alert color="red" className="mb-4">{error}</Alert>}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Form */}
-        <Card className="lg:col-span-2">
-          <CardHeader
-            variant="gradient"
-            style={{ background: 'linear-gradient(87deg, #00357a 0, #0056b3 100%)' }}
-            className="mb-8 p-6"
-          >
-            <Typography variant="h6" color="white">
-              Nouvel Abonnement
-            </Typography>
-          </CardHeader>
-
+        <Card className="lg:col-span-2 shadow-lg">
           <CardBody>
-            <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+            <form onSubmit={handleSubmit} className="space-y-6">
               {/* Member Selection */}
               <div>
                 <Select
@@ -191,7 +195,6 @@ export function SubscriptionCreate() {
                   }}
                   error={Boolean(errors.member)}
                 >
-                  {/* Ajout d'une vérification de sécurité pour le rendu */}
                   {Array.isArray(members) && members.map((member) => ( 
                     <Option key={member.id} value={member.id.toString()}>
                       {member.first_name} {member.last_name} - {member.member_id}
@@ -213,7 +216,6 @@ export function SubscriptionCreate() {
                   onChange={handlePlanChange}
                   error={Boolean(errors.plan)}
                 >
-                  {/* Le rendu des plans est déjà sûr grâce à l'initialisation à [] */}
                   {plans.map((plan) => ( 
                     <Option key={plan.id} value={plan.id.toString()}>
                       {plan.name} - {plan.duration_days} jours - {formatPrice(plan.price)}
@@ -302,17 +304,17 @@ export function SubscriptionCreate() {
               <div className="flex gap-4">
                 <Button
                   type="submit"
-                  style={{ backgroundColor: '#00357a' }}
-                  disabled={loading}
-                  fullWidth
+                  color="blue"
+                  disabled={submitting}
+                  className="flex-1"
                 >
-                  {loading ? 'Création...' : "Créer l'Abonnement"}
+                  {submitting ? 'Création...' : "Créer l'Abonnement"}
                 </Button>
                 <Button
                   type="button"
                   variant="outlined"
                   onClick={() => navigate('/admin/subscriptions')}
-                  fullWidth
+                  disabled={submitting}
                 >
                   Annuler
                 </Button>
@@ -323,27 +325,22 @@ export function SubscriptionCreate() {
 
         {/* Plan Preview */}
         {selectedPlan && (
-          <Card>
-            <CardHeader
-              variant="gradient"
-              style={{ backgroundColor: '#00357a' }}
-              className="p-6"
-            >
-              <Typography variant="h6" color="white">
+          <Card className="shadow-lg">
+            <CardBody className="space-y-4">
+              <Typography variant="h5" color="blue-gray" className="mb-4">
                 Détails du Plan
               </Typography>
-            </CardHeader>
-            <CardBody className="flex flex-col gap-4">
-              <div>
+              
+              <div className="p-4 border rounded-lg">
                 <Typography variant="small" color="gray">
                   Nom
                 </Typography>
-                <Typography variant="h6" style={{ color: '#00357a' }}>
+                <Typography variant="h6" className="text-blue-600">
                   {selectedPlan.name}
                 </Typography>
               </div>
 
-              <div>
+              <div className="p-4 border rounded-lg">
                 <Typography variant="small" color="gray">
                   Durée
                 </Typography>
@@ -352,18 +349,18 @@ export function SubscriptionCreate() {
                 </Typography>
               </div>
 
-              <div>
+              <div className="p-4 border rounded-lg">
                 <Typography variant="small" color="gray">
                   Prix
                 </Typography>
-                <Typography variant="h5" style={{ color: '#00357a' }}>
+                <Typography variant="h5" className="text-blue-600">
                   {formatPrice(selectedPlan.price)}
                 </Typography>
               </div>
 
               {selectedPlan.description && (
-                <div>
-                  <Typography variant="small" color="gray">
+                <div className="p-4 border rounded-lg">
+                  <Typography variant="small" color="gray" className="mb-2">
                     Description
                   </Typography>
                   <Typography className="text-sm">
@@ -373,11 +370,11 @@ export function SubscriptionCreate() {
               )}
 
               {formData.start_date && (
-                <div className="mt-4 p-4 bg-blue-50 rounded-lg">
-                  <Typography variant="small" color="gray">
+                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <Typography variant="small" color="blue-gray" className="font-medium">
                     Date de fin estimée
                   </Typography>
-                  <Typography className="font-medium">
+                  <Typography className="font-bold text-blue-600">
                     {new Date(
                       new Date(formData.start_date).getTime() +
                         selectedPlan.duration_days * 24 * 60 * 60 * 1000
@@ -385,6 +382,19 @@ export function SubscriptionCreate() {
                   </Typography>
                 </div>
               )}
+            </CardBody>
+          </Card>
+        )}
+
+        {!selectedPlan && (
+          <Card className="shadow-lg">
+            <CardBody className="text-center py-12">
+              <Typography color="gray" className="mb-4">
+                Aperçu du Plan
+              </Typography>
+              <Typography variant="small" color="gray">
+                Sélectionnez un plan pour voir les détails
+              </Typography>
             </CardBody>
           </Card>
         )}

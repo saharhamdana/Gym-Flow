@@ -3,7 +3,6 @@
 from rest_framework import permissions
 from .models import User
 
-
 # ========== PERMISSIONS BASÉES SUR LES RÔLES ==========
 
 class IsAdminOrReceptionist(permissions.BasePermission):
@@ -112,6 +111,32 @@ class IsAdminOfTenant(permissions.BasePermission):
             return False
         
         return True
+
+
+# ========== PERMISSIONS SPÉCIFIQUES RÉCEPTIONNISTE ==========
+
+class IsReceptionist(permissions.BasePermission):
+    """
+    Permission personnalisée pour autoriser l'accès uniquement aux RÉCEPTIONNISTES.
+    """
+    def has_permission(self, request, view):
+        user = request.user
+        if not user.is_authenticated:
+            return False
+            
+        return user.role == User.Role.RECEPTIONIST
+
+
+class IsReceptionistOrAdmin(permissions.BasePermission):
+    """
+    Permission pour réceptionniste ou admin.
+    """
+    def has_permission(self, request, view):
+        user = request.user
+        if not user.is_authenticated:
+            return False
+            
+        return user.role in [User.Role.RECEPTIONIST, User.Role.ADMIN]
 
 
 # ========== PERMISSIONS COMBINÉES (RÔLE + TENANT) ==========

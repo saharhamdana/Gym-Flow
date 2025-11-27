@@ -1,9 +1,7 @@
-// File: frontend/src/components/admin/AdminLayout.jsx
+// File: frontend/src/components/receptionist/ReceptionistLayout.jsx
 
 import React, { useState, useEffect } from "react";
 import { Link, useLocation, Navigate } from "react-router-dom";
-
-// Composants Material Tailwind
 import {
   Typography,
   IconButton,
@@ -13,8 +11,6 @@ import {
   ListItemPrefix,
   Avatar,
 } from "@material-tailwind/react";
-
-// Icônes
 import {
   Bars3Icon,
   XMarkIcon,
@@ -24,15 +20,10 @@ import {
   CreditCardIcon,
   ChartBarIcon,
   ArrowRightOnRectangleIcon,
-  BuildingOfficeIcon,
-  AcademicCapIcon,
   ClipboardDocumentCheckIcon,
-  ClipboardDocumentListIcon,
-  TagIcon,
-  UserGroupIcon,
 } from "@heroicons/react/24/outline";
 
-export default function AdminLayout({ children }) {
+export default function ReceptionistLayout({ children }) {
   const [open, setOpen] = useState(false);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -62,62 +53,37 @@ export default function AdminLayout({ children }) {
     window.location.href = "/sign-in";
   };
 
-  // Vérifier si l'utilisateur est admin
-  if (!loading && user && user.role !== "ADMIN" && !user?.is_superuser) {
+  // Vérifier si l'utilisateur est réceptionniste ou admin
+  if (!loading && user && user.role !== "RECEPTIONIST" && user.role !== "ADMIN") {
     return <Navigate to="/portal" replace />;
   }
 
-  // Menu items pour admin
+  // Menu items pour réceptionniste
   const menuItems = [
     {
       label: "Tableau de bord",
       icon: ChartBarIcon,
-      path: "/admin/dashboard",
-    },
-    {
-      label: "Mon Profil",
-      icon: UserCircleIcon,
-      path: "/admin/profile",
+      path: "/receptionist/dashboard",
     },
     {
       label: "Membres",
       icon: UsersIcon,
-      path: "/admin/members",
-    },
-    {
-      label: "Personnel",
-      icon: UserGroupIcon,
-      path: "/admin/staff",
+      path: "/receptionist/members",
     },
     {
       label: "Abonnements",
       icon: CreditCardIcon,
-      path: "/admin/subscriptions",
-    },
-    {
-      label: "Plans d'Abonnement",
-      icon: TagIcon,
-      path: "/admin/subscription-plans",
-    },
-    {
-      label: "Salles",
-      icon: BuildingOfficeIcon,
-      path: "/admin/rooms",
-    },
-    {
-      label: "Types de cours",
-      icon: AcademicCapIcon,
-      path: "/admin/course-types",
-    },
-    {
-      label: "Planning Cours",
-      icon: CalendarDaysIcon,
-      path: "/admin/courses",
+      path: "/receptionist/subscriptions",
     },
     {
       label: "Réservations",
+      icon: CalendarDaysIcon,
+      path: "/receptionist/bookings",
+    },
+    {
+      label: "Check-in",
       icon: ClipboardDocumentCheckIcon,
-      path: "/admin/bookings",
+      path: "/receptionist/checkin",
     },
   ];
 
@@ -141,14 +107,14 @@ export default function AdminLayout({ children }) {
         <div className="flex flex-col flex-grow pt-5 overflow-y-auto bg-white border-r shadow-sm">
           <div className="flex items-center flex-shrink-0 px-4">
             <Typography variant="h5" color="blue-gray" className="ml-2">
-              Admin Panel
+              Panel Réceptionniste
             </Typography>
           </div>
           <div className="mt-8 flex-grow flex flex-col">
             <nav className="flex-1 px-2 pb-4 space-y-1">
               {menuItems.map((item) => (
                 <Link
-                  key={item.path}
+                  key={item.path} 
                   to={item.path}
                   className={`flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors hover:bg-gray-100 group ${isActive(item.path)}`}
                 >
@@ -177,7 +143,7 @@ export default function AdminLayout({ children }) {
                     {user?.first_name} {user?.last_name}
                   </Typography>
                   <Typography variant="small" className="text-gray-500 truncate">
-                    Administrateur
+                    {user?.role === "RECEPTIONIST" ? "Réceptionniste" : "Administrateur"}
                   </Typography>
                 </div>
               </div>
@@ -210,7 +176,7 @@ export default function AdminLayout({ children }) {
                 <Bars3Icon className="h-6 w-6" />
               </IconButton>
               <Typography variant="h5" color="blue-gray">
-                PowerFit Admin
+                Panel Réceptionniste
               </Typography>
             </div>
             {user?.profile_picture ? (
@@ -231,7 +197,7 @@ export default function AdminLayout({ children }) {
         <Drawer open={open} onClose={closeDrawer} className="lg:hidden">
           <div className="flex items-center justify-between p-4 bg-blue-500 text-white">
             <Typography variant="h5">
-              Menu Admin
+              Menu Réceptionniste
             </Typography>
             <IconButton variant="text" color="white" onClick={closeDrawer}>
               <XMarkIcon className="h-5 w-5" />
@@ -264,8 +230,8 @@ export default function AdminLayout({ children }) {
           </List>
         </Drawer>
 
-        {/* CORRECTION : Contenu des pages SANS PageContainer */}
-        <main className="flex-1 overflow-y-auto p-4 lg:p-6 bg-gray-50">
+        {/* Contenu des pages */}
+        <main className="flex-1 overflow-y-auto bg-gray-50">
           {children}
         </main>
       </div>

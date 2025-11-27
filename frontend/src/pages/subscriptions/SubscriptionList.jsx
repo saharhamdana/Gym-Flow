@@ -4,15 +4,15 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Card,
-  CardHeader,
   CardBody,
   Typography,
   Button,
   Chip,
-  IconButton,
   Input,
   Select,
   Option,
+  Spinner,
+  Alert,
 } from '@material-tailwind/react';
 import {
   PlusIcon,
@@ -21,6 +21,7 @@ import {
   CheckCircleIcon,
   XCircleIcon,
 } from '@heroicons/react/24/outline';
+import PageContainer from '@/components/admin/PageContainer';
 import {
   getSubscriptions,
   activateSubscription,
@@ -30,10 +31,10 @@ import {
 
 export function SubscriptionList() {
   const navigate = useNavigate();
-  // L'état est correctement initialisé à un tableau vide []
-  const [subscriptions, setSubscriptions] = useState([]); 
+  const [subscriptions, setSubscriptions] = useState([]);
   const [statistics, setStatistics] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [filters, setFilters] = useState({
     search: '',
     status: '',
@@ -47,28 +48,25 @@ export function SubscriptionList() {
   const fetchSubscriptions = async () => {
     try {
       setLoading(true);
-      const response = await getSubscriptions(filters); 
+      const response = await getSubscriptions(filters);
       
-      // 🎯 CORRECTION CLÉ : Gérer les réponses de l'API (DRF paginé vs. simple tableau)
       let subscriptionData = [];
       
       if (response && Array.isArray(response.results)) {
-        // Cas 1: Réponse paginée de DRF (e.g., { count: N, results: [...] })
         subscriptionData = response.results;
       } else if (response && Array.isArray(response)) {
-        // Cas 2: Réponse est un tableau direct
         subscriptionData = response;
       } else {
-        // Cas 3: Réponse inattendue (e.g., null, undefined, {} vide sans 'results')
         console.warn('API returned unexpected data structure for subscriptions:', response);
         subscriptionData = [];
       }
 
       setSubscriptions(subscriptionData);
+      setError(null);
       
     } catch (error) {
       console.error('Error fetching subscriptions:', error);
-      // Assurer que l'état reste un tableau même en cas d'erreur réseau/API
+      setError('Impossible de charger les abonnements');
       setSubscriptions([]);
     } finally {
       setLoading(false);
@@ -138,11 +136,24 @@ export function SubscriptionList() {
   };
 
   return (
-    <div className="mt-12 mb-8 flex flex-col gap-12">
+    <PageContainer
+      title="Gestion des Abonnements"
+      subtitle={`${subscriptions.length} abonnement(s) trouvé(s)`}
+      actions={
+        <Button
+          className="flex items-center gap-2"
+          color="blue"
+          onClick={() => navigate('/admin/subscriptions/create')}
+        >
+          <PlusIcon className="h-5 w-5" />
+          Nouvel Abonnement
+        </Button>
+      }
+    >
       {/* Statistics Cards */}
       {statistics && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <Card style={{ backgroundColor: '#00357a' }}>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <Card className="bg-blue-600 shadow-lg">
             <CardBody className="text-center">
               <Typography variant="h3" color="white">
                 {statistics.total}
@@ -153,7 +164,7 @@ export function SubscriptionList() {
             </CardBody>
           </Card>
 
-          <Card style={{ backgroundColor: '#10b981' }}>
+          <Card className="bg-green-500 shadow-lg">
             <CardBody className="text-center">
               <Typography variant="h3" color="white">
                 {statistics.active}
@@ -164,7 +175,7 @@ export function SubscriptionList() {
             </CardBody>
           </Card>
 
-          <Card style={{ backgroundColor: '#ef4444' }}>
+          <Card className="bg-red-500 shadow-lg">
             <CardBody className="text-center">
               <Typography variant="h3" color="white">
                 {statistics.expired}
@@ -175,7 +186,7 @@ export function SubscriptionList() {
             </CardBody>
           </Card>
 
-          <Card style={{ backgroundColor: '#6b7280' }}>
+          <Card className="bg-gray-500 shadow-lg">
             <CardBody className="text-center">
               <Typography variant="h3" color="white">
                 {statistics.cancelled}
@@ -188,31 +199,10 @@ export function SubscriptionList() {
         </div>
       )}
 
-      <Card>
-        <CardHeader
-          variant="gradient"
-          style={{ background: 'linear-gradient(87deg, #00357a 0, #0056b3 100%)' }}
-          className="mb-8 p-6"
-        >
-          <div className="flex items-center justify-between">
-            <Typography variant="h6" color="white">
-              Abonnements
-            </Typography>
-            <Button
-              size="sm"
-              color="white"
-              className="flex items-center gap-2"
-              onClick={() => navigate('/admin/subscriptions/create')}
-            >
-              <PlusIcon className="h-4 w-4" />
-              Nouvel Abonnement
-            </Button>
-          </div>
-        </CardHeader>
-
-        <CardBody className="px-0 pt-0 pb-2">
+      <Card className="shadow-lg">
+        <CardBody>
           {/* Filters */}
-          <div className="px-6 mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input
               label="Rechercher (nom, ID membre)"
               icon={<MagnifyingGlassIcon className="h-5 w-5" />}
@@ -232,36 +222,26 @@ export function SubscriptionList() {
             </Select>
           </div>
 
+          {error && <Alert color="red" className="mb-4">{error}</Alert>}
+
           {loading ? (
-            <div className="text-center py-8">
-              <Typography>Chargement...</Typography>
+            <div className="flex justify-center items-center h-32">
+              <Spinner color="blue" className="h-8 w-8" />
             </div>
           ) : subscriptions.length === 0 ? (
-            <div className="text-center py-8">
-              <Typography color="gray">Aucun abonnement trouvé</Typography>
+            <div className="text-center py-12">
+              <Typography color="gray">
+                {filters.search || filters.status ? 'Aucun abonnement trouvé.' : 'Aucun abonnement enregistré.'}
+              </Typography>
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[640px] table-auto">
+              <table className="w-full min-w-max table-auto">
                 <thead>
-                  <tr>
-                    {[
-                      'Membre',
-                      'Plan',
-                      'Dates',
-                      'Montant',
-                      'Statut',
-                      'Jours restants',
-                      'Actions',
-                    ].map((head) => (
-                      <th
-                        key={head}
-                        className="border-b border-blue-gray-50 py-3 px-5 text-left"
-                      >
-                        <Typography
-                          variant="small"
-                          className="text-[11px] font-bold uppercase text-blue-gray-400"
-                        >
+                  <tr className="border-b border-gray-200">
+                    {['Membre', 'Plan', 'Dates', 'Montant', 'Statut', 'Jours restants', 'Actions'].map((head) => (
+                      <th key={head} className="p-4 text-left">
+                        <Typography variant="small" className="font-bold text-gray-700 uppercase">
                           {head}
                         </Typography>
                       </th>
@@ -269,87 +249,92 @@ export function SubscriptionList() {
                   </tr>
                 </thead>
                 <tbody>
-                  {/* Cette ligne est désormais protégée car 'subscriptions' est garanti d'être un tableau */}
-                  {subscriptions.map((subscription) => ( 
-                    <tr key={subscription.id}>
-                      <td className="py-3 px-5 border-b border-blue-gray-50">
-                        <Typography variant="small" className="font-semibold">
-                          {subscription.member_name}
-                        </Typography>
-                      </td>
-                      <td className="py-3 px-5 border-b border-blue-gray-50">
-                        <Typography variant="small">{subscription.plan_name}</Typography>
-                      </td>
-                      <td className="py-3 px-5 border-b border-blue-gray-50">
-                        <div className="flex flex-col">
-                          <Typography variant="small" className="text-xs">
-                            Début: {new Date(subscription.start_date).toLocaleDateString('fr-FR')}
+                  {subscriptions.map((subscription, index) => {
+                    const isLast = index === subscriptions.length - 1;
+                    const classes = isLast ? 'p-4' : 'p-4 border-b border-gray-100';
+
+                    return (
+                      <tr key={subscription.id} className="hover:bg-gray-50 transition-colors">
+                        <td className={classes}>
+                          <Typography variant="small" className="font-semibold text-blue-600">
+                            {subscription.member_name}
                           </Typography>
-                          <Typography variant="small" className="text-xs">
-                            Fin: {new Date(subscription.end_date).toLocaleDateString('fr-FR')}
-                          </Typography>
-                        </div>
-                      </td>
-                      <td className="py-3 px-5 border-b border-blue-gray-50">
-                        <Typography
-                          variant="small"
-                          className="font-bold"
-                          style={{ color: '#00357a' }}
-                        >
-                          {formatPrice(subscription.amount_paid)}
-                        </Typography>
-                      </td>
-                      <td className="py-3 px-5 border-b border-blue-gray-50">
-                        <Chip
-                          size="sm"
-                          variant="gradient"
-                          value={getStatusLabel(subscription.status)}
-                          color={getStatusColor(subscription.status)}
-                        />
-                      </td>
-                      <td className="py-3 px-5 border-b border-blue-gray-50">
-                        <Typography variant="small" className="font-medium">
-                          {subscription.is_active ? `${subscription.days_remaining} jours` : '-'}
-                        </Typography>
-                      </td>
-                      <td className="py-3 px-5 border-b border-blue-gray-50">
-                        <div className="flex gap-2">
-                          <IconButton
-                            variant="text"
-                            size="sm"
-                            onClick={() => navigate(`/admin/subscriptions/${subscription.id}`)}
+                        </td>
+                        <td className={classes}>
+                          <Typography variant="small">{subscription.plan_name}</Typography>
+                        </td>
+                        <td className={classes}>
+                          <div className="flex flex-col">
+                            <Typography variant="small" className="text-xs">
+                              Début: {new Date(subscription.start_date).toLocaleDateString('fr-FR')}
+                            </Typography>
+                            <Typography variant="small" className="text-xs">
+                              Fin: {new Date(subscription.end_date).toLocaleDateString('fr-FR')}
+                            </Typography>
+                          </div>
+                        </td>
+                        <td className={classes}>
+                          <Typography
+                            variant="small"
+                            className="font-bold text-blue-600"
                           >
-                            <EyeIcon className="h-4 w-4" style={{ color: '#00357a' }} />
-                          </IconButton>
-                          {subscription.status === 'PENDING' && (
-                            <IconButton
+                            {formatPrice(subscription.amount_paid)}
+                          </Typography>
+                        </td>
+                        <td className={classes}>
+                          <Chip
+                            size="sm"
+                            value={getStatusLabel(subscription.status)}
+                            color={getStatusColor(subscription.status)}
+                          />
+                        </td>
+                        <td className={classes}>
+                          <Typography variant="small" className="font-medium">
+                            {subscription.is_active ? `${subscription.days_remaining} jours` : '-'}
+                          </Typography>
+                        </td>
+                        <td className={classes}>
+                          <div className="flex gap-2">
+                            <Button
                               variant="text"
                               size="sm"
-                              onClick={() => handleActivate(subscription.id)}
+                              color="blue"
+                              onClick={() => navigate(`/admin/subscriptions/${subscription.id}`)}
                             >
-                              <CheckCircleIcon className="h-4 w-4 text-green-500" />
-                            </IconButton>
-                          )}
-                          {subscription.status === 'ACTIVE' && (
-                            <IconButton
-                              variant="text"
-                              size="sm"
-                              onClick={() => handleCancel(subscription.id)}
-                            >
-                              <XCircleIcon className="h-4 w-4 text-red-500" />
-                            </IconButton>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                              <EyeIcon className="h-4 w-4" />
+                            </Button>
+                            {subscription.status === 'PENDING' && (
+                              <Button
+                                variant="text"
+                                size="sm"
+                                color="green"
+                                onClick={() => handleActivate(subscription.id)}
+                              >
+                                <CheckCircleIcon className="h-4 w-4" />
+                              </Button>
+                            )}
+                            {subscription.status === 'ACTIVE' && (
+                              <Button
+                                variant="text"
+                                size="sm"
+                                color="red"
+                                onClick={() => handleCancel(subscription.id)}
+                              >
+                                <XCircleIcon className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
           )}
         </CardBody>
       </Card>
-    </div>
+    </PageContainer>
   );
 }
 
