@@ -38,31 +38,32 @@ const getSubdomain = () => {
  */
 const getBaseURL = () => {
   const hostname = window.location.hostname;
+  const protocol = window.location.protocol;
+  const port = window.location.port;
 
-  // 💻 En développement local (localhost, 127.0.0.1 ou sous-domaine.localhost)
-  if (
-    hostname === 'localhost' ||
-    hostname === '127.0.0.1' ||
-    hostname.endsWith('.localhost')
-  ) {
+  console.log("🌐 Hostname:", hostname, "Port:", port);
+
+  // 💻 En développement avec sous-domaines gymflow.com
+  if (hostname.endsWith('.gymflow.com')) {
+    if (hostname === 'api.gymflow.com') {
+      return "http://127.0.0.1:8000/api/";
+    }
     return "http://127.0.0.1:8000/api/";
   }
 
-  // 🌐 En développement avec sous-domaine local simulé (moveup.gymflow.com:5173)
-  if (hostname.endsWith('.gymflow.com') && window.location.port === '5173') {
+  // 💻 En développement local standard
+  if (hostname === 'localhost' || hostname === '127.0.0.1') {
     return "http://127.0.0.1:8000/api/";
   }
 
   // 🚀 En production
-  return `${window.location.protocol}//api.gymflow.com/api/`;
+  return `${protocol}//api.gymflow.com/api/`;
 };
-
 
 // Créer l'instance Axios
 const api = axios.create({
   baseURL: getBaseURL(),
 });
-
 
 // ✅ INTERCEPTEUR DE REQUÊTE - Ajouter le token et le tenant-id
 api.interceptors.request.use(

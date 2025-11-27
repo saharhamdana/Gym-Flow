@@ -61,7 +61,7 @@ INSTALLED_APPS = [
     'bookings',
     'training_programs',
     'site_utils',
-    'coaching'
+    'coaching',
 ]
 
 AUTH_USER_MODEL = 'authentication.User'
@@ -126,28 +126,20 @@ USE_TZ = True
 STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# 🔒 Configuration CORS pour sous-domaines
+# 🔧 Configuration CORS CORRIGÉE
 CORS_ALLOW_ALL_ORIGINS = False
 
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost",
-    "http://127.0.0.1",
     "http://localhost:5173",
     "http://127.0.0.1:5173",
-    "http://gymflow.com:5173",
-    "http://www.gymflow.com:5173",
     "http://powerfit.gymflow.com:5173",
     "http://titangym.gymflow.com:5173",
     "http://moveup.gymflow.com:5173",
-    "http://powerfit.gymflow.com",      
-    "http://titangym.gymflow.com",
-    "http://moveup.gymflow.com",
-    "http://gymflow.com",
-    "http://www.gymflow.com",
+    "http://gymflow.com:5173",
+    "http://api.gymflow.com:8000",
 ]
 
 CORS_ALLOWED_ORIGIN_REGEXES = [
-    r"^https://\w+\.gymflow\.com$",
     r"^http://\w+\.gymflow\.com:\d+$",
     r"^http://localhost:\d+$",
     r"^http://127\.0\.0\.1:\d+$",
@@ -155,6 +147,7 @@ CORS_ALLOWED_ORIGIN_REGEXES = [
 
 CORS_ALLOW_CREDENTIALS = True
 
+# ✅ AJOUTER LES HEADERS AUTORISÉS
 CORS_ALLOW_HEADERS = [
     'accept',
     'accept-encoding',
@@ -166,6 +159,7 @@ CORS_ALLOW_HEADERS = [
     'x-csrftoken',
     'x-requested-with',
     'x-tenant-subdomain',
+    'tenant-id',  # ✅ AJOUTER CETTE LIGNE
 ]
 
 # # 🍪 Configuration des cookies pour sous-domaines
@@ -277,45 +271,14 @@ LOGGING = {
 }
 
 
+# Ajouter à la fin du fichier
+import os
+from dotenv import load_dotenv
 
-# # ============================================================
-# # STRIPE CONFIGURATION
-# # ============================================================
+load_dotenv()
 
-# import stripe
-
-# # Clés Stripe (Mode Test)
-# STRIPE_PUBLISHABLE_KEY = os.getenv(
-#     'STRIPE_PUBLISHABLE_KEY',
-#     'pk_test_...'  # Remplacer par votre clé publique test
-# )
-
-# STRIPE_SECRET_KEY = os.getenv(
-#     'STRIPE_SECRET_KEY',
-#     'sk_test_...'  # Remplacer par votre clé secrète test
-# )
-
-# STRIPE_WEBHOOK_SECRET = os.getenv(
-#     'STRIPE_WEBHOOK_SECRET',
-#     'whsec_...'  # Remplacer par votre webhook secret
-# )
-
-# # Initialiser Stripe
-# stripe.api_key = STRIPE_SECRET_KEY
-
-# # URL de retour après paiement
-# STRIPE_SUCCESS_URL = os.getenv(
-#     'STRIPE_SUCCESS_URL',
-#     'http://localhost:8000/portal/payment/success'
-# )
-
-# STRIPE_CANCEL_URL = os.getenv(
-#     'STRIPE_CANCEL_URL',
-#     'http://localhost:8000/portal/payment/cancel'
-# )
-
-# # Devise par défaut
-# STRIPE_CURRENCY = 'tnd'  # Dinar Tunisien
-
-# # Mode test
-# STRIPE_TEST_MODE = True
+# Stripe Configuration
+# STRIPE_SECRET_KEY = os.getenv('STRIPE_SECRET_KEY', '')
+# STRIPE_PUBLISHABLE_KEY = os.getenv('STRIPE_PUBLISHABLE_KEY', '')
+# STRIPE_WEBHOOK_SECRET = os.getenv('STRIPE_WEBHOOK_SECRET', '')
+# FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:5173')
