@@ -20,6 +20,7 @@ import {
   ClockIcon,
   UserGroupIcon,
   PlayCircleIcon,
+  CalendarDaysIcon, // ✅ AJOUT DE L'IMPORT MANQUANT
 } from "@heroicons/react/24/solid";
 import api from '@/api/axiosInstance';
 

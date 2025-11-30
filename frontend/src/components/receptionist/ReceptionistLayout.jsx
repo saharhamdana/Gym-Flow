@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from "react";
 import { Link, useLocation, Navigate } from "react-router-dom";
+
+// Composants Material Tailwind
 import {
   Typography,
   IconButton,
@@ -11,6 +13,8 @@ import {
   ListItemPrefix,
   Avatar,
 } from "@material-tailwind/react";
+
+// Icônes
 import {
   Bars3Icon,
   XMarkIcon,
@@ -50,6 +54,7 @@ export default function ReceptionistLayout({ children }) {
     localStorage.removeItem("access_token");
     localStorage.removeItem("refresh_token");
     localStorage.removeItem("user");
+    localStorage.removeItem("user_profile_photo");
     window.location.href = "/sign-in";
   };
 
@@ -66,6 +71,11 @@ export default function ReceptionistLayout({ children }) {
       path: "/receptionist/dashboard",
     },
     {
+      label: "Check-in",
+      icon: ClipboardDocumentCheckIcon,
+      path: "/receptionist/checkin",
+    },
+    {
       label: "Membres",
       icon: UsersIcon,
       path: "/receptionist/members",
@@ -80,16 +90,13 @@ export default function ReceptionistLayout({ children }) {
       icon: CalendarDaysIcon,
       path: "/receptionist/bookings",
     },
-    {
-      label: "Check-in",
-      icon: ClipboardDocumentCheckIcon,
-      path: "/receptionist/checkin",
-    },
   ];
 
   // Fonction pour vérifier si l'item est actif
   const isActive = (path) => {
-    return location.pathname.startsWith(path) ? "bg-blue-500/10 text-blue-600 border-r-2 border-blue-600" : "text-gray-700";
+    return location.pathname.startsWith(path) 
+      ? "bg-blue-500/10 text-blue-600 border-r-2 border-blue-600" 
+      : "text-gray-700";
   };
 
   if (loading) {
@@ -114,7 +121,7 @@ export default function ReceptionistLayout({ children }) {
             <nav className="flex-1 px-2 pb-4 space-y-1">
               {menuItems.map((item) => (
                 <Link
-                  key={item.path} 
+                  key={item.path}
                   to={item.path}
                   className={`flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors hover:bg-gray-100 group ${isActive(item.path)}`}
                 >
@@ -176,7 +183,7 @@ export default function ReceptionistLayout({ children }) {
                 <Bars3Icon className="h-6 w-6" />
               </IconButton>
               <Typography variant="h5" color="blue-gray">
-                Panel Réceptionniste
+                GymFlow
               </Typography>
             </div>
             {user?.profile_picture ? (
@@ -231,7 +238,7 @@ export default function ReceptionistLayout({ children }) {
         </Drawer>
 
         {/* Contenu des pages */}
-        <main className="flex-1 overflow-y-auto bg-gray-50">
+        <main className="flex-1 overflow-y-auto p-4 lg:p-6 bg-gray-50">
           {children}
         </main>
       </div>

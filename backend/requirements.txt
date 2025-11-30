@@ -5,7 +5,7 @@ cffi==2.0.0
 charset-normalizer==3.4.4
 colorama==0.4.6
 cssselect2==0.8.0
-Django==5.2.7
+Django==5.2.8
 django-cors-headers==4.9.0
 django-filter==25.2
 djangorestframework==3.16.1
@@ -35,4 +35,3 @@ weasyprint==66.0
 webencodings==0.5.1
 wheel==0.45.1
 zopfli==0.2.3.post1
-reportlab==4.0.7

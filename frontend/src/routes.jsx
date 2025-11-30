@@ -86,7 +86,10 @@ import SubscriptionCreateReceptionist from "./pages/receptionist/subscriptions/S
 import BookingsList from "./pages/receptionist/bookings/BookingsList";
 import BookingCreateReceptionist from "./pages/receptionist/bookings/BookingCreate";
 import CheckIn from "./pages/receptionist/checkin/CheckIn";
-import ReceptionistLayout from "./components/receptionist/ReceptionistLayout";
+import { element } from "prop-types";
+import MembersCreate from "./pages/receptionist/members/MembersCreate";
+
+
 
 export const routes = [
   // ==========================================
@@ -198,6 +201,11 @@ export const routes = [
     path: "/receptionist/members/:id",
     element: <MemberDetailReceptionist />,
     hidden: true
+  },
+  {
+    name: "Créer Membre",
+    path: "/receptionist/members/create",
+    element: <MembersCreate />,
   },
   {
     name: "Gestion Abonnements",

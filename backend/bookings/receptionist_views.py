@@ -10,15 +10,14 @@ from datetime import datetime, timedelta
 
 from .models import Booking, Course
 from members.models import Member
+from subscriptions.models import Subscription
 from authentication.permissions import IsReceptionistOrAdmin
 
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsReceptionistOrAdmin])
 def search_member_for_checkin(request):
-    """
-    🔍 Recherche de membre avec leurs réservations du jour
-    """
+    """🔍 Recherche de membre avec leurs réservations du jour"""
     query = request.GET.get('q', '')
     
     if len(query) < 2:
@@ -27,7 +26,6 @@ def search_member_for_checkin(request):
     tenant_id = getattr(request, 'tenant_id', None)
     today = timezone.now().date()
     
-    # Rechercher les membres
     members = Member.objects.filter(
         tenant_id=tenant_id
     ).filter(
@@ -40,24 +38,19 @@ def search_member_for_checkin(request):
     
     results = []
     for member in members:
-        # Récupérer les réservations du jour
         today_bookings = Booking.objects.filter(
             member=member,
             course__date=today,
             tenant_id=tenant_id
         ).select_related('course__course_type', 'course__coach', 'course__room')
         
-        # Vérifier l'abonnement
         has_active_sub = member.has_active_subscription
-        
-        # Vérifier si déjà check-in aujourd'hui
         is_checked_in = Booking.objects.filter(
             member=member,
             course__date=today,
             checked_in=True
         ).exists()
         
-        # Formater les réservations
         bookings_data = []
         for booking in today_bookings:
             bookings_data.append({
@@ -84,7 +77,7 @@ def search_member_for_checkin(request):
             'phone': member.phone,
             'photo': member.photo.url if member.photo else None,
             'has_active_subscription': has_active_sub,
-            'subscription_expires_soon': False,  # À implémenter selon votre logique
+            'subscription_expires_soon': False,
             'is_checked_in': is_checked_in,
             'today_bookings': bookings_data
         })
@@ -95,9 +88,7 @@ def search_member_for_checkin(request):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsReceptionistOrAdmin])
 def quick_checkin(request):
-    """
-    ✅ Check-in rapide pour un cours spécifique
-    """
+    """✅ Check-in rapide pour un cours spécifique"""
     member_id = request.data.get('member_id')
     course_id = request.data.get('course_id')
     
@@ -113,14 +104,12 @@ def quick_checkin(request):
         member = Member.objects.get(member_id=member_id, tenant_id=tenant_id)
         course = Course.objects.get(id=course_id, tenant_id=tenant_id)
         
-        # Vérifier l'abonnement
         if not member.has_active_subscription:
             return Response(
                 {'error': 'Membre sans abonnement actif'},
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        # Récupérer la réservation
         booking = Booking.objects.filter(
             member=member,
             course=course
@@ -132,7 +121,6 @@ def quick_checkin(request):
                 status=status.HTTP_404_NOT_FOUND
             )
         
-        # Vérifier si déjà check-in
         if booking.checked_in:
             return Response(
                 {
@@ -142,7 +130,6 @@ def quick_checkin(request):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        # Effectuer le check-in
         booking.check_in()
         
         return Response({
@@ -179,12 +166,9 @@ def quick_checkin(request):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsReceptionistOrAdmin])
 def manual_checkin(request):
-    """
-    📝 Check-in manuel (sans réservation préalable)
-    Créer une réservation à la volée si nécessaire
-    """
+    """📝 Check-in manuel (sans réservation préalable)"""
     member_id = request.data.get('member_id')
-    course_id = request.data.get('course_id')  # Optionnel
+    course_id = request.data.get('course_id')
     
     if not member_id:
         return Response(
@@ -197,18 +181,15 @@ def manual_checkin(request):
     try:
         member = Member.objects.get(member_id=member_id, tenant_id=tenant_id)
         
-        # Vérifier l'abonnement
         if not member.has_active_subscription:
             return Response(
                 {'error': 'Membre sans abonnement actif'},
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        # Si un cours est spécifié
         if course_id:
             course = Course.objects.get(id=course_id, tenant_id=tenant_id)
             
-            # Vérifier ou créer la réservation
             booking, created = Booking.objects.get_or_create(
                 member=member,
                 course=course,
@@ -223,7 +204,6 @@ def manual_checkin(request):
             
             message = f'Check-in {"créé et " if created else ""}effectué pour {member.full_name}'
         else:
-            # Check-in libre (sans cours spécifique)
             message = f'Accès enregistré pour {member.full_name}'
         
         return Response({
@@ -255,21 +235,17 @@ def manual_checkin(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated, IsReceptionistOrAdmin])
 def checkin_stats(request):
-    """
-    📊 Statistiques de check-in en temps réel
-    """
+    """📊 Statistiques de check-in en temps réel"""
     tenant_id = getattr(request, 'tenant_id', None)
     today = timezone.now().date()
     now = timezone.now()
     
-    # Check-ins d'aujourd'hui
     today_checkins = Booking.objects.filter(
         tenant_id=tenant_id,
         course__date=today,
         checked_in=True
     ).count()
     
-    # Présents actuellement (check-in dans les 3 dernières heures)
     three_hours_ago = now - timedelta(hours=3)
     currently_present = Booking.objects.filter(
         tenant_id=tenant_id,
@@ -278,7 +254,6 @@ def checkin_stats(request):
         course__date=today
     ).count()
     
-    # Cours en cours (entre start_time et end_time)
     ongoing_courses = Course.objects.filter(
         tenant_id=tenant_id,
         date=today,
@@ -292,3 +267,127 @@ def checkin_stats(request):
         'currentlyPresent': currently_present,
         'ongoingCourses': ongoing_courses
     })
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated, IsReceptionistOrAdmin])
+def create_booking(request):
+    """📝 Créer une réservation (réceptionniste)"""
+    member_id = request.data.get('member_id')
+    course_id = request.data.get('course_id')
+    
+    if not member_id or not course_id:
+        return Response(
+            {'error': 'member_id et course_id sont requis'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    tenant_id = getattr(request, 'tenant_id', None)
+    
+    try:
+        member = Member.objects.get(member_id=member_id, tenant_id=tenant_id)
+        course = Course.objects.get(id=course_id, tenant_id=tenant_id)
+        
+        # Vérifier abonnement
+        if not member.has_active_subscription:
+            return Response(
+                {'error': 'Le membre doit avoir un abonnement actif'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Vérifier si déjà réservé
+        if Booking.objects.filter(member=member, course=course).exists():
+            return Response(
+                {'error': 'Ce membre a déjà réservé ce cours'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Vérifier disponibilité
+        if course.is_full:
+            return Response(
+                {'error': 'Le cours est complet'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Créer la réservation
+        booking = Booking.objects.create(
+            member=member,
+            course=course,
+            status='CONFIRMED',
+            tenant_id=tenant_id
+        )
+        
+        return Response({
+            'success': True,
+            'message': f'Réservation créée pour {member.full_name}',
+            'booking': {
+                'id': booking.id,
+                'member_name': member.full_name,
+                'course_title': course.title,
+                'date': course.date,
+                'start_time': course.start_time
+            }
+        }, status=status.HTTP_201_CREATED)
+        
+    except Member.DoesNotExist:
+        return Response(
+            {'error': 'Membre non trouvé'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    except Course.DoesNotExist:
+        return Response(
+            {'error': 'Cours non trouvé'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    except Exception as e:
+        return Response(
+            {'error': str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated, IsReceptionistOrAdmin])
+def get_receptionist_bookings(request):
+    """📋 Liste des réservations (vue réceptionniste)"""
+    tenant_id = getattr(request, 'tenant_id', None)
+    
+    # Filtres
+    status_filter = request.GET.get('status')
+    date_filter = request.GET.get('date')
+    
+    bookings = Booking.objects.filter(
+        tenant_id=tenant_id
+    ).select_related('member', 'course__course_type', 'course__coach', 'course__room')
+    
+    if status_filter:
+        bookings = bookings.filter(status=status_filter)
+    
+    if date_filter:
+        bookings = bookings.filter(course__date=date_filter)
+    else:
+        # Par défaut : réservations d'aujourd'hui et futures
+        today = timezone.now().date()
+        bookings = bookings.filter(course__date__gte=today)
+    
+    bookings = bookings.order_by('-course__date', '-course__start_time')
+    
+    results = []
+    for booking in bookings:
+        results.append({
+            'id': booking.id,
+            'member_id': booking.member.member_id,
+            'member_name': booking.member.full_name,
+            'member_photo': booking.member.photo.url if booking.member.photo else None,
+            'course_id': booking.course.id,
+            'course_title': booking.course.title,
+            'course_date': booking.course.date,
+            'course_start_time': booking.course.start_time,
+            'course_end_time': booking.course.end_time,
+            'status': booking.status,
+            'checked_in': booking.checked_in,
+            'check_in_time': booking.check_in_time,
+            'booking_date': booking.booking_date
+        })
+    
+    return Response({'results': results})

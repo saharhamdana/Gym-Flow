@@ -55,14 +55,13 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt',
     'corsheaders',
-    'authentication',
-    'subscriptions',
-    'members',
-    'bookings',
+    'authentication',      # Doit être première (AUTH_USER_MODEL)
+    'members',            # Doit être avant billing
+    'subscriptions',      # Doit être avant billing  
     'training_programs',
-    'site_utils',
     'coaching',
-    'billing',
+    'bookings',
+    'billing',      # ← AJOUTEZ CETTE LIGNE
 ]
 
 AUTH_USER_MODEL = 'authentication.User'

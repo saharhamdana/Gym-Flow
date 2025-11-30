@@ -130,6 +130,7 @@ class IsReceptionist(permissions.BasePermission):
 class IsReceptionistOrAdmin(permissions.BasePermission):
     """
     Permission pour réceptionniste ou admin.
+    Utilisé pour les endpoints réceptionniste (check-in, réservations, etc.)
     """
     def has_permission(self, request, view):
         user = request.user

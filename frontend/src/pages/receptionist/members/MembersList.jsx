@@ -82,7 +82,7 @@ const MembersList = () => {
         <Button
           color="blue"
           className="flex items-center gap-2"
-          onClick={() => navigate('/receptionist/subscriptions/create')}
+          onClick={() => navigate('/receptionist/members/create')}
         >
           <PlusIcon className="h-5 w-5" />
           Nouveau Membre
@@ -181,14 +181,13 @@ const MembersList = () => {
                       />
                     </td>
                     <td className="p-4">
-                      <Typography variant="small">
-                        {member.has_active_subscription ? (
-                          <Chip value="Actif" color="green" size="sm" />
-                        ) : (
-                          <Chip value="Aucun" color="red" size="sm" />
-                        )}
-                      </Typography>
+                      {member.has_active_subscription ? (
+                        <Chip value="Actif" color="green" size="sm" />
+                      ) : (
+                        <Chip value="Aucun" color="red" size="sm" />
+                      )}
                     </td>
+
                     <td className="p-4">
                       <div className="flex items-center gap-2">
                         <Button
@@ -246,7 +245,7 @@ const MembersList = () => {
               <Typography variant="small" className="text-gray-600">
                 {selectedMember.member_id}
               </Typography>
-              
+
               {/* Placeholder pour QR Code - À implémenter avec une librairie QR */}
               <div className="bg-gray-100 p-8 rounded-lg inline-block">
                 <Typography variant="small" className="text-gray-500">
