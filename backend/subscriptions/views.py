@@ -6,6 +6,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django_filters.rest_framework import DjangoFilterBackend
 from django.utils import timezone
+import logging
 
 from .models import SubscriptionPlan, Subscription
 from .serializers import (
@@ -15,6 +16,8 @@ from .serializers import (
     SubscriptionCreateSerializer,
 )
 from authentication.mixins import CompleteTenantMixin
+
+logger = logging.getLogger('subscriptions.views')
 
 
 class SubscriptionPlanViewSet(CompleteTenantMixin, viewsets.ModelViewSet):
@@ -30,11 +33,7 @@ class SubscriptionPlanViewSet(CompleteTenantMixin, viewsets.ModelViewSet):
     
     def create(self, request, *args, **kwargs):
         """✅ Override create pour injecter tenant_id AVANT validation"""
-        import logging
-        logger = logging.getLogger('subscriptions.views')
-        
         logger.debug("🔍 create() appelé - SubscriptionPlanViewSet")
-        logger.debug(f"🔍 request.data = {request.data}")
         
         # ✅ Déterminer le tenant_id
         gym_center = getattr(request, 'gym_center', None)
@@ -42,24 +41,19 @@ class SubscriptionPlanViewSet(CompleteTenantMixin, viewsets.ModelViewSet):
         
         if gym_center:
             final_tenant_id = gym_center.tenant_id
-            logger.debug(f"✅ tenant_id depuis gym_center: {final_tenant_id}")
         elif tenant_id:
             final_tenant_id = tenant_id
-            logger.debug(f"✅ tenant_id depuis request: {final_tenant_id}")
         elif request.user.tenant_id:
             final_tenant_id = request.user.tenant_id
-            logger.debug(f"✅ tenant_id depuis user: {final_tenant_id}")
         else:
-            logger.error("❌ Aucun tenant_id trouvé!")
             from rest_framework.exceptions import PermissionDenied
             raise PermissionDenied("Impossible de créer ce plan : aucun centre associé.")
         
-        # ✅ Valider les données (sans tenant_id)
+        # ✅ Valider les données
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         
         # ✅ Sauvegarder avec tenant_id
-        logger.debug(f"✅ Sauvegarde avec tenant_id={final_tenant_id}")
         self.perform_create(serializer, tenant_id=final_tenant_id)
         
         headers = self.get_success_headers(serializer.data)
@@ -67,14 +61,9 @@ class SubscriptionPlanViewSet(CompleteTenantMixin, viewsets.ModelViewSet):
     
     def perform_create(self, serializer, tenant_id=None):
         """✅ Sauvegarder avec le tenant_id"""
-        import logging
-        logger = logging.getLogger('subscriptions.views')
-        
         if tenant_id:
-            logger.debug(f"✅ perform_create: sauvegarde avec tenant_id={tenant_id}")
             serializer.save(tenant_id=tenant_id)
         else:
-            logger.error("❌ perform_create appelé sans tenant_id!")
             serializer.save()
     
     @action(detail=False, methods=['get'])
@@ -85,25 +74,58 @@ class SubscriptionPlanViewSet(CompleteTenantMixin, viewsets.ModelViewSet):
         return Response(serializer.data)
 
 
-class SubscriptionViewSet(viewsets.ModelViewSet):
-    """ViewSet pour les abonnements - VERSION SIMPLIFIÉE"""
-    
+class SubscriptionViewSet(CompleteTenantMixin, viewsets.ModelViewSet):
+    """
+    ✅ CORRECTION: ViewSet pour les abonnements avec FILTRAGE PAR TENANT
+    """
     queryset = Subscription.objects.all()
     permission_classes = [IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = ['status', 'member', 'plan']
+    search_fields = ['member__first_name', 'member__last_name', 'member__member_id']
+    ordering_fields = ['start_date', 'end_date', 'created_at']
+    tenant_field = 'tenant_id'  # ✅ IMPORTANT
     
     def get_queryset(self):
-        """Filtrer par membre si role=MEMBER"""
+        """
+        ✅ CORRECTION: Filtrer TOUJOURS par tenant_id et rôle utilisateur
+        """
         user = self.request.user
+        tenant_id = getattr(self.request, 'tenant_id', None)
         
+        logger.debug(f"🔍 SubscriptionViewSet.get_queryset()")
+        logger.debug(f"   User: {user.username} (Role: {user.role})")
+        logger.debug(f"   Tenant ID: {tenant_id}")
+        
+        # ✅ BASE: Toujours filtrer par tenant_id
+        if not tenant_id:
+            logger.error("❌ Aucun tenant_id trouvé!")
+            return Subscription.objects.none()
+        
+        base_queryset = Subscription.objects.filter(
+            tenant_id=tenant_id
+        ).select_related('plan', 'member')
+        
+        # ✅ FILTRAGE PAR RÔLE
         if user.role == 'MEMBER':
+            # Les membres ne voient que LEURS abonnements
             try:
                 member = user.member_profile
-                return Subscription.objects.filter(member=member).select_related('plan', 'member')
-            except Member.DoesNotExist:
+                queryset = base_queryset.filter(member=member)
+                logger.debug(f"   → Membre: {queryset.count()} abonnements")
+                return queryset
+            except:
+                logger.warning(f"   → Membre sans profil")
                 return Subscription.objects.none()
         
-        # Pour admin/coach : tous les abonnements
-        return Subscription.objects.all().select_related('plan', 'member')
+        elif user.role in ['ADMIN', 'RECEPTIONIST', 'COACH']:
+            # Admin/Réceptionniste/Coach voient tous les abonnements DU CENTRE
+            logger.debug(f"   → Staff: {base_queryset.count()} abonnements du centre")
+            return base_queryset
+        
+        else:
+            logger.error(f"   → Rôle non autorisé: {user.role}")
+            return Subscription.objects.none()
     
     def get_serializer_class(self):
         if self.action == 'list':
@@ -111,16 +133,59 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
         elif self.action == 'create':
             return SubscriptionCreateSerializer
         return SubscriptionDetailSerializer
-
-    # ✅ AJOUTEZ CETTE ACTION POUR L'ANNULATION
+    
+    def create(self, request, *args, **kwargs):
+        """✅ Override create pour injecter tenant_id"""
+        logger.debug("🔍 create() appelé - SubscriptionViewSet")
+        
+        tenant_id = getattr(request, 'tenant_id', None)
+        
+        if not tenant_id:
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied("Impossible de créer l'abonnement : aucun centre associé.")
+        
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        # ✅ Le tenant_id sera hérité du membre automatiquement
+        subscription = serializer.save()
+        
+        # ✅ Vérifier que le tenant_id a bien été assigné
+        if not subscription.tenant_id:
+            subscription.tenant_id = tenant_id
+            subscription.save(update_fields=['tenant_id'])
+        
+        headers = self.get_success_headers(serializer.data)
+        return Response(
+            SubscriptionDetailSerializer(subscription).data,
+            status=status.HTTP_201_CREATED,
+            headers=headers
+        )
+    
     @action(detail=True, methods=['post'])
-    def cancel(self, request, pk=None):
-        """
-        Annuler un abonnement
-        """
+    def activate(self, request, pk=None):
+        """✅ Activer un abonnement"""
         subscription = self.get_object()
         
-        # Vérifier si l'abonnement peut être annulé
+        if subscription.status == 'ACTIVE':
+            return Response(
+                {'error': 'Cet abonnement est déjà actif'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        subscription.activate()
+        
+        return Response({
+            'success': True,
+            'message': 'Abonnement activé avec succès',
+            'subscription': SubscriptionDetailSerializer(subscription).data
+        })
+    
+    @action(detail=True, methods=['post'])
+    def cancel(self, request, pk=None):
+        """✅ Annuler un abonnement"""
+        subscription = self.get_object()
+        
         if subscription.status == 'CANCELLED':
             return Response(
                 {'error': 'Cet abonnement est déjà annulé.'},
@@ -133,68 +198,33 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        # Annuler l'abonnement
         subscription.status = 'CANCELLED'
         subscription.cancelled_at = timezone.now()
         subscription.save()
         
-        # Log l'action
-        import logging
-        logger = logging.getLogger('subscriptions.views')
         logger.info(f"Abonnement {subscription.id} annulé par l'utilisateur {request.user.id}")
         
         return Response({
             'success': True,
             'message': 'Abonnement annulé avec succès.',
-            'subscription_id': subscription.id,
-            'status': subscription.status
+            'subscription': SubscriptionDetailSerializer(subscription).data
         })
-
-
-# @action(detail=False, methods=['post'])
-# def verify_payment(self, request):
-#     """
-#     Vérifier un paiement Stripe après redirection
-#     """
-#     from .stripe_service import StripeService
     
-#     session_id = request.data.get('session_id')
-    
-#     if not session_id:
-#         return Response(
-#             {'error': 'session_id manquant'},
-#             status=status.HTTP_400_BAD_REQUEST
-#         )
-    
-#     try:
-#         # Récupérer la session Stripe
-#         session = StripeService.retrieve_session(session_id)
+    @action(detail=False, methods=['get'])
+    def statistics(self, request):
+        """📊 Statistiques des abonnements du centre"""
+        queryset = self.get_queryset()
         
-#         # Récupérer l'abonnement depuis les metadata
-#         subscription_id = session.metadata.get('subscription_id')
-#         subscription = Subscription.objects.get(id=subscription_id)
+        total = queryset.count()
+        active = queryset.filter(status='ACTIVE').count()
+        pending = queryset.filter(status='PENDING').count()
+        expired = queryset.filter(status='EXPIRED').count()
+        cancelled = queryset.filter(status='CANCELLED').count()
         
-#         # Vérifier si le paiement est réussi
-#         if session.payment_status == 'paid' and subscription.status != 'ACTIVE':
-#             subscription.activate()
-#             subscription.stripe_session_id = session_id
-#             subscription.save()
-        
-#         return Response({
-#             'success': True,
-#             'subscription_id': subscription.id,
-#             'plan_name': subscription.plan.name,
-#             'duration_days': subscription.plan.duration_days,
-#             'start_date': subscription.start_date,
-#             'end_date': subscription.end_date,
-#             'amount_paid': subscription.amount_paid,
-#             'days_remaining': subscription.days_remaining,
-#             'status': subscription.status
-#         })
-        
-#     except Exception as e:
-#         logger.error(f"Erreur vérification paiement: {str(e)}")
-#         return Response(
-#             {'error': str(e)},
-#             status=status.HTTP_500_INTERNAL_SERVER_ERROR
-#         )
+        return Response({
+            'total': total,
+            'active': active,
+            'pending': pending,
+            'expired': expired,
+            'cancelled': cancelled,
+        })

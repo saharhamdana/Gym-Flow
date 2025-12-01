@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, User, Mail, Phone, CheckCircle } from 'lucide-react';
+import { Search, User, Mail, Phone, CheckCircle, X } from 'lucide-react';
 import coachingService from '../../services/coachingService';
 
 const Step2SelectMember = ({ formData, updateFormData }) => {
@@ -8,18 +8,19 @@ const Step2SelectMember = ({ formData, updateFormData }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [error, setError] = useState('');
 
+  // Initialiser avec un tableau vide si pas de membres sélectionnés
+  const selectedMembers = Array.isArray(formData.members) ? formData.members : [];
+
   useEffect(() => {
     fetchMembers();
   }, []);
 
   const fetchMembers = async () => {
     try {
-      // ← CHANGÉ : récupérer response.data
       const response = await coachingService.getMembers();
       console.log('🔍 Réponse complète:', response);
       console.log('📦 Données:', response.data);
 
-      // Gérer la pagination Django
       const membersData = response.data?.results || response.data || [];
       console.log('✅ Membres extraits:', membersData);
       
@@ -42,8 +43,28 @@ const Step2SelectMember = ({ formData, updateFormData }) => {
     );
   });
 
-  const selectMember = (member) => {
-    updateFormData('member', member);
+  const toggleMember = (member) => {
+    const isSelected = selectedMembers.some(m => m.id === member.id);
+    
+    let newSelection;
+    if (isSelected) {
+      // Retirer le membre
+      newSelection = selectedMembers.filter(m => m.id !== member.id);
+    } else {
+      // Ajouter le membre
+      newSelection = [...selectedMembers, member];
+    }
+    
+    updateFormData('members', newSelection);
+  };
+
+  const removeMember = (memberId) => {
+    const newSelection = selectedMembers.filter(m => m.id !== memberId);
+    updateFormData('members', newSelection);
+  };
+
+  const clearSelection = () => {
+    updateFormData('members', []);
   };
 
   if (loading) {
@@ -71,7 +92,7 @@ const Step2SelectMember = ({ formData, updateFormData }) => {
   return (
     <div className="space-y-6 bg-white p-6 rounded-xl shadow-sm">
       <h2 className="text-2xl font-bold text-gray-900 mb-6">
-        Sélectionner un membre
+        Sélectionner les membres
       </h2>
 
       {/* Debug info - À RETIRER EN PRODUCTION */}
@@ -81,6 +102,48 @@ const Step2SelectMember = ({ formData, updateFormData }) => {
           <p className="text-sm text-yellow-700 mt-1">
             Vérifiez que des membres avec status ACTIVE existent
           </p>
+        </div>
+      )}
+
+      {/* Membres sélectionnés */}
+      {selectedMembers.length > 0 && (
+        <div className="p-4 bg-blue-50 border-2 border-blue-500 rounded-lg">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center">
+              <CheckCircle className="w-5 h-5 text-blue-600 mr-2" />
+              <h3 className="font-semibold text-blue-900">
+                {selectedMembers.length} membre(s) sélectionné(s)
+              </h3>
+            </div>
+            <button
+              onClick={clearSelection}
+              className="text-sm text-red-600 hover:text-red-700 hover:underline"
+            >
+              Tout désélectionner
+            </button>
+          </div>
+          
+          {/* Liste des membres sélectionnés */}
+          <div className="space-y-2">
+            {selectedMembers.map(member => (
+              <div 
+                key={member.id}
+                className="flex items-center justify-between bg-white p-3 rounded-lg border border-blue-200"
+              >
+                <div className="flex-1">
+                  <p className="font-medium text-gray-900">{member.full_name}</p>
+                  <p className="text-sm text-gray-600">{member.email}</p>
+                </div>
+                <button
+                  onClick={() => removeMember(member.id)}
+                  className="ml-4 p-1 text-red-600 hover:bg-red-50 rounded-full transition-colors"
+                  title="Retirer ce membre"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
@@ -96,28 +159,6 @@ const Step2SelectMember = ({ formData, updateFormData }) => {
         />
       </div>
 
-      {/* Membre sélectionné */}
-      {formData.member && (
-        <div className="p-4 bg-green-50 border-2 border-green-500 rounded-lg">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="flex items-center">
-                <CheckCircle className="w-5 h-5 text-green-600 mr-2" />
-                <h3 className="font-semibold text-green-900">Membre sélectionné</h3>
-              </div>
-              <p className="text-green-800 mt-1">{formData.member.full_name}</p>
-              <p className="text-sm text-green-700">{formData.member.email}</p>
-            </div>
-            <button
-              onClick={() => updateFormData('member', null)}
-              className="px-4 py-2 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg"
-            >
-              Changer
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* Liste des membres */}
       <div className="space-y-3 max-h-96 overflow-y-auto">
         {filteredMembers.length === 0 ? (
@@ -130,12 +171,12 @@ const Step2SelectMember = ({ formData, updateFormData }) => {
           </div>
         ) : (
           filteredMembers.map(member => {
-            const isSelected = formData.member?.id === member.id;
+            const isSelected = selectedMembers.some(m => m.id === member.id);
             
             return (
               <div
                 key={member.id}
-                onClick={() => selectMember(member)}
+                onClick={() => toggleMember(member)}
                 className={`
                   p-4 border-2 rounded-lg cursor-pointer transition-all
                   ${isSelected 
@@ -185,7 +226,7 @@ const Step2SelectMember = ({ formData, updateFormData }) => {
 
       {/* Stats */}
       <div className="text-sm text-gray-500 text-center pt-4 border-t">
-        {filteredMembers.length} membre(s) disponible(s)
+        {filteredMembers.length} membre(s) disponible(s) • {selectedMembers.length} sélectionné(s)
       </div>
     </div>
   );

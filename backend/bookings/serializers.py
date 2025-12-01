@@ -113,27 +113,69 @@ class BookingDetailSerializer(serializers.ModelSerializer):
 
 
 class BookingCreateSerializer(serializers.ModelSerializer):
+    """
+    ✅ CORRECTION: Gérer automatiquement le member depuis l'utilisateur
+    """
     class Meta:
         model = Booking
-        fields = ['course', 'member', 'notes']
-        # ✅ tenant_id sera hérité du membre automatiquement
+        fields = ['course', 'notes']  # ✅ Retirer 'member' des champs
         read_only_fields = ['tenant_id']
     
+    def create(self, validated_data):
+        """
+        ✅ CORRECTION: Récupérer automatiquement le membre depuis request.user
+        """
+        request = self.context.get('request')
+        
+        # Récupérer le membre depuis l'utilisateur connecté
+        try:
+            member = request.user.member_profile
+        except AttributeError:
+            raise serializers.ValidationError({
+                'member': 'Profil membre introuvable pour cet utilisateur'
+            })
+        
+        # Ajouter le membre aux données validées
+        validated_data['member'] = member
+        
+        # Le tenant_id sera hérité du membre automatiquement dans le modèle
+        booking = Booking.objects.create(**validated_data)
+        
+        return booking
+    
     def validate(self, data):
+        """
+        ✅ Validation avec le membre récupéré du contexte
+        """
+        request = self.context.get('request')
+        
+        try:
+            member = request.user.member_profile
+        except AttributeError:
+            raise serializers.ValidationError({
+                'member': 'Profil membre introuvable'
+            })
+        
         course = data['course']
-        member = data['member']
         
         # Vérifier si le cours est complet
         if course.is_full:
             raise serializers.ValidationError("Ce cours est complet.")
         
         # Vérifier si le membre a déjà réservé ce cours
-        if Booking.objects.filter(course=course, member=member).exclude(status='CANCELLED').exists():
-            raise serializers.ValidationError("Vous avez déjà réservé ce cours.")
+        if Booking.objects.filter(
+            course=course, 
+            member=member
+        ).exclude(status='CANCELLED').exists():
+            raise serializers.ValidationError(
+                "Vous avez déjà réservé ce cours."
+            )
         
         # Vérifier si le cours est passé
         if course.is_past:
-            raise serializers.ValidationError("Impossible de réserver un cours passé.")
+            raise serializers.ValidationError(
+                "Impossible de réserver un cours passé."
+            )
         
         # Vérifier si le cours est annulé
         if course.status == 'CANCELLED':

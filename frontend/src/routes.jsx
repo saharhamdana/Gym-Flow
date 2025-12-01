@@ -148,7 +148,7 @@ export const routes = [
   {
     name: "Member Progress",
     path: "/portal/progress",
-    element: <MemberLayout><MemberProgress /></MemberLayout>,
+    element: <MemberProgress />,
   },
   {
     name: "Member Program Detail",

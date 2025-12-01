@@ -46,18 +46,20 @@ const BookingCreate = () => {
 
   const fetchMembers = async () => {
     try {
+      // ✅ Charger TOUS les membres ACTIFS
       const response = await api.get('members/?status=ACTIVE');
+      console.log("Membres ACTIFS chargés:", response.data);
+      
       setMembers(response.data);
     } catch (err) {
-      console.error("Erreur chargement membres:", err);
-      setError("Erreur lors du chargement des membres");
+      console.error("Erreur chargement membres actifs:", err);
+      setError("Erreur lors du chargement des membres actifs");
     }
   };
 
   const fetchCourses = async () => {
     setLoadingCourses(true);
     try {
-      // ✅ CORRECTION: Utiliser l'endpoint réceptionniste
       const response = await api.get('bookings/receptionist/courses/?days_ahead=14');
       console.log("Cours chargés:", response.data);
       setCourses(response.data.results || response.data);
@@ -70,12 +72,19 @@ const BookingCreate = () => {
   };
 
   const handleMemberChange = (value) => {
-    // value est l'ID de base de données
     const member = members.find(m => m.id === parseInt(value));
+    
+    console.log("🔍 Membre sélectionné:", {
+      id: member?.id,
+      member_id: member?.member_id,
+      nom: `${member?.first_name} ${member?.last_name}`,
+      has_active_subscription: member?.has_active_subscription
+    });
+    
     setSelectedMember(member);
     setFormData({ 
       ...formData, 
-      member_id: member?.member_id || '' // ✅ Stocker le member_id (MEM20250001)
+      member_id: member?.member_id || ''
     });
   };
 
@@ -96,7 +105,6 @@ const BookingCreate = () => {
     try {
       console.log("Envoi des données:", formData);
       
-      // ✅ Utiliser l'endpoint réceptionniste
       const response = await api.post('bookings/receptionist/create-booking/', formData);
       
       console.log("Réponse:", response.data);
@@ -177,10 +185,12 @@ const BookingCreate = () => {
                       ))}
                     </Select>
                     
-                    {selectedMember && !selectedMember.has_active_subscription && (
-                      <Alert color="red" className="mt-2">
-                        ⚠️ Ce membre n'a pas d'abonnement actif !
-                      </Alert>
+                    {selectedMember && (
+                      <div className="mt-2">
+                        <Alert color="green" className="mt-2">
+                          ✅ Membre actif - Réservation autorisée
+                        </Alert>
+                      </div>
                     )}
                   </div>
 
@@ -261,7 +271,11 @@ const BookingCreate = () => {
                     <Button
                       type="submit"
                       color="blue"
-                      disabled={loading || !formData.member_id || !formData.course_id || !selectedMember?.has_active_subscription}
+                      disabled={
+                        loading || 
+                        !formData.member_id || 
+                        !formData.course_id
+                      }
                       className="flex-1"
                     >
                       {loading ? 'Création...' : '✅ Créer la Réservation'}
@@ -311,8 +325,8 @@ const BookingCreate = () => {
                         </Typography>
                       </div>
                     </div>
-                    <Typography variant="small" className={selectedMember.has_active_subscription ? 'text-green-600' : 'text-red-600'}>
-                      {selectedMember.has_active_subscription ? '✅ Abonnement actif' : '❌ Abonnement inactif'}
+                    <Typography variant="small" className="text-green-600">
+                      ✅ Membre actif
                     </Typography>
                   </div>
                 )}
@@ -350,7 +364,7 @@ const BookingCreate = () => {
 
               <div className="mt-6 p-4 bg-yellow-50 border-2 border-yellow-200 rounded-lg">
                 <Typography variant="small" className="text-gray-700">
-                  ℹ️ <strong>Important:</strong> Vérifiez que le membre a un abonnement actif avant de créer la réservation.
+                  ℹ️ <strong>Important:</strong> Vérifiez que le membre est actif avant de créer la réservation.
                 </Typography>
               </div>
             </CardBody>

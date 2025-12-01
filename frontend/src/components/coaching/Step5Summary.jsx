@@ -1,6 +1,7 @@
 import React from 'react';
 import { 
   User, 
+  Users,
   Calendar, 
   Target, 
   Dumbbell, 
@@ -9,7 +10,6 @@ import {
   CheckCircle,
   AlertCircle
 } from 'lucide-react';
-import api from '../../api/axiosInstance';  
 
 const Step5Summary = ({ formData }) => {
   const statusLabels = {
@@ -27,6 +27,8 @@ const Step5Summary = ({ formData }) => {
   };
 
   const dayNames = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
+
+  const selectedMembers = Array.isArray(formData.members) ? formData.members : [];
 
   const calculateEndDate = (startDate, weeks) => {
     const date = new Date(startDate);
@@ -67,6 +69,20 @@ const Step5Summary = ({ formData }) => {
         </p>
       </div>
 
+      {/* Info multi-membres */}
+      {selectedMembers.length > 1 && (
+        <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg flex items-start">
+          <Users className="w-5 h-5 text-blue-600 mt-0.5 mr-3 flex-shrink-0" />
+          <div>
+            <h4 className="font-semibold text-blue-900">Programme multiple</h4>
+            <p className="text-sm text-blue-800 mt-1">
+              Un programme identique sera créé pour chaque membre sélectionné. 
+              Le titre du programme inclura le nom de chaque membre.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Alerte si pas de sessions */}
       {formData.workout_sessions.length === 0 && (
         <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg flex items-start">
@@ -92,18 +108,24 @@ const Step5Summary = ({ formData }) => {
         </div>
       </div>
 
-      {/* Membre */}
+      {/* Membres sélectionnés */}
       <div className="bg-white rounded-lg border border-gray-200 p-6">
         <div className="flex items-center mb-4">
-          <User className="w-5 h-5 text-gray-600 mr-2" />
-          <h3 className="font-semibold text-gray-900">Membre</h3>
+          <Users className="w-5 h-5 text-gray-600 mr-2" />
+          <h3 className="font-semibold text-gray-900">
+            Membres sélectionnés ({selectedMembers.length})
+          </h3>
         </div>
-        <div className="pl-7">
-          <p className="text-gray-900 font-medium">{formData.member?.full_name}</p>
-          <p className="text-sm text-gray-600">{formData.member?.email}</p>
-          {formData.member?.phone && (
-            <p className="text-sm text-gray-600">{formData.member?.phone}</p>
-          )}
+        <div className="pl-7 space-y-3">
+          {selectedMembers.map(member => (
+            <div key={member.id} className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+              <p className="text-gray-900 font-medium">{member.full_name}</p>
+              <p className="text-sm text-gray-600">{member.email}</p>
+              {member.phone && (
+                <p className="text-sm text-gray-600">{member.phone}</p>
+              )}
+            </div>
+          ))}
         </div>
       </div>
 
@@ -235,10 +257,15 @@ const Step5Summary = ({ formData }) => {
         <div className="flex items-start">
           <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 mr-3 flex-shrink-0" />
           <div>
-            <h4 className="font-semibold text-green-900">Prêt à créer le programme</h4>
+            <h4 className="font-semibold text-green-900">
+              Prêt à créer {selectedMembers.length} programme(s)
+            </h4>
             <p className="text-sm text-green-800 mt-1">
-              Cliquez sur "Créer le programme" pour finaliser la création. 
-              Vous pourrez modifier le programme à tout moment après sa création.
+              {selectedMembers.length === 1 
+                ? "Cliquez sur \"Créer 1 programme\" pour finaliser la création."
+                : `Un programme identique sera créé pour chacun des ${selectedMembers.length} membres sélectionnés.`
+              }
+              {" "}Vous pourrez modifier les programmes à tout moment après leur création.
             </p>
           </div>
         </div>

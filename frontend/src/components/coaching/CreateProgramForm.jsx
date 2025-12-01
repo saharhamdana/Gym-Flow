@@ -19,7 +19,7 @@ import api from '../../api/axiosInstance';
 
 const STEPS = [
   { id: 1, title: 'Informations', icon: FileText },
-  { id: 2, title: 'Membre', icon: User },
+  { id: 2, title: 'Membres', icon: User },
   { id: 3, title: 'Configuration', icon: Calendar },
   { id: 4, title: 'Sessions', icon: Dumbbell },
   { id: 5, title: 'Récapitulatif', icon: Check }
@@ -35,7 +35,7 @@ const CreateProgramForm = () => {
     title: '',
     description: '',
     goal: '',
-    member: null,
+    members: [], // ✅ CHANGÉ: array au lieu d'un seul membre
     start_date: new Date().toISOString().split('T')[0],
     duration_weeks: 8,
     target_weight: '',
@@ -71,7 +71,7 @@ const CreateProgramForm = () => {
       case 1:
         return formData.title && formData.description && formData.goal;
       case 2:
-        return formData.member !== null;
+        return formData.members.length > 0; // ✅ CHANGÉ: vérifier qu'il y a au moins un membre
       case 3:
         return formData.start_date && formData.duration_weeks > 0;
       case 4:
@@ -95,75 +95,90 @@ const CreateProgramForm = () => {
     setError('');
   };
 
- const handleSubmit = async () => {
-  setLoading(true);
-  setError('');
+  const handleSubmit = async () => {
+    setLoading(true);
+    setError('');
 
-  try {
-    const programData = {
-      title: formData.title,
-      description: formData.description,
-      goal: formData.goal,
-      member: formData.member.id,
-      status: formData.status,
-      start_date: formData.start_date,
-      end_date: calculateEndDate(formData.start_date, formData.duration_weeks),
-      duration_weeks: formData.duration_weeks,
-      target_weight: formData.target_weight || null,
-      target_body_fat: formData.target_body_fat || null,
-      notes: formData.notes,
-      tenant_id: 1 // Add tenant_id to program as well if needed
-    };
-
-    const programResponse = await coachingService.createProgram(programData);
-    const programId = programResponse.data.id;
-
-    for (const session of formData.workout_sessions) {
-      const sessionData = {
-        program: programId,
-        title: session.title,
-        day_of_week: session.day_of_week,
-        week_number: session.week_number,
-        duration_minutes: session.duration_minutes,
-        notes: session.notes || '',
-        order: session.order,
-        tenant_id: 1 // ADD THIS LINE - FIXES THE ERROR
-      };
-
-      const sessionResponse = await coachingService.createWorkoutSession(sessionData);
-      const sessionId = sessionResponse.data.id;
-
-      for (const ex of session.exercises) {
-        const exerciseData = {
-          workout_session: sessionId,
-          exercise: typeof ex.exercise === 'object' ? ex.exercise.id : ex.exercise,
-          sets: parseInt(ex.sets) || 0,
-          reps: String(ex.reps || ''),
-          rest_seconds: parseInt(ex.rest_seconds) || 0,
-          weight: String(ex.weight || ''),
-          notes: ex.notes || '',
-          order: ex.order || 0
+    try {
+      // ✅ MODIFICATION: Créer un programme pour CHAQUE membre sélectionné
+      const createdPrograms = [];
+      
+      for (const member of formData.members) {
+        const programData = {
+          title: formData.title + (formData.members.length > 1 ? ` - ${member.full_name}` : ''),
+          description: formData.description,
+          goal: formData.goal,
+          member: member.id,
+          status: formData.status,
+          start_date: formData.start_date,
+          end_date: calculateEndDate(formData.start_date, formData.duration_weeks),
+          duration_weeks: formData.duration_weeks,
+          target_weight: formData.target_weight || null,
+          target_body_fat: formData.target_body_fat || null,
+          notes: formData.notes,
         };
-        
-        await api.post('coaching/workout-exercises/', exerciseData);
+
+        const programResponse = await coachingService.createProgram(programData);
+        const programId = programResponse.data.id;
+
+        // Créer les sessions pour ce programme
+        for (const session of formData.workout_sessions) {
+          const sessionData = {
+            program: programId,
+            title: session.title,
+            day_of_week: session.day_of_week,
+            week_number: session.week_number,
+            duration_minutes: session.duration_minutes,
+            notes: session.notes || '',
+            order: session.order,
+          };
+
+          const sessionResponse = await coachingService.createWorkoutSession(sessionData);
+          const sessionId = sessionResponse.data.id;
+
+          // Créer les exercices pour cette session
+          for (const ex of session.exercises) {
+            const exerciseData = {
+              workout_session: sessionId,
+              exercise: typeof ex.exercise === 'object' ? ex.exercise.id : ex.exercise,
+              sets: parseInt(ex.sets) || 0,
+              reps: String(ex.reps || ''),
+              rest_seconds: parseInt(ex.rest_seconds) || 0,
+              weight: String(ex.weight || ''),
+              notes: ex.notes || '',
+              order: ex.order || 0
+            };
+            
+            await api.post('coaching/workout-exercises/', exerciseData);
+          }
+        }
+
+        createdPrograms.push({
+          member: member.full_name,
+          programId: programId
+        });
       }
+
+      // Message de succès
+      if (formData.members.length === 1) {
+        alert(`Programme "${formData.title}" créé avec succès pour ${formData.members[0].full_name} !`);
+      } else {
+        alert(`${formData.members.length} programmes créés avec succès pour les membres sélectionnés !`);
+      }
+      
+      navigate('/coaching/programs');
+    } catch (err) {
+      console.error('Erreur:', err);
+      setError(
+        err.response?.data?.detail || 
+        err.response?.data?.message ||
+        JSON.stringify(err.response?.data) ||
+        'Une erreur est survenue lors de la création du programme'
+      );
+    } finally {
+      setLoading(false);
     }
-
-    alert(`Programme "${formData.title}" créé avec succès !`);
-    navigate('/coaching/programs');
-  } catch (err) {
-    console.error('Erreur:', err);
-    setError(
-      err.response?.data?.detail || 
-      err.response?.data?.message ||
-      JSON.stringify(err.response?.data) ||
-      'Une erreur est survenue lors de la création du programme'
-    );
-  } finally {
-    setLoading(false);
-  }
-};
-
+  };
 
   const renderStepContent = () => {
     switch (currentStep) {
@@ -270,7 +285,10 @@ const CreateProgramForm = () => {
               disabled={loading}
               className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 flex items-center"
             >
-              {loading ? 'Création...' : 'Créer le programme'}
+              {loading 
+                ? `Création de ${formData.members.length} programme(s)...` 
+                : `Créer ${formData.members.length} programme(s)`
+              }
               <Check className="w-5 h-5 ml-2" />
             </button>
           )}
