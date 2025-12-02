@@ -12,6 +12,7 @@ import logging
 
 from .models import Subscription
 from .stripe_service import StripeService
+from .email_service import send_payment_confirmation_email  # ✅ AJOUT
 from members.models import Member
 
 logger = logging.getLogger('stripe')
@@ -25,7 +26,7 @@ def get_frontend_url(request):
 @permission_classes([IsAuthenticated])
 def create_payment_session(request, subscription_id):
     """
-    🔐 Créer une session de paiement Stripe - VERSION MULTI-TENANT
+    📝 Créer une session de paiement Stripe - VERSION MULTI-TENANT
     """
     try:
         user = request.user
@@ -140,11 +141,19 @@ def verify_payment(request):
                 
                 logger.info(f"✅ Paiement confirmé - Abonnement {subscription.id} activé")
                 
-                # ✅ CRÉATION MANUELLE DE LA FACTURE ICI AUSSI
+                # ✅ CRÉATION MANUELLE DE LA FACTURE
+                invoice = None
                 try:
-                    create_invoice_for_subscription(subscription, session.payment_intent)
+                    invoice = create_invoice_for_subscription(subscription, session.payment_intent)
                 except Exception as invoice_error:
                     logger.error(f"❌ Erreur création facture manuelle: {str(invoice_error)}")
+                
+                # ✅ ENVOYER L'EMAIL DE CONFIRMATION
+                try:
+                    send_payment_confirmation_email(subscription, invoice)
+                    logger.info(f"📧 Email de confirmation envoyé à {member.email}")
+                except Exception as email_error:
+                    logger.error(f"❌ Erreur envoi email: {str(email_error)}")
             
             return Response({
                 'success': True,
@@ -178,7 +187,7 @@ def verify_payment(request):
 @api_view(['POST'])
 def stripe_webhook(request):
     """
-    🔔 Webhook Stripe - ✅ VERSION CORRIGÉE
+    🔒 Webhook Stripe - ✅ VERSION CORRIGÉE
     """
     payload = request.body
     sig_header = request.META.get('HTTP_STRIPE_SIGNATURE')
@@ -280,7 +289,7 @@ def create_invoice_for_subscription(subscription, payment_intent_id=''):
 
 def handle_checkout_session_completed(session):
     """
-    ✅ Gérer la complétion d'une session + CRÉER FACTURE AUTOMATIQUEMENT
+    ✅ Gérer la complétion d'une session + CRÉER FACTURE + ENVOYER EMAIL
     """
     try:
         subscription_id = session.get('metadata', {}).get('subscription_id')
@@ -304,6 +313,7 @@ def handle_checkout_session_completed(session):
             logger.info(f"✅ Abonnement {subscription.id} activé")
             
             # ✅ ÉTAPE 2: CRÉER LA FACTURE
+            invoice = None
             try:
                 invoice = create_invoice_for_subscription(
                     subscription, 
@@ -312,6 +322,15 @@ def handle_checkout_session_completed(session):
                 logger.info(f"✅✅ Facture créée avec succès: {invoice.invoice_number}")
             except Exception as invoice_error:
                 logger.error(f"❌ Erreur création facture dans webhook: {str(invoice_error)}")
+                import traceback
+                traceback.print_exc()
+            
+            # ✅ ÉTAPE 3: ENVOYER L'EMAIL DE CONFIRMATION
+            try:
+                send_payment_confirmation_email(subscription, invoice)
+                logger.info(f"📧✅ Email de confirmation envoyé à {subscription.member.email}")
+            except Exception as email_error:
+                logger.error(f"❌ Erreur envoi email: {str(email_error)}")
                 import traceback
                 traceback.print_exc()
         else:
@@ -342,12 +361,21 @@ def handle_payment_intent_succeeded(payment_intent):
             logger.info(f"✅ Abonnement {subscription.id} activé via payment_intent.succeeded")
             
             # ✅ Créer facture si pas déjà créée
+            invoice = None
             try:
                 from billing.models import Invoice
                 if not Invoice.objects.filter(subscription=subscription).exists():
-                    create_invoice_for_subscription(subscription, payment_intent_id)
+                    invoice = create_invoice_for_subscription(subscription, payment_intent_id)
             except Exception as e:
                 logger.error(f"❌ Erreur création facture: {str(e)}")
+            
+            # ✅ ENVOYER EMAIL SI PAS DÉJÀ ENVOYÉ
+            try:
+                send_payment_confirmation_email(subscription, invoice)
+                logger.info(f"📧✅ Email envoyé à {subscription.member.email}")
+            except Exception as e:
+                logger.error(f"❌ Erreur envoi email: {str(e)}")
+                
         elif subscription:
             logger.info(f"ℹ️ Abonnement {subscription.id} déjà actif")
         else:

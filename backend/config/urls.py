@@ -4,6 +4,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 
 urlpatterns = [
+    path('api/superadmin/', include('authentication.superadmin_urls')),
     path('admin/', admin.site.urls),
     path('api/auth/', include('authentication.urls')),
     path('api/subscriptions/', include('subscriptions.urls')),

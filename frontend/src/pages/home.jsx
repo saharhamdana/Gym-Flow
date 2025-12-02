@@ -36,8 +36,7 @@ export function Home() {
   // import { Spinner, Alert } from "@material-tailwind/react"; // <-- RETIRÉ
 
   // === LOGIQUE MULTI-TENANT (Version distante) ===
-  const { subdomain, gymCenter, loading, error, isMultiTenant } = useSubdomain();
-
+  const { subdomain, gymCenter, allCenters, loading, error, isMultiTenant } = useSubdomain();
   // === LOGIQUE CALCULATEUR D'IMC (Version HEAD) ===
   // === CALCULATEUR D'IMC STATE ===
   const [height, setHeight] = useState("");
@@ -142,35 +141,106 @@ export function Home() {
       </div>
     );
   }
+  // 🆕 Si domaine principal (pas de sous-domaine) : afficher la liste des centres
+  if (isMultiTenant && !subdomain && !gymCenter) {
+    return (
+      <div className="w-full overflow-x-hidden">
+        {/* Hero Section */}
+        <div className="relative flex h-screen content-center items-center justify-center pt-16 pb-32">
+          <div className="absolute top-0 h-full w-full bg-[url('/img/background-3.jpg')] bg-cover bg-center" />
+          <div className="absolute top-0 h-full w-full bg-black/60" />
+          
+          <div className="container relative mx-auto px-4 max-w-7xl">
+            <div className="text-center">
+              <Typography variant="h1" color="white" className="mb-6 font-black">
+                Bienvenue sur GymFlow
+              </Typography>
+              <Typography variant="lead" color="white" className="mb-12 opacity-80">
+                Choisissez votre centre de fitness
+              </Typography>
 
-  // Afficher une erreur si le centre n'est pas trouvé (Version distante)
+              {/* 🆕 Grille des Centres Disponibles */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-12">
+                {allCenters.map((center) => (
+                  <Card 
+                    key={center.id}
+                    className="cursor-pointer hover:shadow-2xl transition-shadow"
+                    onClick={() => window.location.href = center.full_url}
+                  >
+                    <CardBody className="text-center p-6">
+                      {center.logo && (
+                        <img 
+                          src={center.logo} 
+                          alt={center.name}
+                          className="mx-auto mb-4 h-20 w-20 rounded-full object-cover"
+                        />
+                      )}
+                      <Typography variant="h5" color="blue-gray" className="mb-2">
+                        {center.name}
+                      </Typography>
+                      <Typography variant="small" className="text-gray-600 mb-4">
+                        {center.description}
+                      </Typography>
+                      <Typography 
+                        variant="small" 
+                        style={{ color: "#00357a" }}
+                        className="font-semibold"
+                      >
+                        🌐 {center.subdomain}.gymflow.com
+                      </Typography>
+                    </CardBody>
+                  </Card>
+                ))}
+              </div>
+
+              {allCenters.length === 0 && (
+                <Alert color="amber" className="mt-8">
+                  Aucun centre disponible pour le moment.
+                </Alert>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="bg-white w-full">
+          <Footer />
+        </div>
+      </div>
+    );
+  }
+
+  // 🆕 Si erreur (sous-domaine invalide)
   if (error && isMultiTenant) {
     return (
       <div className="container mx-auto px-4 py-12">
-        <Alert
-          color="red"
-          icon={<ExclamationTriangleIcon className="h-6 w-6" />}
-        >
+        <Alert color="red" icon={<ExclamationTriangleIcon className="h-6 w-6" />}>
           <Typography variant="h6" className="mb-2">
             Centre non trouvé
           </Typography>
           <Typography variant="small">
             Le sous-domaine "{subdomain}" n'existe pas ou n'est pas actif.
           </Typography>
+          <Button 
+            className="mt-4"
+            onClick={() => window.location.href = 'https://gymflow.com'}
+          >
+            Retour à la page d'accueil
+          </Button>
         </Alert>
       </div>
     );
   }
 
-  // Déterminer le titre et la description dynamiques
-  const pageTitle = gymCenter
+    // 🆕 Contenu normal si sous-domaine valide
+  const pageTitle = gymCenter 
     ? `Bienvenue chez ${gymCenter.name}`
     : "Your fitness starts with Gymflow.";
-
+  
   const pageDescription = gymCenter
     ? gymCenter.description || `${gymCenter.name} - Votre partenaire fitness`
-    : "Gymflow is the ultimate solution for your fitness routine. We offer personalized programs, track your progress, and help you reach your goals.";
-
+    : "Gymflow is the ultimate solution for your fitness routine.";
+    
   return (
     // 'overflow-x-hidden' est nécessaire ici pour garantir qu'il n'y a pas de défilement horizontal
     <div className="w-full overflow-x-hidden">

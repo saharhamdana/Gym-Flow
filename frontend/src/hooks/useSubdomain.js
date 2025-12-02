@@ -1,53 +1,77 @@
-// Fichier: frontend/src/hooks/useSubdomain.js
+// frontend/src/hooks/useSubdomain.js
+import { useState, useEffect } from 'react';
+import api from '../api/axiosInstance';
 
-import { useState, useEffect } from "react";
-import { getSubdomain } from "../api/axiosInstance";
-import gymCenterService from "../services/gymCenterService";
+export const useSubdomain = () => {
+    const [subdomain, setSubdomain] = useState(null);
+    const [gymCenter, setGymCenter] = useState(null);
+    const [allCenters, setAllCenters] = useState([]); // 🆕 Liste de tous les centres
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [isMultiTenant, setIsMultiTenant] = useState(false);
 
-/**
- * Hook personnalisé pour gérer le sous-domaine et récupérer les infos du centre
- */
-export function useSubdomain() {
-  const [subdomain, setSubdomain] = useState(null);
-  const [gymCenter, setGymCenter] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+    useEffect(() => {
+        const detectSubdomain = () => {
+            const hostname = window.location.hostname;
+            const parts = hostname.split('.');
 
-  useEffect(() => {
-    const fetchCenterInfo = async () => {
-      setLoading(true);
-      setError(null);
+            // Développement local
+            if (hostname === 'localhost' || hostname === '127.0.0.1') {
+                setIsMultiTenant(false);
+                setLoading(false);
+                return;
+            }
 
-      try {
-        // Obtenir le sous-domaine actuel
-        const currentSubdomain = getSubdomain();
-        setSubdomain(currentSubdomain);
+            // Production multi-tenant
+            if (parts.length >= 3 && parts[0] !== 'www') {
+                const detectedSubdomain = parts[0];
+                setSubdomain(detectedSubdomain);
+                setIsMultiTenant(true);
+                fetchGymCenter(detectedSubdomain);
+            } else {
+                // 🆕 Domaine principal : charger tous les centres
+                setIsMultiTenant(true);
+                fetchAllCenters();
+            }
+        };
 
-        // Si un sous-domaine existe, récupérer les infos du centre
-        if (currentSubdomain) {
-          const centerData = await gymCenterService.getCenterBySubdomain(
-            currentSubdomain
-          );
-          setGymCenter(centerData);
+        detectSubdomain();
+    }, []);
+
+    const fetchGymCenter = async (subdomain) => {
+        try {
+            const response = await api.get(`/auth/centers/${subdomain}/by-subdomain/`);
+            setGymCenter(response.data);
+            setError(null);
+        } catch (err) {
+            console.error('Erreur:', err);
+            setError(err.response?.data?.detail || 'Centre non trouvé');
+        } finally {
+            setLoading(false);
         }
-      } catch (err) {
-        console.error("Erreur lors de la récupération du centre:", err);
-        setError(err.response?.data?.detail || "Centre non trouvé");
-      } finally {
-        setLoading(false);
-      }
     };
 
-    fetchCenterInfo();
-  }, []);
+    // 🆕 Fonction pour charger tous les centres
+    const fetchAllCenters = async () => {
+        try {
+            const response = await api.get('/auth/centers/');
+            const centers = Array.isArray(response.data) ? response.data : response.data.results || [];
+            setAllCenters(centers);
+            setError(null);
+        } catch (err) {
+            console.error('Erreur:', err);
+            setError('Impossible de charger les centres');
+        } finally {
+            setLoading(false);
+        }
+    };
 
-  return {
-    subdomain,
-    gymCenter,
-    loading,
-    error,
-    isMultiTenant: !!subdomain,
-  };
-}
-
-export default useSubdomain;
+    return { 
+        subdomain, 
+        gymCenter, 
+        allCenters, // 🆕 Exposer la liste des centres
+        loading, 
+        error, 
+        isMultiTenant 
+    };
+};

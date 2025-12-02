@@ -7,8 +7,6 @@ import { ThemeProvider } from "@material-tailwind/react";
 import App from "./App";
 
 // Les imports en conflit ont été remplacés par la version structurée (nommée) ci-dessous.
-import { Home } from "./pages/home";
-import { SignIn } from "./pages/auth/SignIn"; 
 import { SignUp } from "./pages/auth/SignUp";
 import { ProfilePage } from "./pages/profile";
 import { MemberList } from "./pages/admin/members";

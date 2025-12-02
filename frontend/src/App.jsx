@@ -7,13 +7,15 @@ import routes from "./routes";
 import AdminLayout from "@/components/admin/AdminLayout";
 import ReceptionistLayout from "@/components/receptionist/ReceptionistLayout"; // ⭐ AJOUT
 
-import { RequireAuth, RequireAdminOrReceptionistOrCoach, RequireCoach } from "./utils/AuthGuard"; 
+import { RequireAuth, RequireAdminOrReceptionistOrCoach, RequireCoach } from "./utils/AuthGuard";
 import { ProgramList, CreateProgramForm } from "./components/coaching";
 import APIDebugTool from './components/debug/APIDebugTool';
 import EditProgramForm from './components/coaching/EditProgramForm';
 import ProgramDetails from './components/coaching/ProgramDetails';
 import ForgotPassword from "./pages/auth/ForgotPassword";
 import ResetPassword from "./pages/auth/ResetPassword";
+import SuperAdminDashboard from "./pages/superadmin/Dashboard";
+import SuperAdminSignIn from "./pages/superadmin/SuperAdminSignIn";
 
 
 function App() {
@@ -36,13 +38,12 @@ function App() {
         isPortalRoute(pathname) ||
         isReceptionistRoute(pathname)     // ⭐ AJOUT
       ) && (
-        <Navbar routes={routes}/>
-      )}
-      
+          <Navbar routes={routes} />
+        )}
+
       {/* ================= CONTENU =================== */}
       <div
-        className={`w-full min-h-screen ${
-          !(
+        className={`w-full min-h-screen ${!(
             pathname === '/sign-in' ||
             pathname === '/sign-up' ||
             pathname === '/' ||
@@ -52,9 +53,13 @@ function App() {
           )
             ? 'pt-24'
             : ''
-        }`}
+          }`}
       >
         <Routes>
+          <Route path="/superadmin/login" element={<SuperAdminSignIn />} />
+
+          {/* Route protégée pour dashboard */}
+          <Route path="/superadmin/dashboard" element={<SuperAdminDashboard />} />
 
           {/* LOOP DES ROUTES DE routes.jsx */}
           {routes.map(({ path, element }, key) => {
@@ -148,15 +153,15 @@ function App() {
           <Route path="/coaching/programs" element={<ProgramList />} />
 
           {/* ====== AUTH ====== */}
-          <Route path="/forgot-password" element={<ForgotPassword />} /> 
-          <Route path="/reset-password/:uid/:token" element={<ResetPassword />} />  
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password/:uid/:token" element={<ResetPassword />} />
 
           {/* ====== DEBUG ====== */}
           <Route path="/debug" element={<APIDebugTool />} />
 
           {/* Redirect unknown routes */}
           <Route path="*" element={<Navigate to="/" replace />} />
-          
+
         </Routes>
       </div>
     </>
