@@ -1,6 +1,12 @@
 // File: frontend/src/routes.jsx
 
+// ==========================================
+// HOME PAGES (Multi-tenant)
+// ==========================================
 import Home from "@/pages/home";
+// Les autres pages (GeneralHome, TenantHome) sont gérées par Home.jsx
+
+// Auth & Profile
 import SignIn from "@/pages/auth/SignIn";
 import SignUp from "@/pages/auth/SignUp";
 import ProfilePage from "@/pages/profile/ProfilePage";
@@ -74,10 +80,7 @@ import SubscriptionSuccess from "./pages/member/SubscriptionSuccess";
 import SubscriptionCancel from "./pages/member/SubscriptionCancel";
 import MemberInvoices from "./pages/member/MemberInvoices";
 
-// ==========================================
-// ⭐ COMPOSANTS RÉCEPTIONNISTE - AJOUTÉS
-// ==========================================
-
+// Receptionist Components
 import ReceptionistDashboard from "./pages/receptionist/dashboard/Dashboard";
 import MembersList from "./pages/receptionist/members/MembersList";
 import MemberDetailReceptionist from "./pages/receptionist/members/MemberDetail";
@@ -86,10 +89,7 @@ import SubscriptionCreateReceptionist from "./pages/receptionist/subscriptions/S
 import BookingsList from "./pages/receptionist/bookings/BookingsList";
 import BookingCreateReceptionist from "./pages/receptionist/bookings/BookingCreate";
 import CheckIn from "./pages/receptionist/checkin/CheckIn";
-import { element } from "prop-types";
 import MembersCreate from "./pages/receptionist/members/MembersCreate";
-
-
 
 export const routes = [
   // ==========================================
@@ -98,7 +98,7 @@ export const routes = [
   {
     name: "home",
     path: "/",
-    element: <Home />,
+    element: <Home />, // Ce composant gère maintenant GeneralHome ET TenantHome
   },
   {
     name: "Sign In",
@@ -111,10 +111,9 @@ export const routes = [
     element: <SignUp />,
   },
   {
-    name: "Docs",
-    href: "https://www.material-tailwind.com/docs/react/installation",
-    target: "_blank",
-    element: "",
+    name: "Terms",
+    path: "/terms",
+    element: <Terms />,
   },
 
   // ==========================================
@@ -182,7 +181,7 @@ export const routes = [
   },
 
   // ==========================================
-  // ⭐ ROUTES RÉCEPTIONNISTE - AJOUTÉES
+  // ROUTES RÉCEPTIONNISTE
   // ==========================================
   {
     name: "Réception Dashboard",
@@ -206,6 +205,7 @@ export const routes = [
     name: "Créer Membre",
     path: "/receptionist/members/create",
     element: <MembersCreate />,
+    hidden: true
   },
   {
     name: "Gestion Abonnements",
@@ -232,11 +232,12 @@ export const routes = [
     hidden: true
   },
   {
-  name: "Check-in",
-  path: "/receptionist/checkin",
-  element: <CheckIn />,
- },
- 
+    name: "Check-in",
+    path: "/receptionist/checkin",
+    element: <CheckIn />,
+    hidden: true
+  },
+
   // ==========================================
   // ROUTES COACH
   // ==========================================
@@ -471,11 +472,6 @@ export const routes = [
     path: "/admin/bookings/:bookingId/edit",
     element: <BookingEdit />,
     hidden: true
-  },
-  {
-    name: "terms",
-    path: "/terms",
-    element: <Terms />,
   },
 
   // ==========================================
