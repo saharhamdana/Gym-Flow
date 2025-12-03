@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backend-config
+  namespace: gymflow
+data:
+  DEBUG: "False"
+  POSTGRES_DB: "gymflow_db"
+  POSTGRES_HOST: "postgres-service"
+  POSTGRES_PORT: "5432"

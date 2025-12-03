@@ -1,0 +1,84 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: gymflow
+  labels:
+    app: backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+      - name: backend
+        image: lassouedsiwar/gymflow-backend:v1
+        ports:
+        - containerPort: 8000
+          name: http
+        env:
+        - name: DEBUG
+          valueFrom:
+            configMapKeyRef:
+              name: backend-config
+              key: DEBUG
+        - name: SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: backend-secret
+              key: SECRET_KEY
+        - name: POSTGRES_DB
+          valueFrom:
+            configMapKeyRef:
+              name: backend-config
+              key: POSTGRES_DB
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: backend-secret
+              key: POSTGRES_USER
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: backend-secret
+              key: POSTGRES_PASSWORD
+        - name: POSTGRES_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: backend-config
+              key: POSTGRES_HOST
+        - name: POSTGRES_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: backend-config
+              key: POSTGRES_PORT
+        livenessProbe:
+          httpGet:
+            path: /admin/
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /admin/
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-service
+  namespace: gymflow
+spec:
+  selector:
+    app: backend
+  ports:
+  - port: 8000
+    targetPort: 8000
+  type: NodePort

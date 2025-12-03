@@ -6,6 +6,7 @@ from pathlib import Path
 import os
 from dotenv import load_dotenv
 from datetime import timedelta
+import dj_database_url
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -51,7 +52,13 @@ ALLOWED_HOSTS = [
     'titangym.gymflow.com',
     'moveup.gymflow.com',
     'api.gymflow.com',
+    'gymflow-backend.onrender.com',
 ]
+
+# Ajouter le host Render dynamique si défini
+render_host = os.environ.get("RENDER_EXTERNAL_HOSTNAME")
+if render_host:
+    ALLOWED_HOSTS.append(render_host)
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -75,6 +82,7 @@ INSTALLED_APPS = [
 AUTH_USER_MODEL = 'authentication.User'
 
 MIDDLEWARE = [
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -104,19 +112,16 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'config.wsgi.application'
-
+DEBUG = os.environ.get("DEBUG", "0") in ("1", "True", "true")
+SECRET_KEY = os.environ.get("SECRET_KEY", "dev-secret")
 # ✅ Configuration Base de Données SÉCURISÉE
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('POSTGRES_DB', 'gymflow_db'),
-        'USER': os.getenv('POSTGRES_USER', 'gymflow_user'),
-        'PASSWORD': os.getenv('POSTGRES_PASSWORD'),  # ⚠️ JAMAIS en dur !
-        'HOST': os.getenv('POSTGRES_HOST', 'localhost'),
-        'PORT': os.getenv('POSTGRES_PORT', '5432'),
-    }
+    "default": dj_database_url.config(
+        default=os.environ.get("DATABASE_URL"),
+        conn_max_age=600,
+        ssl_require=True
+    )
 }
-
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
     {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
@@ -294,3 +299,6 @@ STRIPE_SECRET_KEY = os.getenv('STRIPE_SECRET_KEY', '')
 STRIPE_PUBLISHABLE_KEY = os.getenv('STRIPE_PUBLISHABLE_KEY', '')
 STRIPE_WEBHOOK_SECRET = os.getenv('STRIPE_WEBHOOK_SECRET', '')
 FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:5173')
+
+
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"

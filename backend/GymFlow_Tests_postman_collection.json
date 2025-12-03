@@ -1,0 +1,735 @@
+{
+  "info": {
+    "_postman_id": "12345678-1234-1234-1234-123456789abc",
+    "name": "GymFlow Multi-Tenant API Tests",
+    "description": "Tests complets de l'API GymFlow avec multi-tenant",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. AUTHENTIFICATION",
+      "item": [
+        {
+          "name": "1.1 Register - PowerFit Member",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Tenant-Subdomain",
+                "value": "powerfit"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"sarah_powerfit\",\n  \"email\": \"sarah@powerfit.com\",\n  \"password\": \"Sarah123!\",\n  \"first_name\": \"Sarah\",\n  \"last_name\": \"Johnson\"\n}"
+            },
+            "url": {
+              "raw": "http://127.0.0.1:8000/api/auth/register/",
+              "protocol": "http",
+              "host": ["127", "0", "0", "1"],
+              "port": "8000",
+              "path": ["api", "auth", "register", ""]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "1.2 Login - PowerFit Admin",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('admin_token', jsonData.access);",
+                  "    console.log('Admin token saved:', jsonData.access);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Tenant-Subdomain",
+                "value": "powerfit"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@powerfit.com\",\n  \"password\": \"Admin123!\"\n}"
+            },
+            "url": {
+              "raw": "http://127.0.0.1:8000/api/auth/token/",
+              "protocol": "http",
+              "host": ["127", "0", "0", "1"],
+              "port": "8000",
+              "path": ["api", "auth", "token", ""]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "1.3 Login - PowerFit Coach",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('coach_token', jsonData.access);",
+                  "    console.log('Coach token saved');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Tenant-Subdomain",
+                "value": "powerfit"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"coach@powerfit.com\",\n  \"password\": \"Coach123!\"\n}"
+            },
+            "url": {
+              "raw": "http://127.0.0.1:8000/api/auth/token/",
+              "protocol": "http",
+              "host": ["127", "0", "0", "1"],
+              "port": "8000",
+              "path": ["api", "auth", "token", ""]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "1.4 Login - PowerFit Member",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('member_token', jsonData.access);",
+                  "    console.log('Member token saved');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Tenant-Subdomain",
+                "value": "powerfit"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"john@powerfit.com\",\n  \"password\": \"Member123!\"\n}"
+            },
+            "url": {
+              "raw": "http://127.0.0.1:8000/api/auth/token/",
+              "protocol": "http",
+              "host": ["127", "0", "0", "1"],
+              "port": "8000",
+              "path": ["api", "auth", "token", ""]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "1.5 ❌ Login Mauvais Tenant (DOIT ÉCHOUER)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Tenant-Subdomain",
+                "value": "moveup",
+                "description": "Tenter de se connecter sur MoveUp avec un compte PowerFit"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@powerfit.com\",\n  \"password\": \"Admin123!\"\n}"
+            },
+            "url": {
+              "raw": "http://127.0.0.1:8000/api/auth/token/",
+              "protocol": "http",
+              "host": ["127", "0", "0", "1"],
+              "port": "8000",
+              "path": ["api", "auth", "token", ""]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "2. GESTION MEMBRES",
+      "item": [
+        {
+          "name": "2.1 Lister les membres",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    var data = jsonData.results || jsonData;",
+                  "    if (Array.isArray(data) && data.length > 0) {",
+                  "        pm.collectionVariables.set('member_id', data[0].id);",
+                  "        console.log('Member ID saved:', data[0].id);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              },
+              {
+                "key": "X-Tenant-Subdomain",
+                "value": "powerfit"
+              }
+            ],
+            "url": {
+              "raw": "http://127.0.0.1:8000/api/members/",
+              "protocol": "http",
+              "host": ["127", "0", "0", "1"],
+              "port": "8000",
+              "path": ["api", "members", ""]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "2.2 Modifier un membre",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Tenant-Subdomain",
+                "value": "powerfit"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"weight\": 90,\n  \"height\": 182,\n  \"medical_conditions\": \"Aucune condition particulière\"\n}"
+            },
+            "url": {
+              "raw": "http://127.0.0.1:8000/api/members/{{member_id}}/",
+              "protocol": "http",
+              "host": ["127", "0", "0", "1"],
+              "port": "8000",
+              "path": ["api", "members", "{{member_id}}", ""]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "2.3 Détails d'un membre",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              },
+              {
+                "key": "X-Tenant-Subdomain",
+                "value": "powerfit"
+              }
+            ],
+            "url": {
+              "raw": "http://127.0.0.1:8000/api/members/{{member_id}}/",
+              "protocol": "http",
+              "host": ["127", "0", "0", "1"],
+              "port": "8000",
+              "path": ["api", "members", "{{member_id}}", ""]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "3. RÉSERVATIONS",
+      "item": [
+        {
+          "name": "3.1 Lister les cours disponibles",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{member_token}}"
+              },
+              {
+                "key": "X-Tenant-Subdomain",
+                "value": "powerfit"
+              }
+            ],
+            "url": {
+              "raw": "http://127.0.0.1:8000/api/bookings/courses/",
+              "protocol": "http",
+              "host": ["127", "0", "0", "1"],
+              "port": "8000",
+              "path": ["api", "bookings", "courses", ""]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "3.2 Consulter réservations membre",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{member_token}}"
+              },
+              {
+                "key": "X-Tenant-Subdomain",
+                "value": "powerfit"
+              }
+            ],
+            "url": {
+              "raw": "http://127.0.0.1:8000/api/bookings/bookings/?member={{member_id}}",
+              "protocol": "http",
+              "host": ["127", "0", "0", "1"],
+              "port": "8000",
+              "path": ["api", "bookings", "bookings", ""],
+              "query": [
+                {
+                  "key": "member",
+                  "value": "{{member_id}}"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "4. PROGRAMMES & EXERCICES",
+      "item": [
+        {
+          "name": "4.1 Lister les programmes",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    var data = jsonData.results || jsonData;",
+                  "    if (Array.isArray(data) && data.length > 0) {",
+                  "        pm.collectionVariables.set('program_id', data[0].id);",
+                  "        console.log('Program ID saved:', data[0].id);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{coach_token}}"
+              },
+              {
+                "key": "X-Tenant-Subdomain",
+                "value": "powerfit"
+              }
+            ],
+            "url": {
+              "raw": "http://127.0.0.1:8000/api/coaching/programs/",
+              "protocol": "http",
+              "host": ["127", "0", "0", "1"],
+              "port": "8000",
+              "path": ["api", "coaching", "programs", ""]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "4.2 Lister les exercices",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{coach_token}}"
+              },
+              {
+                "key": "X-Tenant-Subdomain",
+                "value": "powerfit"
+              }
+            ],
+            "url": {
+              "raw": "http://127.0.0.1:8000/api/coaching/exercises/",
+              "protocol": "http",
+              "host": ["127", "0", "0", "1"],
+              "port": "8000",
+              "path": ["api", "coaching", "exercises", ""]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "4.3 Lister sessions d'un programme",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    var data = jsonData.results || jsonData;",
+                  "    if (Array.isArray(data) && data.length > 0) {",
+                  "        pm.collectionVariables.set('session_id', data[0].id);",
+                  "        console.log('Session ID saved:', data[0].id);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{coach_token}}"
+              },
+              {
+                "key": "X-Tenant-Subdomain",
+                "value": "powerfit"
+              }
+            ],
+            "url": {
+              "raw": "http://127.0.0.1:8000/api/coaching/workout-sessions/?program={{program_id}}",
+              "protocol": "http",
+              "host": ["127", "0", "0", "1"],
+              "port": "8000",
+              "path": ["api", "coaching", "workout-sessions", ""],
+              "query": [
+                {
+                  "key": "program",
+                  "value": "{{program_id}}"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "4.4 Ajouter exercice à session",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{coach_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Tenant-Subdomain",
+                "value": "powerfit"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workout_session\": {{session_id}},\n  \"exercise\": 2,\n  \"sets\": 3,\n  \"reps\": \"8-10\",\n  \"rest_seconds\": 90,\n  \"weight\": \"Poids du corps\",\n  \"notes\": \"Exercice ajouté via Postman\",\n  \"order\": 3\n}"
+            },
+            "url": {
+              "raw": "http://127.0.0.1:8000/api/coaching/workout-exercises/",
+              "protocol": "http",
+              "host": ["127", "0", "0", "1"],
+              "port": "8000",
+              "path": ["api", "coaching", "workout-exercises", ""]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "5. PROGRESSION",
+      "item": [
+        {
+          "name": "5.1 Consulter progression membre",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{member_token}}"
+              },
+              {
+                "key": "X-Tenant-Subdomain",
+                "value": "powerfit"
+              }
+            ],
+            "url": {
+              "raw": "http://127.0.0.1:8000/api/coaching/progress-tracking/?member={{member_id}}",
+              "protocol": "http",
+              "host": ["127", "0", "0", "1"],
+              "port": "8000",
+              "path": ["api", "coaching", "progress-tracking", ""],
+              "query": [
+                {
+                  "key": "member",
+                  "value": "{{member_id}}"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "5.2 Statistiques progression",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{coach_token}}"
+              },
+              {
+                "key": "X-Tenant-Subdomain",
+                "value": "powerfit"
+              }
+            ],
+            "url": {
+              "raw": "http://127.0.0.1:8000/api/coaching/progress-tracking/statistics/?member={{member_id}}",
+              "protocol": "http",
+              "host": ["127", "0", "0", "1"],
+              "port": "8000",
+              "path": ["api", "coaching", "progress-tracking", "statistics", ""],
+              "query": [
+                {
+                  "key": "member",
+                  "value": "{{member_id}}"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "6. ABONNEMENTS",
+      "item": [
+        {
+          "name": "6.1 Lister les plans d'abonnement",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              },
+              {
+                "key": "X-Tenant-Subdomain",
+                "value": "powerfit"
+              }
+            ],
+            "url": {
+              "raw": "http://127.0.0.1:8000/api/subscriptions/plans/",
+              "protocol": "http",
+              "host": ["127", "0", "0", "1"],
+              "port": "8000",
+              "path": ["api", "subscriptions", "plans", ""]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "6.2 Créer un abonnement",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Tenant-Subdomain",
+                "value": "powerfit"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"member\": {{member_id}},\n  \"plan\": 1,\n  \"start_date\": \"2025-12-02\",\n  \"amount_paid\": 150.00,\n  \"payment_method\": \"Carte bancaire\",\n  \"notes\": \"Abonnement créé via Postman\"\n}"
+            },
+            "url": {
+              "raw": "http://127.0.0.1:8000/api/subscriptions/subscriptions/",
+              "protocol": "http",
+              "host": ["127", "0", "0", "1"],
+              "port": "8000",
+              "path": ["api", "subscriptions", "subscriptions", ""]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "6.3 Lister factures membre",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{member_token}}"
+              },
+              {
+                "key": "X-Tenant-Subdomain",
+                "value": "powerfit"
+              }
+            ],
+            "url": {
+              "raw": "http://127.0.0.1:8000/api/subscriptions/subscriptions/?member={{member_id}}",
+              "protocol": "http",
+              "host": ["127", "0", "0", "1"],
+              "port": "8000",
+              "path": ["api", "subscriptions", "subscriptions", ""],
+              "query": [
+                {
+                  "key": "member",
+                  "value": "{{member_id}}"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "7. TESTS MULTI-TENANT",
+      "item": [
+        {
+          "name": "7.1 ❌ Accès autre tenant (DOIT ÉCHOUER)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}",
+                "description": "Token PowerFit"
+              },
+              {
+                "key": "X-Tenant-Subdomain",
+                "value": "moveup",
+                "description": "Tenter d'accéder à MoveUp"
+              }
+            ],
+            "url": {
+              "raw": "http://127.0.0.1:8000/api/members/",
+              "protocol": "http",
+              "host": ["127", "0", "0", "1"],
+              "port": "8000",
+              "path": ["api", "members", ""]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "admin_token",
+      "value": ""
+    },
+    {
+      "key": "coach_token",
+      "value": ""
+    },
+    {
+      "key": "member_token",
+      "value": ""
+    },
+    {
+      "key": "member_id",
+      "value": ""
+    },
+    {
+      "key": "program_id",
+      "value": ""
+    },
+    {
+      "key": "session_id",
+      "value": ""
+    },
+    {
+  "key": "payment_id",
+  "value": ""
+},
+{
+  "key": "payment_intent_id",
+  "value": ""
+}
+  ]
+}

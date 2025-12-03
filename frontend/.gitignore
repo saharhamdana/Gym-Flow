@@ -36,3 +36,5 @@ venv/
 *.env
 backend/.env
 
+.vercel
+.env*.local
