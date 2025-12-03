@@ -302,3 +302,8 @@ FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:5173')
 
 
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+# Répertoire où Django collectera les fichiers statiques pour le déploiement
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
+# URL utilisée pour accéder aux fichiers statiques
+STATIC_URL = '/static/'
