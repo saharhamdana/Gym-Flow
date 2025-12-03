@@ -1,5 +1,4 @@
 # backend/subscriptions/stripe_service.py
-
 import stripe
 from django.conf import settings
 import logging

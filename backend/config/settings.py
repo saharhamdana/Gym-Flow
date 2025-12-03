@@ -62,6 +62,7 @@ INSTALLED_APPS = [
     'training_programs',
     'site_utils',
     'coaching',
+    'billing',
 ]
 
 AUTH_USER_MODEL = 'authentication.User'
@@ -278,7 +279,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Stripe Configuration
-# STRIPE_SECRET_KEY = os.getenv('STRIPE_SECRET_KEY', '')
-# STRIPE_PUBLISHABLE_KEY = os.getenv('STRIPE_PUBLISHABLE_KEY', '')
-# STRIPE_WEBHOOK_SECRET = os.getenv('STRIPE_WEBHOOK_SECRET', '')
-# FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:5173')
+STRIPE_SECRET_KEY = os.getenv('STRIPE_SECRET_KEY', '')
+STRIPE_PUBLISHABLE_KEY = os.getenv('STRIPE_PUBLISHABLE_KEY', '')
+STRIPE_WEBHOOK_SECRET = os.getenv('STRIPE_WEBHOOK_SECRET', '')
+FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:5173')
