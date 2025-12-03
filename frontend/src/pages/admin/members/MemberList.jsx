@@ -14,6 +14,10 @@ import {
     Alert,
     IconButton,
     Tooltip,
+    Dialog,
+    DialogHeader,
+    DialogBody,
+    DialogFooter,
 } from "@material-tailwind/react";
 import { 
     MagnifyingGlassIcon, 
@@ -22,6 +26,7 @@ import {
     PencilIcon,
     PhoneIcon,
     EnvelopeIcon,
+    TrashIcon,
 } from "@heroicons/react/24/solid";
 import PageContainer from "@/components/admin/PageContainer";
 import api from "@/api/axiosInstance";
@@ -32,6 +37,9 @@ export function MemberList() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [searchTerm, setSearchTerm] = useState("");
+    const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+    const [memberToDelete, setMemberToDelete] = useState(null);
+    const [deleting, setDeleting] = useState(false);
 
     useEffect(() => {
         const fetchMembers = async () => {
@@ -51,6 +59,35 @@ export function MemberList() {
         };
         fetchMembers();
     }, []);
+
+    const handleDeleteClick = (member, e) => {
+        e.stopPropagation();
+        setMemberToDelete(member);
+        setDeleteModalOpen(true);
+    };
+
+    const handleDeleteConfirm = async () => {
+        if (!memberToDelete) return;
+        
+        setDeleting(true);
+        try {
+            await api.delete(`members/${memberToDelete.id}/`);
+            // Mettre à jour la liste des membres après suppression
+            setMembers(members.filter(member => member.id !== memberToDelete.id));
+            setDeleteModalOpen(false);
+            setMemberToDelete(null);
+        } catch (err) {
+            console.error("Erreur lors de la suppression:", err);
+            setError(err.response?.data?.detail || "Échec de la suppression du membre.");
+        } finally {
+            setDeleting(false);
+        }
+    };
+
+    const handleDeleteCancel = () => {
+        setDeleteModalOpen(false);
+        setMemberToDelete(null);
+    };
 
     const filteredMembers = Array.isArray(members) ? members.filter(member =>
         member.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -284,6 +321,16 @@ export function MemberList() {
                                                                 <PencilIcon className="h-4 w-4" />
                                                             </IconButton>
                                                         </Tooltip>
+                                                        <Tooltip content="Supprimer">
+                                                            <IconButton
+                                                                variant="text"
+                                                                color="red"
+                                                                size="sm"
+                                                                onClick={(e) => handleDeleteClick(member, e)}
+                                                            >
+                                                                <TrashIcon className="h-4 w-4" />
+                                                            </IconButton>
+                                                        </Tooltip>
                                                     </div>
                                                 </td>
                                             </tr>
@@ -310,6 +357,79 @@ export function MemberList() {
                     )}
                 </CardBody>
             </Card>
+
+            {/* Modal de Confirmation de Suppression */}
+            <Dialog 
+                open={deleteModalOpen} 
+                handler={handleDeleteCancel}
+                size="sm"
+            >
+                <DialogHeader className="flex flex-col items-center pb-2">
+                    <div className="rounded-full bg-red-100 p-3 mb-2">
+                        <TrashIcon className="h-6 w-6 text-red-600" />
+                    </div>
+                    <Typography variant="h5" className="text-center">
+                        Confirmer la suppression
+                    </Typography>
+                </DialogHeader>
+                <DialogBody className="text-center">
+                    <Typography variant="paragraph" className="mb-4">
+                        Êtes-vous sûr de vouloir supprimer le membre ?
+                    </Typography>
+                    {memberToDelete && (
+                        <div className="bg-gray-50 rounded-lg p-4 mb-4">
+                            <div className="flex items-center gap-3 justify-center">
+                                <Avatar
+                                    src={memberToDelete.photo || "/img/default-avatar.png"}
+                                    alt={`${memberToDelete.first_name} ${memberToDelete.last_name}`}
+                                    size="sm"
+                                />
+                                <div className="text-left">
+                                    <Typography variant="small" className="font-bold">
+                                        {memberToDelete.first_name} {memberToDelete.last_name}
+                                    </Typography>
+                                    <Typography variant="small" className="text-gray-600">
+                                        {memberToDelete.member_id}
+                                    </Typography>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                    <Typography variant="small" className="text-red-600 font-semibold">
+                        ⚠️ Cette action est irréversible !
+                    </Typography>
+                </DialogBody>
+                <DialogFooter className="flex justify-center gap-3">
+                    <Button
+                        variant="text"
+                        color="gray"
+                        onClick={handleDeleteCancel}
+                        className="mr-2"
+                        disabled={deleting}
+                    >
+                        Annuler
+                    </Button>
+                    <Button
+                        variant="filled"
+                        color="red"
+                        onClick={handleDeleteConfirm}
+                        disabled={deleting}
+                        className="flex items-center gap-2"
+                    >
+                        {deleting ? (
+                            <>
+                                <Spinner className="h-4 w-4" />
+                                Suppression...
+                            </>
+                        ) : (
+                            <>
+                                <TrashIcon className="h-4 w-4" />
+                                Supprimer
+                            </>
+                        )}
+                    </Button>
+                </DialogFooter>
+            </Dialog>
         </PageContainer>
     );
 }

@@ -55,11 +55,21 @@ class SubscriptionDetailSerializer(serializers.ModelSerializer):
 
 
 class SubscriptionCreateSerializer(serializers.ModelSerializer):
+    """
+    ✅ CORRECTION: Ne plus activer automatiquement
+    Le réceptionniste crée l'abonnement en PENDING,
+    puis active manuellement après paiement
+    """
     class Meta:
         model = Subscription
         fields = ['member', 'plan', 'start_date', 'amount_paid', 'payment_method', 'notes']
     
     def create(self, validated_data):
+        # ✅ CORRECTION: Créer en statut PENDING par défaut
+        # Le statut PENDING est déjà le défaut dans le modèle
         subscription = Subscription.objects.create(**validated_data)
-        subscription.activate()
+        
+        # ⚠️ NE PLUS ACTIVER AUTOMATIQUEMENT
+        # subscription.activate()  # ← SUPPRIMER CETTE LIGNE
+        
         return subscription

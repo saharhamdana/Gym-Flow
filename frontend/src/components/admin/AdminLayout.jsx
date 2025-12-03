@@ -1,132 +1,274 @@
-// Fichier: frontend/src/components/admin/AdminLayout.jsx
+// File: frontend/src/components/admin/AdminLayout.jsx
 
-import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import React, { useState, useEffect } from "react";
+import { Link, useLocation, Navigate } from "react-router-dom";
+
+// Composants Material Tailwind
 import {
-    Card,
-    Typography,
-    List,
-    ListItem,
-    ListItemPrefix,
+  Typography,
+  IconButton,
+  Drawer,
+  List,
+  ListItem,
+  ListItemPrefix,
+  Avatar,
 } from "@material-tailwind/react";
+
+// Icônes
 import {
-    PresentationChartBarIcon,
-    UserGroupIcon,
-    BuildingOfficeIcon,
-    AcademicCapIcon,
-    CalendarDaysIcon,
-    ClipboardDocumentCheckIcon,
-    ClipboardDocumentListIcon, 
-    TagIcon,
-    UserCircleIcon, 
-} from "@heroicons/react/24/solid";
+  Bars3Icon,
+  XMarkIcon,
+  UserCircleIcon,
+  UsersIcon,
+  CalendarDaysIcon,
+  CreditCardIcon,
+  ChartBarIcon,
+  ArrowRightOnRectangleIcon,
+  BuildingOfficeIcon,
+  AcademicCapIcon,
+  ClipboardDocumentCheckIcon,
+  ClipboardDocumentListIcon,
+  TagIcon,
+  UserGroupIcon,
+} from "@heroicons/react/24/outline";
 
-const Sidebar = () => {
-    const location = useLocation();
+export default function AdminLayout({ children }) {
+  const [open, setOpen] = useState(false);
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const location = useLocation();
 
-    const isActive = (path) => {
-        // La fonction isActive est parfaite pour gérer les sous-routes (ex: /admin/subscriptions/create)
-        return location.pathname.startsWith(path) ? "bg-blue-500/10" : "";
-    };
+  // Récupérer l'utilisateur depuis localStorage
+  useEffect(() => {
+    const userInfo = localStorage.getItem("user");
+    if (userInfo) {
+      try {
+        setUser(JSON.parse(userInfo));
+      } catch (error) {
+        console.error("Erreur parsing user data:", error);
+      }
+    }
+    setLoading(false);
+  }, []);
 
-    const navigation = [
-        {
-            label: "Tableau de bord",
-            path: "/admin/dashboard",
-            icon: PresentationChartBarIcon,
-        },
-        {
-            label: "Mon Profil",
-            path: "/admin/profile",
-            icon: UserCircleIcon,
-        },
-        {
-            label: "Membres",
-            path: "/admin/members",
-            icon: UserGroupIcon,
-        },
-        {
-            label: "Personnel",
-            path: "/admin/staff",
-            icon: UserGroupIcon,
-        },
-        {
-            label: "Abonnements",
-            path: "/admin/subscriptions",
-            icon: ClipboardDocumentListIcon,
-        },
-        {
-            label: "Plans d'Abonnement",
-            path: "/admin/subscription-plans",
-            icon: TagIcon,
-        },
-        {
-            label: "Salles",
-            path: "/admin/rooms",
-            icon: BuildingOfficeIcon,
-        },
-        {
-            label: "Types de cours",
-            path: "/admin/course-types",
-            icon: AcademicCapIcon,
-        },
-        {
-            label: "Planning Cours",
-            path: "/admin/courses",
-            icon: CalendarDaysIcon,
-        },
-        {
-            label: "Réservations",
-            path: "/admin/bookings",
-            icon: ClipboardDocumentCheckIcon,
-        },
-        {
-            label: "Factures",
-            path: "/portal/invoices",
-            icon: ClipboardDocumentListIcon,
-        },
-    ];
+  const openDrawer = () => setOpen(true);
+  const closeDrawer = () => setOpen(false);
 
+  // Déconnexion
+  const handleLogout = () => {
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("refresh_token");
+    localStorage.removeItem("user");
+    window.location.href = "/sign-in";
+  };
+
+  // Vérifier si l'utilisateur est admin
+  if (!loading && user && user.role !== "ADMIN" && !user?.is_superuser) {
+    return <Navigate to="/portal" replace />;
+  }
+
+  // Menu items pour admin
+  const menuItems = [
+    {
+      label: "Tableau de bord",
+      icon: ChartBarIcon,
+      path: "/admin/dashboard",
+    },
+    {
+      label: "Mon Profil",
+      icon: UserCircleIcon,
+      path: "/admin/profile",
+    },
+    {
+      label: "Membres",
+      icon: UsersIcon,
+      path: "/admin/members",
+    },
+    {
+      label: "Personnel",
+      icon: UserGroupIcon,
+      path: "/admin/staff",
+    },
+    {
+      label: "Abonnements",
+      icon: CreditCardIcon,
+      path: "/admin/subscriptions",
+    },
+    {
+      label: "Plans d'Abonnement",
+      icon: TagIcon,
+      path: "/admin/subscription-plans",
+    },
+    {
+      label: "Salles",
+      icon: BuildingOfficeIcon,
+      path: "/admin/rooms",
+    },
+    {
+      label: "Types de cours",
+      icon: AcademicCapIcon,
+      path: "/admin/course-types",
+    },
+    {
+      label: "Planning Cours",
+      icon: CalendarDaysIcon,
+      path: "/admin/courses",
+    },
+    {
+      label: "Réservations",
+      icon: ClipboardDocumentCheckIcon,
+      path: "/admin/bookings",
+    },
+  ];
+
+  // Fonction pour vérifier si l'item est actif
+  const isActive = (path) => {
+    return location.pathname.startsWith(path) ? "bg-blue-500/10 text-blue-600 border-r-2 border-blue-600" : "text-gray-700";
+  };
+
+  if (loading) {
     return (
-        // ✅ CLÉ 1 : h-screen (pleine hauteur de l'écran) et fixed (reste au défilement)
-        <Card className="h-screen w-full max-w-[20rem] p-4 shadow-xl shadow-blue-gray-900/5 fixed top-0 left-0 z-50">
-            <div className="mb-2 flex items-center gap-4 p-4">
-                <Typography variant="h5" color="blue-gray">
-                    Admin Panel
-                </Typography>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex h-screen bg-gray-50">
+      {/* Sidebar pour desktop */}
+      <div className="hidden lg:flex lg:w-64 lg:flex-col">
+        <div className="flex flex-col flex-grow pt-5 overflow-y-auto bg-white border-r shadow-sm">
+          <div className="flex items-center flex-shrink-0 px-4">
+            <Typography variant="h5" color="blue-gray" className="ml-2">
+              Admin Panel
+            </Typography>
+          </div>
+          <div className="mt-8 flex-grow flex flex-col">
+            <nav className="flex-1 px-2 pb-4 space-y-1">
+              {menuItems.map((item) => (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  className={`flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors hover:bg-gray-100 group ${isActive(item.path)}`}
+                >
+                  <item.icon className="w-5 h-5 mr-3 flex-shrink-0" />
+                  {item.label}
+                </Link>
+              ))}
+            </nav>
+
+            {/* Profil utilisateur */}
+            <div className="flex-shrink-0 flex border-t border-gray-200 p-4">
+              <div className="flex items-center">
+                {user?.profile_picture ? (
+                  <Avatar
+                    src={user.profile_picture}
+                    alt={user?.first_name}
+                    className="h-8 w-8 rounded-full"
+                  />
+                ) : (
+                  <div className="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center">
+                    <UserCircleIcon className="h-5 w-5 text-white" />
+                  </div>
+                )}
+                <div className="ml-3 min-w-0 flex-1">
+                  <Typography variant="small" className="font-medium text-gray-900 truncate">
+                    {user?.first_name} {user?.last_name}
+                  </Typography>
+                  <Typography variant="small" className="text-gray-500 truncate">
+                    Administrateur
+                  </Typography>
+                </div>
+              </div>
+              <IconButton
+                variant="text"
+                color="blue-gray"
+                className="ml-2 flex-shrink-0"
+                onClick={handleLogout}
+                title="Déconnexion"
+              >
+                <ArrowRightOnRectangleIcon className="h-4 w-4" />
+              </IconButton>
             </div>
-            <List className="overflow-y-auto"> {/* Ajout de l'overflow si la liste est très longue */}
-                {navigation.map(({ label, path, icon: Icon }) => (
-                    <Link key={path} to={path}>
-                        <ListItem className={`mb-1 ${isActive(path)}`}>
-                            <ListItemPrefix>
-                                <Icon className="h-5 w-5" />
-                            </ListItemPrefix>
-                            {label}
-                        </ListItem>
-                    </Link>
-                ))}
-            </List>
-        </Card>
-    );
-};
-
-const AdminLayout = ({ children }) => {
-    return (
-        // Le conteneur principal
-        <div className="flex min-h-screen bg-gray-50">
-            
-            {/* 1. Sidebar (Fixed) */}
-            <Sidebar /> 
-            
-            {/* 2. Main Content (Décalé) */}
-            {/* ✅ CLÉ 2 : pl-[20rem] pour décaler le contenu principal et éviter qu'il ne passe sous la sidebar */}
-            <main className="flex-grow w-full pl-[20rem] p-8">
-                {children}
-            </main>
-
+          </div>
         </div>
-    );
-};
+      </div>
 
-export default AdminLayout;
+      {/* Contenu principal */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Header mobile */}
+        <header className="lg:hidden bg-white shadow-sm z-10">
+          <div className="flex items-center justify-between px-4 py-3">
+            <div className="flex items-center">
+              <IconButton
+                variant="text"
+                color="blue-gray"
+                onClick={openDrawer}
+                className="mr-2"
+              >
+                <Bars3Icon className="h-6 w-6" />
+              </IconButton>
+              <Typography variant="h5" color="blue-gray">
+                PowerFit Admin
+              </Typography>
+            </div>
+            {user?.profile_picture ? (
+              <Avatar
+                src={user.profile_picture}
+                alt={user?.first_name}
+                className="h-8 w-8 rounded-full"
+              />
+            ) : (
+              <div className="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center">
+                <UserCircleIcon className="h-5 w-5 text-white" />
+              </div>
+            )}
+          </div>
+        </header>
+
+        {/* Drawer mobile */}
+        <Drawer open={open} onClose={closeDrawer} className="lg:hidden">
+          <div className="flex items-center justify-between p-4 bg-blue-500 text-white">
+            <Typography variant="h5">
+              Menu Admin
+            </Typography>
+            <IconButton variant="text" color="white" onClick={closeDrawer}>
+              <XMarkIcon className="h-5 w-5" />
+            </IconButton>
+          </div>
+          <List className="p-0">
+            {menuItems.map((item) => (
+              <ListItem 
+                key={item.path} 
+                onClick={closeDrawer}
+                className={`${isActive(item.path)} hover:bg-blue-50 focus:bg-blue-50`}
+              >
+                <Link to={item.path} className="flex items-center w-full">
+                  <ListItemPrefix>
+                    <item.icon className="h-5 w-5" />
+                  </ListItemPrefix>
+                  {item.label}
+                </Link>
+              </ListItem>
+            ))}
+            <ListItem 
+              onClick={handleLogout} 
+              className="text-red-600 hover:bg-red-50 focus:bg-red-50"
+            >
+              <ListItemPrefix>
+                <ArrowRightOnRectangleIcon className="h-5 w-5" />
+              </ListItemPrefix>
+              Déconnexion
+            </ListItem>
+          </List>
+        </Drawer>
+
+        {/* CORRECTION : Contenu des pages SANS PageContainer */}
+        <main className="flex-1 overflow-y-auto p-4 lg:p-6 bg-gray-50">
+          {children}
+        </main>
+      </div>
+    </div>
+  );
+}

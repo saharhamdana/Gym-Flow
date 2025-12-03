@@ -7,62 +7,33 @@ import axios from "axios";
  * Ex: powerfit.gymflow.com → "powerfit"
  *     moveup.localhost → "moveup"
  */
+const getBaseURL = () => {
+  const hostname = window.location.hostname;
+  const port = window.location.port;
+
+  console.log('🌐 Configuration:', { hostname, port });
+
+  // 💻 EN DÉVELOPPEMENT SUR PORT 80
+  // Peu importe le sous-domaine, utilisez le proxy
+  return '/api/';  // ✅ Le proxy Vite fera le reste
+};
+
 const getSubdomain = () => {
   const hostname = window.location.hostname;
   const parts = hostname.split('.');
   
-  // En développement sur localhost simple (sans sous-domaine)
-  if (hostname === 'localhost' || hostname === '127.0.0.1') {
-    // Retourner un tenant par défaut en dev
-    return 'powerfit'; // ✅ Changez selon votre centre par défaut
+  // Sous-domaines .gymflow.com (avec ou sans port)
+  if (hostname.includes('.gymflow.com')) {
+    const subdomain = parts[0];
+    return subdomain !== 'www' ? subdomain : null;
   }
   
-  // Pour les sous-domaines en .localhost (développement)
-  // Ex: moveup.localhost → "moveup"
-  if (hostname.endsWith('.localhost')) {
-    return parts[0];
-  }
-  
-  // Pour les sous-domaines en production
-  // Ex: moveup.gymflow.com → "moveup"
-  if (parts.length >= 3 && parts[0] !== 'www') {
-    return parts[0];
-  }
-  
-  // Retour par défaut
-  return 'powerfit';
+  return 'moveup'; // Par défaut
 };
 
-/**
- * Déterminer l'URL de base de l'API
- */
-const getBaseURL = () => {
-  const hostname = window.location.hostname;
-  const protocol = window.location.protocol;
-  const port = window.location.port;
-
-  console.log("🌐 Hostname:", hostname, "Port:", port);
-
-  // 💻 En développement avec sous-domaines gymflow.com
-  if (hostname.endsWith('.gymflow.com')) {
-    if (hostname === 'api.gymflow.com') {
-      return "http://127.0.0.1:8000/api/";
-    }
-    return "http://127.0.0.1:8000/api/";
-  }
-
-  // 💻 En développement local standard
-  if (hostname === 'localhost' || hostname === '127.0.0.1') {
-    return "http://127.0.0.1:8000/api/";
-  }
-
-  // 🚀 En production
-  return `${protocol}//api.gymflow.com/api/`;
-};
-
-// Créer l'instance Axios
 const api = axios.create({
   baseURL: getBaseURL(),
+  timeout: 10000,
 });
 
 // ✅ INTERCEPTEUR DE REQUÊTE - Ajouter le token et le tenant-id

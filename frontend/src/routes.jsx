@@ -1,6 +1,12 @@
 // File: frontend/src/routes.jsx
 
+// ==========================================
+// HOME PAGES (Multi-tenant)
+// ==========================================
 import Home from "@/pages/home";
+// Les autres pages (GeneralHome, TenantHome) sont gérées par Home.jsx
+
+// Auth & Profile
 import SignIn from "@/pages/auth/SignIn";
 import SignUp from "@/pages/auth/SignUp";
 import ProfilePage from "@/pages/profile/ProfilePage";
@@ -12,53 +18,53 @@ import MemberLayout from "@/components/member/MemberLayout";
 import MemberDashboard from "@/pages/member/MemberDashboard";
 import MemberProgress from "@/pages/member/MemberProgress";
 import MemberBookings from "@/pages/member/MemberBookings";
-import MemberCourses from "@/pages/member/MemberCourses"; // ⭐ AJOUTEZ CET IMPORT
+import MemberCourses from "@/pages/member/MemberCourses";
 
-// ⭐ IMPORTS COACH - Utiliser CoachDashboard au lieu de CoachPanel
+// Coach Components
 import CoachDashboard from "@/components/coaching/CoachDashboard";
 import CoachMembers from "@/pages/coach/CoachMembers";
 import CoachSchedule from "@/pages/coach/CoachSchedule";
 import CoachExercises from "@/pages/coach/CoachExercises";
 import CoachSettings from "@/pages/coach/CoachSettings";
 
-// Admin imports
+// Admin Components
 import Dashboard from "@/pages/admin/dashboard/Dashboard";
 import { ProgramBuilder, ExerciseList } from "@/pages/admin/programs";
 import ReservationList from "@/pages/admin/ReservationList";
 import { Staff, UserCreate } from "@/pages/admin/staff";
 
-// Imports Membres
+// Admin Members
 import MemberCreate from "@/pages/admin/members/MemberCreate";
 import MemberDetail from "@/pages/admin/members/MemberDetail";
 import MemberEdit from "@/pages/admin/members/MemberEdit";
 import MemberList from "@/pages/admin/members/MemberList";
 
-// Imports Salles (Rooms)
+// Admin Rooms
 import RoomCreate from "./pages/admin/bookings/rooms/RoomCreate";
 import RoomList from "./pages/admin/bookings/rooms/RoomList";
 import RoomDetail from "./pages/admin/bookings/rooms/RoomDetail";
 import RoomEdit from "./pages/admin/bookings/rooms/RoomEdit";
 
-// Imports Types de Cours (Course Types)
+// Admin Course Types
 import CourseTypeCreate from "./pages/admin/bookings/course-types/CourseTypeCreate";
 import CourseTypeList from "./pages/admin/bookings/course-types/CourseTypeList";
 import CourseTypeDetail from "./pages/admin/bookings/course-types/CourseTypeDetail";
 import CourseTypeEdit from "./pages/admin/bookings/course-types/CourseTypeEdit";
 
-// Imports Cours/Sessions (Courses)
+// Admin Courses
 import CourseCreate from "./pages/admin/bookings/courses/CourseCreate";
 import CourseList from "./pages/admin/bookings/courses/CourseList";
 import CourseDetail from "./pages/admin/bookings/courses/CourseDetail";
 import CourseEdit from "./pages/admin/bookings/courses/CourseEdit";
 import CourseCalendar from "./pages/admin/bookings/courses/CourseCalendar";
 
-// Imports Réservations (Bookings)
+// Admin Bookings
 import BookingCreate from "./pages/admin/bookings/bookings/BookingCreate";
 import BookingList from "./pages/admin/bookings/bookings/BookingList";
 import BookingDetail from "./pages/admin/bookings/bookings/BookingDetail";
 import BookingEdit from "./pages/admin/bookings/bookings/BookingEdit";
 
-// Imports Subscriptions
+// Subscriptions
 import {
   SubscriptionPlanList,
   SubscriptionPlanForm,
@@ -68,13 +74,22 @@ import {
 } from "./pages/subscriptions";
 import MemberPrograms from "./pages/member/MemberPrograms";
 import MemberProgramDetail from "./pages/member/MemberProgramDetail";
-import { element } from "prop-types";
 import MemberSubscriptions from "./pages/member/MemberSubscriptions";
 import PaymentSuccess from "./pages/member/PaymentSuccess";
 import SubscriptionSuccess from "./pages/member/SubscriptionSuccess";
 import SubscriptionCancel from "./pages/member/SubscriptionCancel";
 import MemberInvoices from "./pages/member/MemberInvoices";
 
+// Receptionist Components
+import ReceptionistDashboard from "./pages/receptionist/dashboard/Dashboard";
+import MembersList from "./pages/receptionist/members/MembersList";
+import MemberDetailReceptionist from "./pages/receptionist/members/MemberDetail";
+import SubscriptionsList from "./pages/receptionist/subscriptions/SubscriptionsList";
+import SubscriptionCreateReceptionist from "./pages/receptionist/subscriptions/SubscriptionCreate";
+import BookingsList from "./pages/receptionist/bookings/BookingsList";
+import BookingCreateReceptionist from "./pages/receptionist/bookings/BookingCreate";
+import CheckIn from "./pages/receptionist/checkin/CheckIn";
+import MembersCreate from "./pages/receptionist/members/MembersCreate";
 
 export const routes = [
   // ==========================================
@@ -83,7 +98,7 @@ export const routes = [
   {
     name: "home",
     path: "/",
-    element: <Home />,
+    element: <Home />, // Ce composant gère maintenant GeneralHome ET TenantHome
   },
   {
     name: "Sign In",
@@ -96,10 +111,9 @@ export const routes = [
     element: <SignUp />,
   },
   {
-    name: "Docs",
-    href: "https://www.material-tailwind.com/docs/react/installation",
-    target: "_blank",
-    element: "",
+    name: "Terms",
+    path: "/terms",
+    element: <Terms />,
   },
 
   // ==========================================
@@ -118,7 +132,7 @@ export const routes = [
   {
     name: "Member Programs",
     path: "/portal/programs",
-    element: <MemberLayout><MemberPrograms /></MemberLayout>,
+    element: <MemberPrograms />,
   },
   {
     name: "Member Bookings",
@@ -126,24 +140,19 @@ export const routes = [
     element: <MemberLayout><MemberBookings /></MemberLayout>,
   },
   {
-    name: "Member Courses", // ⭐ NOUVELLE ROUTE AJOUTÉE
+    name: "Member Courses",
     path: "/portal/courses",
     element: <MemberLayout><MemberCourses /></MemberLayout>,
   },
   {
     name: "Member Progress",
     path: "/portal/progress",
-    element: <MemberLayout><MemberProgress /></MemberLayout>, // ⭐ CORRIGÉ: Ajout de MemberLayout
+    element: <MemberProgress />,
   },
   {
     name: "Member Program Detail",
     path: "/portal/programs/:id",
-    element: <MemberLayout><MemberProgramDetail /></MemberLayout>, // ⭐ CORRIGÉ: Ajout de MemberLayout
-  },
-  {
-    name: "Member Dashboard",
-    path: "/portal",
-    element: <MemberLayout><MemberDashboard /></MemberLayout>,
+    element: <MemberLayout><MemberProgramDetail /></MemberLayout>,
   },
   {
     name: "Member Subscriptions",
@@ -166,13 +175,71 @@ export const routes = [
     element: <MemberInvoices />,
   },
   {
-    name: " Invoice Detail",
+    name: "Invoice Detail",
     path: "/portal/invoices/:invoiceId",
     element: <MemberInvoices />,
   },
 
   // ==========================================
-  // ⭐ ROUTES COACH - UTILISER CoachDashboard
+  // ROUTES RÉCEPTIONNISTE
+  // ==========================================
+  {
+    name: "Réception Dashboard",
+    path: "/receptionist/dashboard",
+    element: <ReceptionistDashboard />,
+    hidden: true
+  },
+  {
+    name: "Gestion Membres",
+    path: "/receptionist/members",
+    element: <MembersList />,
+    hidden: true
+  },
+  {
+    name: "Détail Membre",
+    path: "/receptionist/members/:id",
+    element: <MemberDetailReceptionist />,
+    hidden: true
+  },
+  {
+    name: "Créer Membre",
+    path: "/receptionist/members/create",
+    element: <MembersCreate />,
+    hidden: true
+  },
+  {
+    name: "Gestion Abonnements",
+    path: "/receptionist/subscriptions",
+    element: <SubscriptionsList />,
+    hidden: true
+  },
+  {
+    name: "Créer Abonnement",
+    path: "/receptionist/subscriptions/create",
+    element: <SubscriptionCreateReceptionist />,
+    hidden: true
+  },
+  {
+    name: "Gestion Réservations",
+    path: "/receptionist/bookings",
+    element: <BookingsList />,
+    hidden: true
+  },
+  {
+    name: "Créer Réservation",
+    path: "/receptionist/bookings/create",
+    element: <BookingCreateReceptionist />,
+    hidden: true
+  },
+  {
+    name: "Check-in",
+    path: "/receptionist/checkin",
+    element: <CheckIn />,
+    hidden: true
+  },
+
+  // ==========================================
+  // ROUTES COACH
   // ==========================================
   {
     name: "Coach Dashboard",
@@ -405,11 +472,6 @@ export const routes = [
     path: "/admin/bookings/:bookingId/edit",
     element: <BookingEdit />,
     hidden: true
-  },
-  {
-    name: "terms",
-    path: "/terms",
-    element: <Terms />,
   },
 
   // ==========================================

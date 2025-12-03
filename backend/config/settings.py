@@ -18,14 +18,22 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'changez-moi-en-production')
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
 
-# ✅ Configuration Email SÉCURISÉE
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+# ✅ Configuration Email - VERSION FINALE
+if DEBUG:
+    EMAIL_BACKEND = 'utils.custom_smtp_backend.CustomSMTPBackend'
+    # Alternative pour tester rapidement: 
+    # EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+else:
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+
 EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
 EMAIL_PORT = int(os.getenv('EMAIL_PORT', '587'))
 EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True') == 'True'
+EMAIL_USE_SSL = False  # Important: Gmail sur port 587 utilise TLS, pas SSL
 EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
-EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')  # ⚠️ JAMAIS en dur !
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', f'GymFlow <{EMAIL_HOST_USER}>')
+EMAIL_TIMEOUT = 30
 
 # Frontend URL pour les liens de réinitialisation
 FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:5173')
@@ -55,14 +63,13 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt',
     'corsheaders',
-    'authentication',
-    'subscriptions',
-    'members',
-    'bookings',
+    'authentication',      # Doit être première (AUTH_USER_MODEL)
+    'members',            # Doit être avant billing
+    'subscriptions',      # Doit être avant billing  
     'training_programs',
-    'site_utils',
     'coaching',
-    'billing',
+    'bookings',
+    'billing',      # ← AJOUTEZ CETTE LIGNE
 ]
 
 AUTH_USER_MODEL = 'authentication.User'
@@ -76,8 +83,6 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'authentication.middleware.SubdomainMiddleware',
-    'authentication.middleware.TenantMiddleware',
     'authentication.middleware.AdminTenantMiddleware',
 ]
 
@@ -189,8 +194,8 @@ if DEBUG:
     ]
 else:
     # 🌐 Production multi-tenant
-    SESSION_COOKIE_DOMAIN = ".gymflow.com"
-    CSRF_COOKIE_DOMAIN = ".gymflow.com"
+    SESSION_COOKIE_DOMAIN = None  # Pas de domaine pour le développement
+    CSRF_COOKIE_DOMAIN = None     # Pas de domaine pour le développement
     CSRF_TRUSTED_ORIGINS = [
         "https://gymflow.com",
         "https://www.gymflow.com",
@@ -214,8 +219,8 @@ REST_FRAMEWORK = {
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
-# 🌐 Domaine parent pour les sous-domaines
-PARENT_DOMAIN = 'gymflow.com'
+# 🌐 Domaine parent pour le développement
+PARENT_DOMAIN = 'gymflow.com'  # Utilisez localhost en développement
 
 # 🔧 Configuration JWT
 SIMPLE_JWT = {

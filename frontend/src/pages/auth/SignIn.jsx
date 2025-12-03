@@ -37,15 +37,19 @@ export function SignIn() {
                         localStorage.setItem("user", JSON.stringify(userProfile));
                         setLoading(false);
 
-                        // 🚀 Redirection basée sur le rôle
-                        if (userProfile.role === "COACH") {
-
-                            navigate("/coach"); // ← NOUVELLE REDIRECTION POUR LES COACH
-                        } else if (userProfile.role === "ADMIN" || userProfile.role === "RECEPTIONIST") {
-
-                            navigate("/admin/dashboard");
-                        } else {
-                            navigate("/portal");
+                        // 🚀 REDIRECTION CORRIGÉE BASÉE SUR LE RÔLE
+                        switch (userProfile.role) {
+                            case "COACH":
+                                navigate("/coach");
+                                break;
+                            case "ADMIN":
+                                navigate("/admin/dashboard");
+                                break;
+                            case "RECEPTIONIST":
+                                navigate("/receptionist/dashboard"); // ✅ Réceptionniste vers son propre dashboard
+                                break;
+                            default:
+                                navigate("/portal"); // Membre ou autre
                         }
                     })
                     .catch((err) => {
@@ -99,7 +103,7 @@ export function SignIn() {
 
                 {/* ⚠️ Erreur tenant (mauvais sous-domaine) */}
 
-                
+
                 {error && (
                     <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative my-4" role="alert">
                         <strong className="font-bold">⚠️ Erreur : </strong>

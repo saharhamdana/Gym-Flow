@@ -12,26 +12,39 @@ export default defineConfig({
   },
   
   server: {
-    port: 80,  // ← Changer ici
-    host: true,
+    port: 80,  // ✅ Vous gardez le port 80
+    host: '0.0.0.0',
     
-    // 🌐 Configuration pour accepter les sous-domaines
-    allowedHosts: ['.gymflow.com', 'localhost'],
+    allowedHosts: [
+      'localhost',
+      '.gymflow.com',
+      'gymflow.com'
+    ],
     
-    // Proxy pour l'API (optionnel)
+    // 🔥 PROXY AMÉLIORÉ POUR PORT 80
     proxy: {
-  '/api': {
-    target: 'http://127.0.0.1:8000',
-    changeOrigin: true,
-    secure: false,
-  },
-},
+      '/api': {
+        target: 'http://127.0.0.1:8000',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path,
+        configure: (proxy, options) => {
+          proxy.on('proxyReq', (proxyReq, req, res) => {
+            console.log('🔄 Proxy:', req.method, req.url);
+            // Transmettre le sous-domaine
+            const host = req.headers.host;
+            if (host && host.includes('.gymflow.com')) {
+              const subdomain = host.split('.')[0];
+              proxyReq.setHeader('X-Tenant-Subdomain', subdomain);
+            }
+          });
+        }
+      }
+    },
 
-    // Configuration CORS
     cors: true,
   },
   
-  // Optimisation du build
   build: {
     outDir: 'dist',
     sourcemap: true,
