@@ -34,6 +34,8 @@ import {
 import { PageTitle, Footer } from "@/widgets/layout";
 import { FeatureCard, TeamCard } from "@/widgets/cards";
 import { featuresData, teamData, contactData } from "@/data";
+import HealthChatbot from "@/components/HealthChatbot";
+
 
 export function TenantHome({ gymCenter }) {
   // === BMI Calculator State ===
@@ -105,6 +107,93 @@ export function TenantHome({ gymCenter }) {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  // === Print AI Plan Function ===
+  const printAIPlan = () => {
+    if (!aiPlan) {
+      alert("Aucun plan à imprimer");
+      return;
+    }
+
+    // Créer une nouvelle fenêtre pour l'impression
+    const printWindow = window.open('', '_blank');
+    
+    // Contenu HTML à imprimer
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Plan de Santé Personnalisé - ${gymCenter?.name || 'Gym Flow'}</title>
+          <style>
+            body {
+              font-family: Arial, sans-serif;
+              line-height: 1.6;
+              margin: 20px;
+              color: #333;
+            }
+            h1, h2 {
+              color: #00357a;
+              border-bottom: 2px solid #9b0e16;
+              padding-bottom: 10px;
+            }
+            h3 {
+              color: #9b0e16;
+              margin-top: 20px;
+            }
+            .header {
+              text-align: center;
+              margin-bottom: 30px;
+              border-bottom: 3px solid #00357a;
+              padding-bottom: 20px;
+            }
+            .plan-content {
+              white-space: pre-wrap;
+              line-height: 1.8;
+            }
+            .footer {
+              margin-top: 30px;
+              text-align: center;
+              font-size: 12px;
+              color: #666;
+              border-top: 1px solid #ccc;
+              padding-top: 20px;
+            }
+            @media print {
+              body { margin: 15px; }
+              .header { page-break-after: avoid; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>Plan de Santé Personnalisé</h1>
+            <p><strong>${gymCenter?.name || 'Gym Flow'}</strong></p>
+            <p>Généré le ${new Date().toLocaleDateString('fr-FR')}</p>
+          </div>
+          
+          <div class="plan-content">
+            ${aiPlan.replace(/\n/g, '<br>')}
+          </div>
+          
+          <div class="footer">
+            <p>Ce plan a été généré automatiquement par l'IA de ${gymCenter?.name || 'Gym Flow'}</p>
+            <p>Consultez votre médecin avant de commencer tout nouveau programme d'entraînement</p>
+          </div>
+        </body>
+      </html>
+    `;
+    
+    // Écrire le contenu et lancer l'impression
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+    
+    // Attendre que le contenu soit chargé puis imprimer
+    printWindow.onload = () => {
+      printWindow.focus();
+      printWindow.print();
+      printWindow.close();
+    };
   };
 
   // === BMI Calculator ===
@@ -565,7 +654,7 @@ export function TenantHome({ gymCenter }) {
                             </Button>
                             <Button
                               style={{ backgroundColor: "#9b0e16" }}
-                              onClick={() => window.print()}
+                              onClick={printAIPlan}
                               className="flex-1"
                             >
                               Imprimer le plan
@@ -642,6 +731,34 @@ export function TenantHome({ gymCenter }) {
           </div>
         </div>
       </section>
+            {/* === CHATBOT IA SECTION === */}
+      <section className="py-16 px-4 w-full" style={{ backgroundColor: "#00357a05" }}>
+        <div className="container mx-auto max-w-7xl">
+          <div className="text-center mb-12">
+            <Typography variant="h2" style={{ color: "#00357a" }} className="mb-4">
+              💬 Assistant Santé IA
+            </Typography>
+            <Typography variant="lead" className="text-gray-600 max-w-2xl mx-auto">
+              Posez vos questions sur la nutrition, l'exercice ou le bien-être.
+              Notre assistant IA vous répondra instantanément !
+            </Typography>
+          </div>
+          
+          <div className="max-w-4xl mx-auto">
+            <HealthChatbot />
+            
+            <div className="mt-8 text-center">
+              <div className="inline-flex items-center gap-2 p-4 bg-blue-50 rounded-lg">
+                <SparklesIcon className="h-5 w-5 text-[#00357a]" />
+                <Typography variant="small" className="text-gray-600">
+                  L'assistant utilise l'IA Gemini pour fournir des conseils personnalisés
+                </Typography>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
 
       {/* === CONTACT SECTION === */}
       <section className="relative bg-white py-24 px-4 w-full">

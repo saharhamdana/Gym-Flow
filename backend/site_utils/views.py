@@ -384,3 +384,66 @@ Félicitations pour avoir pris cette initiative vers une vie plus saine ! 🎉
 
 **Rappel**: La régularité est plus importante que la perfection.
 """
+@api_view(['POST'])
+@permission_classes([AllowAny])
+@csrf_exempt
+def chatbot_assistant(request):
+    """Endpoint pour le chatbot santé"""
+    try:
+        data = request.data
+        user_message = data.get('message', '').strip()
+        
+        if not user_message:
+            return Response({'response': 'Veuillez poser une question.'})
+        
+        # Vérifier API key
+        if not hasattr(settings, 'GEMINI_API_KEY') or not settings.GEMINI_API_KEY:
+            return Response({
+                'response': 'Configuration IA indisponible. Voici un conseil général : Buvez 2L d\'eau par jour et marchez 30 minutes quotidiennement.'
+            })
+        
+        # Configurer Gemini
+        genai.configure(api_key=settings.GEMINI_API_KEY)
+        
+        # Prompt pour le chatbot
+        prompt = f"""
+        Tu es un assistant santé et nutrition français, sympathique et professionnel.
+        L'utilisateur demande : "{user_message}"
+        
+        Règles importantes :
+        1. Réponds en français, de manière concise (max 3-4 phrases)
+        2. Reste positif et encourageant
+        3. Ne donne pas de diagnostic médical
+        4. Recommande toujours de consulter un professionnel si nécessaire
+        5. Propose des conseils pratiques et réalisables
+        
+        Exemples de bonnes réponses :
+        - "Pour perdre du poids, je recommande de manger plus de légumes, réduire les sucres ajoutés et faire 30min d'exercice par jour."
+        - "L'hydratation varie selon l'activité, mais visez 1.5L à 2L d'eau par jour en général."
+        - "Comme exercice débutant : marche rapide 20min, pompes sur les genoux, et planche 30 secondes."
+        
+        Réponds maintenant :
+        """
+        
+        # Utiliser le modèle Gemini
+        model = genai.GenerativeModel('gemini-2.5-flash')
+        response = model.generate_content(prompt)
+        
+        return Response({
+            'response': response.text.strip(),
+            'success': True
+        })
+        
+    except Exception as e:
+        print(f"Erreur chatbot: {e}")
+        # Réponses de secours
+        fallback_responses = [
+            "Je recommande une alimentation équilibrée et 30 minutes d'activité physique par jour.",
+            "Buvez suffisamment d'eau et dormez 7 à 8 heures pour une santé optimale.",
+            "Consultez un nutritionniste pour des conseils personnalisés à votre situation."
+        ]
+        import random
+        return Response({
+            'response': f"{random.choice(fallback_responses)} (Note : l'IA est temporairement indisponible)",
+            'success': False
+        })
