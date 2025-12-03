@@ -8,8 +8,8 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('billing', '0001_initial'),
-        ('members', '0002_member_tenant_id'),
-        ('subscriptions', '0005_remove_subscriptionplan_payment_method_and_more'),
+        ('members', '0001_initial'),
+        ('subscriptions', '0001_initial'),
     ]
 
     operations = [

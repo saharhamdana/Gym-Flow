@@ -14,8 +14,23 @@ import {
   DialogHeader,
   DialogBody,
   DialogFooter,
+  Tabs,
+  TabsHeader,
+  TabsBody,
+  Tab,
+  TabPanel,
+  Radio,
+  Alert,
+  Spinner,
 } from "@material-tailwind/react";
-import { FingerPrintIcon } from "@heroicons/react/24/solid";
+import { 
+  FingerPrintIcon, 
+  HeartIcon, 
+  FireIcon, 
+  SparklesIcon,
+  ExclamationTriangleIcon,
+  CheckCircleIcon 
+} from "@heroicons/react/24/solid";
 import { PageTitle, Footer } from "@/widgets/layout";
 import { FeatureCard, TeamCard } from "@/widgets/cards";
 import { featuresData, teamData, contactData } from "@/data";
@@ -26,6 +41,13 @@ export function TenantHome({ gymCenter }) {
   const [weight, setWeight] = useState("");
   const [bmi, setBmi] = useState(null);
   const [classification, setClassification] = useState("");
+  const [goal, setGoal] = useState("maintien");
+
+  // === IA Gemini State ===
+  const [aiPlan, setAiPlan] = useState(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [aiError, setAiError] = useState("");
+  const [activeTab, setActiveTab] = useState("calculator");
 
   // === Contact Form State ===
   const [formData, setFormData] = useState({
@@ -105,6 +127,87 @@ export function TenantHome({ gymCenter }) {
     else category = "Obésité de grade III";
 
     setClassification(category);
+    setAiPlan(null);
+    setAiError("");
+    setActiveTab("results");
+  };
+
+  // === IA Gemini Plan Generator ===
+  const generateAIPlan = async () => {
+    setIsGenerating(true);
+    setAiError("");
+
+    try {
+      const response = await axios.post("http://localhost:8000/api/generate-health-plan/", {
+        bmi: parseFloat(bmi),
+        classification,
+        height: parseFloat(height),
+        weight: parseFloat(weight),
+        goals: goal,
+      });
+
+      if (response.data.success) {
+        setAiPlan(response.data.plan);
+        setActiveTab("ai-plan");
+      } else {
+        setAiError(response.data.error || "Erreur lors de la génération du plan");
+      }
+    } catch (error) {
+      setAiError(error.response?.data?.error || "Impossible de se connecter au serveur");
+      console.error("AI Error:", error.response || error);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  // === Format Markdown to HTML ===
+  const formatMarkdown = (text) => {
+    if (!text) return "";
+    
+    return text
+      .split('\n')
+      .map((line, i) => {
+        // Titres
+        if (line.startsWith('### ')) {
+          return <Typography key={i} variant="h6" style={{ color: "#00357a" }} className="mt-4 mb-2 font-bold">{line.replace('### ', '')}</Typography>;
+        }
+        if (line.startsWith('## ')) {
+          return <Typography key={i} variant="h5" style={{ color: "#00357a" }} className="mt-6 mb-3 font-bold">{line.replace('## ', '')}</Typography>;
+        }
+        if (line.startsWith('# ')) {
+          return <Typography key={i} variant="h4" style={{ color: "#00357a" }} className="mt-6 mb-4 font-bold">{line.replace('# ', '')}</Typography>;
+        }
+        
+        // Listes
+        if (line.startsWith('- ') || line.startsWith('* ')) {
+          return (
+            <div key={i} className="flex gap-2 mb-2 ml-4">
+              <CheckCircleIcon className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+              <Typography className="text-gray-700">{line.replace(/^[*-] /, '')}</Typography>
+            </div>
+          );
+        }
+        
+        // Texte gras **texte**
+        if (line.includes('**')) {
+          const parts = line.split('**');
+          return (
+            <Typography key={i} className="mb-2 text-gray-700">
+              {parts.map((part, j) => 
+                j % 2 === 0 ? part : <strong key={j} className="font-bold" style={{ color: "#00357a" }}>{part}</strong>
+              )}
+            </Typography>
+          );
+        }
+        
+        // Ligne vide
+        if (line.trim() === '') {
+          return <div key={i} className="h-2" />;
+        }
+        
+        // Texte normal
+        return <Typography key={i} className="mb-2 text-gray-700">{line}</Typography>;
+      });
   };
 
   const pageTitle = `Bienvenue chez ${gymCenter.name}`;
@@ -200,117 +303,279 @@ export function TenantHome({ gymCenter }) {
         </div>
       </section>
 
-      {/* === BMI CALCULATOR === */}
+      {/* === BMI CALCULATOR AI === */}
       <section className="py-16 px-4 w-full" style={{ backgroundColor: "#00357a10" }}>
         <div className="container mx-auto max-w-7xl">
-          <PageTitle section="Santé" heading="Calculez votre IMC">
-            L'Indice de Masse Corporelle (IMC) est un indicateur simple de la relation entre votre poids et votre taille.
+          <PageTitle section="Santé" heading="Calculateur IMC Intelligent">
+            Calculez votre IMC et obtenez un plan personnalisé généré par IA
           </PageTitle>
 
-          <div className="mt-12 max-w-4xl mx-auto">
+          <div className="mt-12 max-w-5xl mx-auto">
             <Card className="shadow-xl">
               <CardBody className="p-8">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                  <Input
-                    type="number"
-                    label="Taille (cm)"
-                    value={height}
-                    onChange={(e) => setHeight(e.target.value)}
-                    placeholder="Ex: 175"
-                  />
-                  <Input
-                    type="number"
-                    label="Poids (kg)"
-                    value={weight}
-                    onChange={(e) => setWeight(e.target.value)}
-                    placeholder="Ex: 70"
-                  />
-                </div>
-
-                <div className="flex justify-center mb-8">
-                  <Button
-                    size="lg"
-                    className="flex items-center gap-2"
-                    style={{ backgroundColor: "#9b0e16" }}
-                    onClick={calculateBMI}
+                <Tabs value={activeTab}>
+                  <TabsHeader
+                    className="bg-blue-gray-50"
+                    indicatorProps={{
+                      className: "bg-blue-500 shadow-none"
+                    }}
                   >
-                    Calculer mon IMC
-                  </Button>
-                </div>
+                    <Tab 
+                      value="calculator" 
+                      onClick={() => setActiveTab("calculator")}
+                      className={activeTab === "calculator" ? "text-white" : ""}
+                    >
+                      <div className="flex items-center gap-2">
+                        <HeartIcon className="w-5 h-5" />
+                        Calculateur
+                      </div>
+                    </Tab>
+                    <Tab 
+                      value="results" 
+                      disabled={!bmi}
+                      onClick={() => setActiveTab("results")}
+                      className={activeTab === "results" ? "text-white" : ""}
+                    >
+                      <div className="flex items-center gap-2">
+                        <FireIcon className="w-5 h-5" />
+                        Résultats
+                      </div>
+                    </Tab>
+                    <Tab 
+                      value="ai-plan" 
+                      disabled={!aiPlan}
+                      onClick={() => setActiveTab("ai-plan")}
+                      className={activeTab === "ai-plan" ? "text-white" : ""}
+                    >
+                      <div className="flex items-center gap-2">
+                        <SparklesIcon className="w-5 h-5" />
+                        Plan IA
+                      </div>
+                    </Tab>
+                  </TabsHeader>
 
-                {bmi && (
-                  <div className="text-center p-6 bg-white rounded-lg shadow-md">
-                    <Typography variant="h4" style={{ color: "#00357a" }} className="mb-2">
-                      Votre IMC : <span className="font-bold">{bmi}</span>
-                    </Typography>
-                    <Typography variant="h5" style={{ color: "#00357a" }}>
-                      Classification :{" "}
-                      <span
-                        className={`font-bold ${
-                          classification.includes("Normal")
-                            ? "text-green-600"
-                            : classification.includes("Obésité")
-                            ? "text-[#9b0e16]"
-                            : "text-orange-600"
-                        }`}
+                  <TabsBody>
+                    {/* TAB 1: CALCULATEUR */}
+                    <TabPanel value="calculator">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <Input
+                          type="number"
+                          label="Taille (cm)"
+                          value={height}
+                          onChange={(e) => setHeight(e.target.value)}
+                          size="lg"
+                          icon={<Typography className="text-sm">cm</Typography>}
+                          placeholder="Ex: 175"
+                        />
+                        <Input
+                          type="number"
+                          label="Poids (kg)"
+                          value={weight}
+                          onChange={(e) => setWeight(e.target.value)}
+                          size="lg"
+                          icon={<Typography className="text-sm">kg</Typography>}
+                          placeholder="Ex: 70"
+                        />
+                      </div>
+
+                      <div className="mb-6">
+                        <Typography variant="h6" style={{ color: "#00357a" }} className="mb-3">
+                          Votre objectif :
+                        </Typography>
+                        <div className="flex flex-col gap-2">
+                          <Radio
+                            name="goal"
+                            label="Perdre du poids"
+                            value="perte"
+                            checked={goal === "perte"}
+                            onChange={(e) => setGoal(e.target.value)}
+                            color="blue"
+                          />
+                          <Radio
+                            name="goal"
+                            label="Maintenir mon poids"
+                            value="maintien"
+                            checked={goal === "maintien"}
+                            onChange={(e) => setGoal(e.target.value)}
+                            color="blue"
+                          />
+                          <Radio
+                            name="goal"
+                            label="Prendre du poids / Muscle"
+                            value="prise"
+                            checked={goal === "prise"}
+                            onChange={(e) => setGoal(e.target.value)}
+                            color="blue"
+                          />
+                        </div>
+                      </div>
+
+                      <Button
+                        size="lg"
+                        fullWidth
+                        className="flex items-center justify-center gap-2"
+                        style={{ backgroundColor: "#9b0e16" }}
+                        onClick={calculateBMI}
                       >
-                        {classification}
-                      </span>
-                    </Typography>
-                  </div>
-                )}
+                        <HeartIcon className="w-5 h-5" />
+                        Calculer mon IMC
+                      </Button>
+                    </TabPanel>
 
-                <div className="mt-10">
-                  <Typography variant="h6" style={{ color: "#00357a" }} className="mb-4 text-center">
-                    Tableau de Classification de l'IMC
-                  </Typography>
-                  <div className="overflow-x-auto">
-                    <table className="w-full table-auto text-left">
-                      <thead>
-                        <tr style={{ backgroundColor: "#00357a20" }}>
-                          <th className="px-4 py-3 text-xs font-bold uppercase" style={{ color: "#00357a" }}>
-                            IMC
-                          </th>
-                          <th className="px-4 py-3 text-xs font-bold uppercase" style={{ color: "#00357a" }}>
-                            Classification
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr className="border-b">
-                          <td className="px-4 py-3 text-sm">&lt; 18.5</td>
-                          <td className="px-4 py-3 text-sm text-orange-600 font-medium">Sous-poids</td>
-                        </tr>
-                        <tr className="border-b">
-                          <td className="px-4 py-3 text-sm">18.5 - 24.9</td>
-                          <td className="px-4 py-3 text-sm text-green-600 font-medium">Poids Normal</td>
-                        </tr>
-                        <tr className="border-b">
-                          <td className="px-4 py-3 text-sm">25 - 29.9</td>
-                          <td className="px-4 py-3 text-sm text-orange-600 font-medium">Surpoids</td>
-                        </tr>
-                        <tr className="border-b">
-                          <td className="px-4 py-3 text-sm">30 - 34.9</td>
-                          <td className="px-4 py-3 text-sm font-medium" style={{ color: "#9b0e16" }}>
-                            Obésité de grade I
-                          </td>
-                        </tr>
-                        <tr className="border-b">
-                          <td className="px-4 py-3 text-sm">35 - 39.9</td>
-                          <td className="px-4 py-3 text-sm font-medium" style={{ color: "#9b0e16" }}>
-                            Obésité de grade II
-                          </td>
-                        </tr>
-                        <tr>
-                          <td className="px-4 py-3 text-sm">&gt; 40</td>
-                          <td className="px-4 py-3 text-sm font-medium" style={{ color: "#9b0e16" }}>
-                            Obésité de grade III
-                          </td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
+                    {/* TAB 2: RÉSULTATS */}
+                    <TabPanel value="results">
+                      {bmi && (
+                        <>
+                          <div className="text-center p-8 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg shadow-md mb-6">
+                            <Typography variant="h2" style={{ color: "#00357a" }} className="mb-2">
+                              {bmi}
+                            </Typography>
+                            <Typography variant="h5" className={`font-bold ${
+                              classification.includes("Normal") ? "text-green-600" :
+                              classification.includes("Obésité") ? "text-[#9b0e16]" : "text-orange-600"
+                            }`}>
+                              {classification}
+                            </Typography>
+                          </div>
+
+                          <div className="mb-6">
+                            <Typography variant="h6" style={{ color: "#00357a" }} className="mb-4 text-center">
+                              Tableau de Classification
+                            </Typography>
+                            <div className="overflow-x-auto">
+                              <table className="w-full table-auto text-left">
+                                <thead>
+                                  <tr style={{ backgroundColor: "#00357a20" }}>
+                                    <th className="px-4 py-3 text-xs font-bold uppercase" style={{ color: "#00357a" }}>
+                                      IMC
+                                    </th>
+                                    <th className="px-4 py-3 text-xs font-bold uppercase" style={{ color: "#00357a" }}>
+                                      Classification
+                                    </th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  <tr className="border-b">
+                                    <td className="px-4 py-3 text-sm">&lt; 18.5</td>
+                                    <td className="px-4 py-3 text-sm text-orange-600 font-medium">Sous-poids</td>
+                                  </tr>
+                                  <tr className="border-b">
+                                    <td className="px-4 py-3 text-sm">18.5 - 24.9</td>
+                                    <td className="px-4 py-3 text-sm text-green-600 font-medium">Poids Normal</td>
+                                  </tr>
+                                  <tr className="border-b">
+                                    <td className="px-4 py-3 text-sm">25 - 29.9</td>
+                                    <td className="px-4 py-3 text-sm text-orange-600 font-medium">Surpoids</td>
+                                  </tr>
+                                  <tr className="border-b">
+                                    <td className="px-4 py-3 text-sm">30 - 34.9</td>
+                                    <td className="px-4 py-3 text-sm font-medium" style={{ color: "#9b0e16" }}>
+                                      Obésité de grade I
+                                    </td>
+                                  </tr>
+                                  <tr className="border-b">
+                                    <td className="px-4 py-3 text-sm">35 - 39.9</td>
+                                    <td className="px-4 py-3 text-sm font-medium" style={{ color: "#9b0e16" }}>
+                                      Obésité de grade II
+                                    </td>
+                                  </tr>
+                                  <tr>
+                                    <td className="px-4 py-3 text-sm">&gt; 40</td>
+                                    <td className="px-4 py-3 text-sm font-medium" style={{ color: "#9b0e16" }}>
+                                      Obésité de grade III
+                                    </td>
+                                  </tr>
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+
+                          <Alert
+                            icon={<SparklesIcon className="w-6 h-6" />}
+                            className="mb-6 bg-gradient-to-r from-purple-50 to-pink-50 border-purple-200"
+                          >
+                            <Typography className="font-medium text-purple-900">
+                              Obtenez un plan personnalisé avec l'IA !
+                            </Typography>
+                            <Typography className="text-sm text-purple-700 mt-1">
+                              Notre intelligence artificielle va analyser vos données et générer un plan alimentaire
+                              et d'exercices adapté à votre IMC et vos objectifs.
+                            </Typography>
+                          </Alert>
+
+                          {aiError && (
+                            <Alert color="red" className="mb-4">
+                              {aiError}
+                            </Alert>
+                          )}
+
+                          <Button
+                            size="lg"
+                            fullWidth
+                            className="flex items-center justify-center gap-2"
+                            style={{ backgroundColor: "#00357a" }}
+                            onClick={generateAIPlan}
+                            disabled={isGenerating}
+                          >
+                            {isGenerating ? (
+                              <>
+                                <Spinner className="h-5 w-5" />
+                                Génération en cours...
+                              </>
+                            ) : (
+                              <>
+                                <SparklesIcon className="w-5 h-5" />
+                                Générer mon plan personnalisé avec l'IA
+                              </>
+                            )}
+                          </Button>
+                        </>
+                      )}
+                    </TabPanel>
+
+                    {/* TAB 3: PLAN IA */}
+                    <TabPanel value="ai-plan">
+                      {aiPlan && (
+                        <div className="prose max-w-none">
+                          <Alert
+                            icon={<ExclamationTriangleIcon className="w-6 h-6" />}
+                            className="mb-6"
+                            color="amber"
+                          >
+                            <Typography className="font-medium">
+                              Ce plan est généré par IA à titre informatif uniquement.
+                            </Typography>
+                            <Typography className="text-sm mt-1">
+                              Consultez un professionnel de santé avant de commencer tout programme.
+                            </Typography>
+                          </Alert>
+
+                          <div className="bg-white p-6 rounded-lg border border-gray-200">
+                            {formatMarkdown(aiPlan)}
+                          </div>
+
+                          <div className="mt-6 flex gap-4">
+                            <Button
+                              variant="outlined"
+                              onClick={() => setActiveTab("calculator")}
+                              className="flex-1"
+                              style={{ borderColor: "#00357a", color: "#00357a" }}
+                            >
+                              Nouveau calcul
+                            </Button>
+                            <Button
+                              style={{ backgroundColor: "#9b0e16" }}
+                              onClick={() => window.print()}
+                              className="flex-1"
+                            >
+                              Imprimer le plan
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </TabPanel>
+                  </TabsBody>
+                </Tabs>
               </CardBody>
             </Card>
           </div>
@@ -358,6 +623,7 @@ export function TenantHome({ gymCenter }) {
               { q: "Quels sont les horaires d'ouverture ?", a: "Du lundi au vendredi : 6h–22h | Samedi & Dimanche : 8h–20h" },
               { q: "Y a-t-il des coaches personnels ?", a: "Oui, des coachs certifiés disponibles sur rendez-vous." },
               { q: "Puis-je geler mon abonnement ?", a: "Oui, jusqu'à 2 mois par an sans frais." },
+              { q: "Comment fonctionne l'IA pour les plans personnalisés ?", a: "Notre IA analyse votre IMC et objectifs pour générer des plans alimentaires et d'exercices adaptés." },
             ].map((faq, i) => (
               <details
                 key={i}
@@ -502,10 +768,13 @@ export function TenantHome({ gymCenter }) {
             **3. Calculateur d'IMC:** Le calculateur d'IMC est fourni à titre informatif uniquement et ne remplace pas un avis médical professionnel.
           </Typography>
           <Typography color="blue-gray" className="font-normal mb-4">
-            **4. Confidentialité:** Votre utilisation du service est également régie par notre politique de confidentialité.
+            **4. Plan IA:** Les plans générés par IA sont des recommandations générales. Consultez toujours un professionnel de santé.
           </Typography>
           <Typography color="blue-gray" className="font-normal mb-4">
-            **5. Résiliation:** Nous pouvons suspendre ou résilier votre accès immédiatement en cas de violation des conditions.
+            **5. Confidentialité:** Votre utilisation du service est également régie par notre politique de confidentialité.
+          </Typography>
+          <Typography color="blue-gray" className="font-normal mb-4">
+            **6. Résiliation:** Nous pouvons suspendre ou résilier votre accès immédiatement en cas de violation des conditions.
           </Typography>
         </DialogBody>
         <DialogFooter>

@@ -17,6 +17,11 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'changez-moi-en-production')
 
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
+GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
+if not GEMINI_API_KEY:
+    print("⚠️  Attention : Utilisation d'une clé API par défaut (à remplacer)")
+    GEMINI_API_KEY = "demo-key"
+
 
 # ✅ Configuration Email - VERSION FINALE
 if DEBUG:
