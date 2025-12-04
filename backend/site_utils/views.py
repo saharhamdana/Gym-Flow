@@ -10,6 +10,9 @@ import google.generativeai as genai
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 
 # Contact Form (inchangé)
 @method_decorator(csrf_exempt, name='dispatch')
@@ -446,4 +449,55 @@ def chatbot_assistant(request):
         return Response({
             'response': f"{random.choice(fallback_responses)} (Note : l'IA est temporairement indisponible)",
             'success': False
+        })
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])  # Public access - no authentication required
+def public_coaches_list(request):
+    """
+    Endpoint public pour afficher la liste des coachs sur la page d'accueil
+    Accessible sans authentification
+    """
+    try:
+        # Récupérer tous les utilisateurs avec le rôle COACH
+        coaches = User.objects.filter(
+            role='COACH',
+            is_active=True
+        ).values(
+            'id',
+            'first_name', 
+            'last_name', 
+            'email',
+            'phone',
+            'profile_picture'
+        )
+        
+        # Construire la liste des coachs avec URLs des photos
+        coaches_list = []
+        for coach in coaches:
+            coach_data = {
+                'id': coach['id'],
+                'first_name': coach['first_name'] or '',
+                'last_name': coach['last_name'] or '',
+                'email': coach['email'],
+                'phone': coach['phone'] or '',
+                'profile_picture': coach['profile_picture'],
+                'profile_picture_url': f"/media/{coach['profile_picture']}" if coach['profile_picture'] else None
+            }
+            coaches_list.append(coach_data)
+        
+        return Response({
+            'success': True,
+            'coaches': coaches_list,
+            'count': len(coaches_list)
+        })
+        
+    except Exception as e:
+        print(f"Erreur lors de la récupération des coachs: {e}")
+        return Response({
+            'success': False,
+            'error': 'Erreur lors de la récupération des coachs',
+            'coaches': [],
+            'count': 0
         })

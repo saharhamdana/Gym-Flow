@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 import {
   Card,
@@ -51,6 +51,10 @@ export function TenantHome({ gymCenter }) {
   const [aiError, setAiError] = useState("");
   const [activeTab, setActiveTab] = useState("calculator");
 
+  // === Coaches State ===
+  const [coaches, setCoaches] = useState([]);
+  const [loadingCoaches, setLoadingCoaches] = useState(true);
+
   // === Contact Form State ===
   const [formData, setFormData] = useState({
     fullName: "",
@@ -65,6 +69,28 @@ export function TenantHome({ gymCenter }) {
   const [showTermsModal, setShowTermsModal] = useState(false);
   const handleOpenTerms = () => setShowTermsModal(true);
   const handleCloseTerms = () => setShowTermsModal(false);
+
+  // === Load Coaches ===
+  useEffect(() => {
+    const loadCoaches = async () => {
+      try {
+        setLoadingCoaches(true);
+        console.log("🔍 Chargement des coachs...");
+        const response = await axios.get("http://localhost:8000/api/coaches/");
+        console.log("📋 Réponse API coachs:", response.data);
+        console.log("📊 Nombre de coachs trouvés:", response.data?.coaches?.length || 0);
+        setCoaches(response.data.coaches || []);
+      } catch (error) {
+        console.error("❌ Erreur lors du chargement des coachs:", error);
+        console.error("📄 Détails de l'erreur:", error.response?.data);
+        setCoaches([]);
+      } finally {
+        setLoadingCoaches(false);
+      }
+    };
+
+    loadCoaches();
+  }, []);
 
   // === Contact Form Handlers ===
   const handleContactChange = (e) => {
@@ -671,31 +697,90 @@ export function TenantHome({ gymCenter }) {
         </div>
       </section>
 
-      {/* === OUR TEAM === */}
+      {/* === OUR COACHES === */}
       <section className="px-4 pt-20 pb-48 w-full">
         <div className="container mx-auto max-w-7xl">
-          <PageTitle section="Notre Équipe" heading="Nos professionnels">
-            Découvrez l'équipe qui vous accompagnera dans votre parcours fitness
+          <PageTitle section="Notre Équipe" heading="Nos Coachs Professionnels">
+            Découvrez nos coachs certifiés qui vous accompagneront dans votre parcours fitness
           </PageTitle>
-          <div className="mt-24 grid grid-cols-1 gap-12 gap-x-24 md:grid-cols-2 xl:grid-cols-4">
-            {teamData.map(({ img, name, position, socials }) => (
-              <TeamCard
-                key={name}
-                img={img}
-                name={name}
-                position={position}
-                socials={
-                  <div className="flex items-center gap-2">
-                    {socials.map(({ color, name }) => (
-                      <IconButton key={name} style={{ color: "#00357a" }} variant="text">
-                        <i className={`fa-brands text-xl fa-${name}`} />
-                      </IconButton>
-                    ))}
-                  </div>
-                }
-              />
-            ))}
-          </div>
+          
+          {loadingCoaches ? (
+            <div className="flex justify-center items-center mt-24 h-32">
+              <Spinner className="h-8 w-8" style={{ color: "#00357a" }} />
+              <Typography className="ml-3 text-gray-600">Chargement de nos coachs...</Typography>
+            </div>
+          ) : coaches.length > 0 ? (
+            <div className="mt-24 grid grid-cols-1 gap-12 gap-x-24 md:grid-cols-2 xl:grid-cols-4">
+              {coaches.map((coach) => (
+                <Card key={coach.id} className="shadow-lg hover:shadow-xl transition-shadow duration-300">
+                  <CardBody className="text-center p-6">
+                    {/* Photo du coach */}
+                    <div className="mx-auto mb-4 h-24 w-24 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center">
+                      {coach.profile_picture ? (
+                        <img
+                          src={coach.profile_picture_url || coach.profile_picture}
+                          alt={`${coach.first_name} ${coach.last_name}`}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <div 
+                          className="h-full w-full flex items-center justify-center text-white text-xl font-bold"
+                          style={{ backgroundColor: "#00357a" }}
+                        >
+                          {coach.first_name?.[0]}{coach.last_name?.[0]}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Nom du coach */}
+                    <Typography variant="h6" style={{ color: "#00357a" }} className="mb-1 font-bold">
+                      {coach.first_name} {coach.last_name}
+                    </Typography>
+
+                    {/* Rôle */}
+                    <Typography 
+                      variant="small" 
+                      className="mb-3 font-medium uppercase tracking-wide"
+                      style={{ color: "#9b0e16" }}
+                    >
+                      Coach Sportif
+                    </Typography>
+
+                    {/* Email (optionnel) */}
+                    <Typography variant="small" className="text-gray-600 mb-4">
+                      {coach.email}
+                    </Typography>
+
+                    {/* Téléphone (si disponible) */}
+                    {coach.phone && (
+                      <Typography variant="small" className="text-gray-600 mb-4">
+                        📞 {coach.phone}
+                      </Typography>
+                    )}
+
+                    {/* Badge d'expérience */}
+                    <div className="flex justify-center">
+                      <div 
+                        className="px-3 py-1 rounded-full text-xs font-bold text-white"
+                        style={{ backgroundColor: "#9b0e16" }}
+                      >
+                        Coach Certifié
+                      </div>
+                    </div>
+                  </CardBody>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center mt-24 py-12">
+              <Typography variant="h6" className="text-gray-500 mb-4">
+                Aucun coach disponible pour le moment
+              </Typography>
+              <Typography variant="small" className="text-gray-400">
+                Nos coachs seront bientôt disponibles pour vous accompagner
+              </Typography>
+            </div>
+          )}
         </div>
       </section>
 

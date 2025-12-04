@@ -1,6 +1,6 @@
 # backend/site_utils/urls.py
 from django.urls import path
-from .views import ContactFormSubmissionView, generate_health_plan , chatbot_assistant
+from .views import ContactFormSubmissionView, generate_health_plan, chatbot_assistant, public_coaches_list
 
 
 urlpatterns = [
@@ -8,5 +8,5 @@ urlpatterns = [
     path('contact/', ContactFormSubmissionView.as_view(), name='contact_submit'),
     path('generate-health-plan/', generate_health_plan, name='generate_health_plan'),
     path('chatbot/', chatbot_assistant, name='chatbot'),
-
+    path('coaches/', public_coaches_list, name='public_coaches'),  # New endpoint for coaches
 ]
