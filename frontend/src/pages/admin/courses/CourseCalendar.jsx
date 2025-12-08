@@ -156,7 +156,7 @@ const CourseCalendar = () => {
                 <Button
                     variant="text"
                     className="flex items-center gap-2"
-                    onClick={() => navigate('/admin/bookings/courses')}
+                    onClick={() => navigate('/admin/courses')}
                 >
                     <ListBulletIcon className="h-5 w-5" /> Vue Liste
                 </Button>
@@ -165,7 +165,7 @@ const CourseCalendar = () => {
                     <Button
                         color="blue"
                         className="flex items-center gap-2"
-                        onClick={() => navigate('/admin/bookings/courses/create')}
+                        onClick={() => navigate('/admin/courses/create')}
                     >
                         <PlusIcon className="h-5 w-5" />
                         Nouveau Cours
@@ -251,7 +251,7 @@ const CourseCalendar = () => {
                                             <div
                                                 key={course.id}
                                                 className="cursor-pointer"
-                                                onClick={() => navigate(`/admin/bookings/courses/${course.id}`)}
+                                                onClick={() => navigate(`/admin/courses/${course.id}`)}
                                             >
                                                 <div className={`text-xs p-1 rounded bg-${getStatusColor(course.status)}-100 text-${getStatusColor(course.status)}-700 hover:bg-${getStatusColor(course.status)}-200 transition-colors`}>
                                                     <div className="font-semibold truncate">

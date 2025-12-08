@@ -311,7 +311,7 @@ const Dashboard = () => {
                                 variant="text"
                                 color="blue"
                                 size="sm"
-                                onClick={() => navigate('/admin/bookings/courses')}
+                                onClick={() => navigate('/admin/courses')}
                             >
                                 Voir tous
                             </Button>
@@ -323,7 +323,7 @@ const Dashboard = () => {
                                     <UpcomingCourseCard
                                         key={course.id || course.course__id}
                                         course={course}
-                                        onClick={() => navigate(`/admin/bookings/courses/${course.id || course.course__id}`)}
+                                        onClick={() => navigate(`/admin/courses/${course.id || course.course__id}`)}
                                     />
                                 ))}
                             </div>

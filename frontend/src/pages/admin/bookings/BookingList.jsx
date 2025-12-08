@@ -129,7 +129,7 @@ const BookingList = () => {
                 <Button
                     className="flex items-center gap-2"
                     color="blue"
-                    onClick={() => navigate('/admin/bookings/bookings/create')}
+                    onClick={() => navigate('/admin/bookings/create')}
                 >
                     <PlusIcon className="h-5 w-5" />
                     Nouvelle Réservation
@@ -225,7 +225,7 @@ const BookingList = () => {
                                                             variant="text"
                                                             size="sm"
                                                             color="blue"
-                                                            onClick={() => navigate(`/admin/bookings/bookings/${booking.id}`)}
+                                                            onClick={() => navigate(`/admin/bookings/${booking.id}`)}
                                                         >
                                                             <EyeIcon className="h-4 w-4" />
                                                         </Button>

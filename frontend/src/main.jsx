@@ -10,7 +10,7 @@ import App from "./App";
 import { SignUp } from "./pages/auth/SignUp";
 import { ProfilePage } from "./pages/profile";
 import { MemberList } from "./pages/admin/members";
-import { CourseTypeList } from "./pages/admin/bookings/course-types";
+import { CourseTypeList } from "./pages/admin/course-types";
 import ReservationList from "./pages/admin/ReservationList"; // Gardé car c'était un import par défaut unique
 
 import "./assets/tailwind.css";

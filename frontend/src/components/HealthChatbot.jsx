@@ -12,6 +12,7 @@ import {
 import { SparklesIcon, ChatBubbleLeftRightIcon } from "@heroicons/react/24/solid";
 
 const HealthChatbot = () => {
+  const [hasStartedChatting, setHasStartedChatting] = useState(false);
   const [messages, setMessages] = useState([
     { text: "👋 Bonjour ! Je suis votre assistant santé. Posez-moi vos questions sur la nutrition, l'exercice ou le bien-être !", sender: 'bot' }
   ]);
@@ -21,8 +22,10 @@ const HealthChatbot = () => {
 
   // Auto-scroll vers le dernier message
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    if (hasStartedChatting) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages, hasStartedChatting]);
 
   const handleSend = async () => {
     if (!input.trim()) return;
@@ -42,16 +45,16 @@ const HealthChatbot = () => {
       });
 
       const data = await response.json();
-      
+
       // Ajouter la réponse du bot
-      setMessages(prev => [...prev, { 
-        text: data.response || "Je n'ai pas pu traiter votre demande.", 
-        sender: 'bot' 
+      setMessages(prev => [...prev, {
+        text: data.response || "Je n'ai pas pu traiter votre demande.",
+        sender: 'bot'
       }]);
     } catch (error) {
-      setMessages(prev => [...prev, { 
-        text: "⚠️ Désolé, je rencontre des difficultés techniques. Réessayez plus tard.", 
-        sender: 'bot' 
+      setMessages(prev => [...prev, {
+        text: "⚠️ Désolé, je rencontre des difficultés techniques. Réessayez plus tard.",
+        sender: 'bot'
       }]);
     } finally {
       setLoading(false);
@@ -116,16 +119,14 @@ const HealthChatbot = () => {
           {messages.map((msg, index) => (
             <div
               key={index}
-              className={`mb-3 ${
-                msg.sender === 'user' ? 'text-right' : 'text-left'
-              }`}
+              className={`mb-3 ${msg.sender === 'user' ? 'text-right' : 'text-left'
+                }`}
             >
               <div
-                className={`inline-block max-w-[80%] px-4 py-3 rounded-2xl ${
-                  msg.sender === 'user'
+                className={`inline-block max-w-[80%] px-4 py-3 rounded-2xl ${msg.sender === 'user'
                     ? 'bg-[#00357a] text-white rounded-br-none'
                     : 'bg-white text-gray-800 border border-gray-200 rounded-bl-none'
-                }`}
+                  }`}
               >
                 <Typography variant="paragraph">
                   {msg.text}

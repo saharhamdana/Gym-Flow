@@ -60,7 +60,7 @@ const CourseDetail = () => {
         setDeleting(true);
         try {
             await courseService.delete(id);
-            navigate('/admin/bookings/courses');
+            navigate('/admin/courses');
         } catch (err) {
             console.error('Erreur:', err);
             alert('Erreur lors de la suppression');
@@ -123,7 +123,7 @@ const CourseDetail = () => {
         return (
             <PageContainer>
                 <Alert color="red">{error}</Alert>
-                <Button className="mt-4" onClick={() => navigate('/admin/bookings/courses')}>
+                <Button className="mt-4" onClick={() => navigate('/admin/courses')}>
                     Retour
                 </Button>
             </PageContainer>
@@ -155,7 +155,7 @@ const CourseDetail = () => {
                 <Button
                     variant="text"
                     className="flex items-center gap-2"
-                    onClick={() => navigate('/admin/bookings/courses')}
+                    onClick={() => navigate('/admin/courses')}
                 >
                     <ArrowLeftIcon className="h-4 w-4" /> Retour
                 </Button>
@@ -166,7 +166,7 @@ const CourseDetail = () => {
                             <Button
                                 color="blue"
                                 className="flex items-center gap-2"
-                                onClick={() => navigate(`/admin/bookings/courses/${id}/edit`)}
+                                onClick={() => navigate(`/admin/courses/${id}/edit`)}
                             >
                                 <PencilIcon className="h-4 w-4" />
                                 Modifier
@@ -358,7 +358,7 @@ const CourseDetail = () => {
                             <Button
                                 color="green"
                                 size="sm"
-                                onClick={() => navigate(`/admin/bookings/bookings/create?course=${id}`)}
+                                onClick={() => navigate(`/admin/bookings/create?course=${id}`)}
                             >
                                 Ajouter une Réservation
                             </Button>
@@ -417,7 +417,7 @@ const CourseDetail = () => {
                                                     <Button
                                                         variant="text"
                                                         size="sm"
-                                                        onClick={() => navigate(`/admin/bookings/bookings/${booking.id}`)}
+                                                        onClick={() => navigate(`/admin/bookings/${booking.id}`)}
                                                     >
                                                         Détails
                                                     </Button>

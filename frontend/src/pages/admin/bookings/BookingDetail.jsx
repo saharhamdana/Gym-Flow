@@ -107,7 +107,7 @@ const BookingDetail = () => {
         return (
             <PageContainer>
                 <Alert color="red">{error}</Alert>
-                <Button className="mt-4" onClick={() => navigate('/admin/bookings/bookings')}>
+                <Button className="mt-4" onClick={() => navigate('/admin/bookings')}>
                     Retour
                 </Button>
             </PageContainer>
@@ -144,7 +144,7 @@ const BookingDetail = () => {
                 <Button
                     variant="text"
                     className="flex items-center gap-2"
-                    onClick={() => navigate('/admin/bookings/bookings')}
+                    onClick={() => navigate('/admin/bookings')}
                 >
                     <ArrowLeftIcon className="h-4 w-4" /> Retour
                 </Button>
@@ -280,7 +280,7 @@ const BookingDetail = () => {
                                         <Button
                                             size="sm"
                                             variant="outlined"
-                                            onClick={() => navigate(`/admin/bookings/courses/${booking.course}`)}
+                                            onClick={() => navigate(`/admin/courses/${booking.course}`)}
                                         >
                                             Voir le cours complet
                                         </Button>

@@ -1,7 +1,3 @@
-"""
-Django settings for config project - Configuration Multi-Tenant SÉCURISÉE
-"""
-
 from pathlib import Path
 import os
 from dotenv import load_dotenv
@@ -138,11 +134,15 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # 🔧 Configuration CORS CORRIGÉE
-CORS_ALLOW_ALL_ORIGINS = False
+# 🔧 Configuration CORS CORRIGÉE
+CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
 
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
+    "http://localhost:5173",      # Frontend Vite
+    "http://127.0.0.1:5173",      # Frontend Vite (alternative)
+    "http://localhost:8000",      # ✅ Backend Django (ajoutez ceci)
+    "http://127.0.0.1:8000",      # ✅ Backend Django (ajoutez ceci)
     "http://powerfit.gymflow.com:5173",
     "http://titangym.gymflow.com:5173",
     "http://moveup.gymflow.com:5173",
@@ -152,13 +152,12 @@ CORS_ALLOWED_ORIGINS = [
 
 CORS_ALLOWED_ORIGIN_REGEXES = [
     r"^http://\w+\.gymflow\.com:\d+$",
-    r"^http://localhost:\d+$",
-    r"^http://127\.0\.0\.1:\d+$",
+    r"^http://localhost:\d+$",        # ✅ Accepte tous les ports localhost
+    r"^http://127\.0\.0\.1:\d+$",    # ✅ Accepte tous les ports 127.0.0.1
 ]
 
-CORS_ALLOW_CREDENTIALS = True
 
-# ✅ AJOUTER LES HEADERS AUTORISÉS
+# ✅ Headers déjà corrects
 CORS_ALLOW_HEADERS = [
     'accept',
     'accept-encoding',
@@ -170,9 +169,18 @@ CORS_ALLOW_HEADERS = [
     'x-csrftoken',
     'x-requested-with',
     'x-tenant-subdomain',
-    'tenant-id',  # ✅ AJOUTER CETTE LIGNE
+    'tenant-id',
 ]
 
+# ✅ Ajoutez aussi les méthodes HTTP autorisées
+CORS_ALLOW_METHODS = [
+    'DELETE',
+    'GET',
+    'OPTIONS',
+    'PATCH',
+    'POST',
+    'PUT',
+]
 # # 🍪 Configuration des cookies pour sous-domaines
 # SESSION_COOKIE_DOMAIN = '.gymflow.com'
 SESSION_COOKIE_SAMESITE = 'Lax'
@@ -293,3 +301,13 @@ STRIPE_SECRET_KEY = os.getenv('STRIPE_SECRET_KEY', '')
 STRIPE_PUBLISHABLE_KEY = os.getenv('STRIPE_PUBLISHABLE_KEY', '')
 STRIPE_WEBHOOK_SECRET = os.getenv('STRIPE_WEBHOOK_SECRET', '')
 FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:5173')
+
+
+# Forcer HTTPS même en développement (pour tester)
+SECURE_SSL_REDIRECT = False  # Mettez à True en production
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+# Ajouter pour les PDF
+SECURE_HSTS_SECONDS = 3600  # Optionnel
+SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+SECURE_HSTS_PRELOAD = True

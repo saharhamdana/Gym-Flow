@@ -35,6 +35,9 @@ const CourseList = () => {
     const [statusFilter, setStatusFilter] = useState('all');
     const [deleteModal, setDeleteModal] = useState({ open: false, course: null });
     const [deleting, setDeleting] = useState(false);
+    
+    // Nouvel état pour suivre tous les cours (non filtrés par statut)
+    const [allCourses, setAllCourses] = useState([]);
 
     useEffect(() => {
         fetchCourses();
@@ -46,6 +49,12 @@ const CourseList = () => {
             const data = await courseService.getAll(params);
             const courseData = Array.isArray(data) ? data : (data.results || []);
             setCourses(courseData);
+            
+            // Si pas de filtre, on met à jour allCourses aussi
+            if (statusFilter === 'all') {
+                setAllCourses(courseData);
+            }
+            
             setError(null);
         } catch (err) {
             console.error('Erreur:', err);
@@ -55,11 +64,23 @@ const CourseList = () => {
         }
     };
 
+    // Fonction pour compter uniquement les cours planifiés (SCHEDULED et ONGOING)
+    // Utilise allCourses au lieu de courses pour toujours avoir le compte total
+    const countPlannedCourses = () => {
+        return allCourses.filter(course => 
+            course.status === 'SCHEDULED' || course.status === 'ONGOING'
+        ).length;
+    };
+
     const handleDelete = async () => {
         setDeleting(true);
         try {
             await courseService.delete(deleteModal.course.id);
-            setCourses(courses.filter(c => c.id !== deleteModal.course.id));
+            // Mettre à jour les deux états
+            const updatedCourses = courses.filter(c => c.id !== deleteModal.course.id);
+            const updatedAllCourses = allCourses.filter(c => c.id !== deleteModal.course.id);
+            setCourses(updatedCourses);
+            setAllCourses(updatedAllCourses);
             setDeleteModal({ open: false, course: null });
         } catch (err) {
             console.error('Erreur:', err);
@@ -75,6 +96,12 @@ const CourseList = () => {
         try {
             await courseService.cancel(courseId);
             fetchCourses();
+            // Recharger aussi les cours sans filtre pour mettre à jour le compteur
+            if (statusFilter !== 'all') {
+                const allData = await courseService.getAll({});
+                const allCourseData = Array.isArray(allData) ? allData : (allData.results || []);
+                setAllCourses(allCourseData);
+            }
         } catch (err) {
             console.error('Erreur:', err);
             alert('Erreur lors de l\'annulation');
@@ -99,6 +126,22 @@ const CourseList = () => {
         return <Chip value={statusConfig.text} color={statusConfig.color} size="sm" />;
     };
 
+    // Fonction pour charger tous les cours (sans filtre) séparément
+    const loadAllCourses = async () => {
+        try {
+            const data = await courseService.getAll({});
+            const courseData = Array.isArray(data) ? data : (data.results || []);
+            setAllCourses(courseData);
+        } catch (err) {
+            console.error('Erreur lors du chargement de tous les cours:', err);
+        }
+    };
+
+    // Charger tous les cours au premier rendu
+    useEffect(() => {
+        loadAllCourses();
+    }, []);
+
     if (loading) {
         return (
             <PageContainer>
@@ -120,14 +163,14 @@ const CourseList = () => {
     return (
         <PageContainer
             title="Gestion des Cours"
-            subtitle={`${courses.length} cours planifié(s)`}
+            subtitle={`${countPlannedCourses()} cours planifié(s)`}
             actions={
                 <div className="flex gap-2">
                     <Button
                         variant="outlined"
                         color="blue"
                         className="flex items-center gap-2"
-                        onClick={() => navigate('/admin/bookings/courses/calendar')}
+                        onClick={() => navigate('/admin/courses/calendar')}
                     >
                         <CalendarIcon className="h-5 w-5" />
                         Calendrier
@@ -233,7 +276,7 @@ const CourseList = () => {
                                                             variant="text"
                                                             size="sm"
                                                             color="blue"
-                                                            onClick={() => navigate(`/admin/bookings/courses/${course.id}`)}
+                                                            onClick={() => navigate(`/admin/courses/${course.id}`)}
                                                         >
                                                             <EyeIcon className="h-4 w-4" />
                                                         </Button>
@@ -241,7 +284,7 @@ const CourseList = () => {
                                                             variant="text"
                                                             size="sm"
                                                             color="blue"
-                                                            onClick={() => navigate(`/admin/bookings/courses/${course.id}/edit`)}
+                                                            onClick={() => navigate(`/admin/courses/${course.id}/edit`)}
                                                             disabled={course.status === 'COMPLETED' || course.status === 'CANCELLED'}
                                                         >
                                                             <PencilIcon className="h-4 w-4" />

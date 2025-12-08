@@ -94,7 +94,7 @@ const BookingCreate = () => {
             
             setSuccess(true);
             setTimeout(() => {
-                navigate(`/admin/bookings/bookings/${response.id}`);
+                navigate(`/admin/bookings/${response.id}`);
             }, 1500);
         } catch (err) {
             console.error('Erreur:', err);
@@ -136,7 +136,7 @@ const BookingCreate = () => {
                 <Button
                     variant="text"
                     className="flex items-center gap-2"
-                    onClick={() => navigate('/admin/bookings/bookings')}
+                    onClick={() => navigate('/admin/bookings')}
                 >
                     <ArrowLeftIcon className="h-4 w-4" /> Retour
                 </Button>
@@ -228,7 +228,7 @@ const BookingCreate = () => {
                             <Button
                                 type="button"
                                 variant="outlined"
-                                onClick={() => navigate('/admin/bookings/bookings')}
+                                onClick={() => navigate('/admin/bookings')}
                                 disabled={loading}
                             >
                                 Annuler

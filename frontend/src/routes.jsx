@@ -40,29 +40,29 @@ import MemberEdit from "@/pages/admin/members/MemberEdit";
 import MemberList from "@/pages/admin/members/MemberList";
 
 // Admin Rooms
-import RoomCreate from "./pages/admin/bookings/rooms/RoomCreate";
-import RoomList from "./pages/admin/bookings/rooms/RoomList";
-import RoomDetail from "./pages/admin/bookings/rooms/RoomDetail";
-import RoomEdit from "./pages/admin/bookings/rooms/RoomEdit";
+import RoomCreate from "./pages/admin/rooms/RoomCreate";
+import RoomList from "./pages/admin/rooms/RoomList";
+import RoomDetail from "./pages/admin/rooms/RoomDetail";
+import RoomEdit from "./pages/admin/rooms/RoomEdit";
 
 // Admin Course Types
-import CourseTypeCreate from "./pages/admin/bookings/course-types/CourseTypeCreate";
-import CourseTypeList from "./pages/admin/bookings/course-types/CourseTypeList";
-import CourseTypeDetail from "./pages/admin/bookings/course-types/CourseTypeDetail";
-import CourseTypeEdit from "./pages/admin/bookings/course-types/CourseTypeEdit";
+import CourseTypeCreate from "./pages/admin/course-types/CourseTypeCreate";
+import CourseTypeList from "./pages/admin/course-types/CourseTypeList";
+import CourseTypeDetail from "./pages/admin/course-types/CourseTypeDetail";
+import CourseTypeEdit from "./pages/admin/course-types/CourseTypeEdit";
 
 // Admin Courses
-import CourseCreate from "./pages/admin/bookings/courses/CourseCreate";
-import CourseList from "./pages/admin/bookings/courses/CourseList";
-import CourseDetail from "./pages/admin/bookings/courses/CourseDetail";
-import CourseEdit from "./pages/admin/bookings/courses/CourseEdit";
-import CourseCalendar from "./pages/admin/bookings/courses/CourseCalendar";
+import CourseCreate from "./pages/admin//courses/CourseCreate";
+import CourseList from "./pages/admin/courses/CourseList";
+import CourseDetail from "./pages/admin/courses/CourseDetail";
+import CourseEdit from "./pages/admin/courses/CourseEdit";
+import CourseCalendar from "./pages/admin/courses/CourseCalendar";
 
 // Admin Bookings
-import BookingCreate from "./pages/admin/bookings/bookings/BookingCreate";
-import BookingList from "./pages/admin/bookings/bookings/BookingList";
-import BookingDetail from "./pages/admin/bookings/bookings/BookingDetail";
-import BookingEdit from "./pages/admin/bookings/bookings/BookingEdit";
+import BookingCreate from "./pages/admin/bookings/BookingCreate";
+import BookingList from "./pages/admin/bookings/BookingList";
+import BookingDetail from "./pages/admin/bookings/BookingDetail";
+import BookingEdit from "./pages/admin/bookings/BookingEdit";
 
 // Subscriptions
 import {

@@ -72,7 +72,7 @@ const RoomEdit = () => {
 
             setSuccess(true);
             setTimeout(() => {
-                navigate('/admin/bookings/rooms');
+                navigate('/admin/rooms');
             }, 1500);
         } catch (err) {
             console.error('Erreur:', err);
@@ -98,7 +98,7 @@ const RoomEdit = () => {
                 <Button
                     variant="text"
                     className="flex items-center gap-2"
-                    onClick={() => navigate('/admin/bookings/rooms')}
+                    onClick={() => navigate('/admin/rooms')}
                 >
                     <ArrowLeftIcon className="h-4 w-4" /> Retour
                 </Button>
@@ -161,7 +161,7 @@ const RoomEdit = () => {
                             <Button
                                 type="button"
                                 variant="outlined"
-                                onClick={() => navigate('/admin/bookings/rooms')}
+                                onClick={() => navigate('/admin/rooms')}
                                 disabled={submitting}
                             >
                                 Annuler

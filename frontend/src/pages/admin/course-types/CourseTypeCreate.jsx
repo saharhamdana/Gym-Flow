@@ -1,4 +1,4 @@
-// Fichier: frontend/src/pages/admin/bookings/rooms/RoomCreate.jsx
+// Fichier: frontend/src/pages/admin/bookings/course-types/CourseTypeCreate.jsx
 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -14,9 +14,9 @@ import {
 } from '@material-tailwind/react';
 import { ArrowLeftIcon } from '@heroicons/react/24/solid';
 import PageContainer from '@/components/admin/PageContainer';
-import { roomService } from '@/services/bookingService';
+import { courseTypeService } from '@/services/bookingService';
 
-const RoomCreate = () => {
+const CourseTypeCreate = () => {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -24,8 +24,9 @@ const RoomCreate = () => {
 
     const [formData, setFormData] = useState({
         name: '',
-        capacity: '',
         description: '',
+        color: '#3B82F6',
+        duration_minutes: 60,
         is_active: true,
     });
 
@@ -40,19 +41,18 @@ const RoomCreate = () => {
         setError(null);
 
         try {
-            await roomService.create({
+            await courseTypeService.create({
                 ...formData,
-                capacity: parseInt(formData.capacity),
+                duration_minutes: parseInt(formData.duration_minutes),
             });
 
             setSuccess(true);
             setTimeout(() => {
-                navigate('/admin/bookings/rooms');
+                navigate('/admin/course-types');
             }, 1500);
         } catch (err) {
             console.error('Erreur:', err);
-            const errorMsg = err.response?.data?.detail || 'Erreur lors de la création';
-            setError(errorMsg);
+            setError(err.response?.data?.detail || 'Erreur lors de la création');
         } finally {
             setLoading(false);
         }
@@ -64,24 +64,24 @@ const RoomCreate = () => {
                 <Button
                     variant="text"
                     className="flex items-center gap-2"
-                    onClick={() => navigate('/admin/bookings/rooms')}
+                    onClick={() => navigate('/admin/course-types')}
                 >
                     <ArrowLeftIcon className="h-4 w-4" /> Retour
                 </Button>
                 <Typography variant="h4" color="blue-gray">
-                    Créer une Nouvelle Salle
+                    Créer un Type de Cours
                 </Typography>
             </div>
 
             {error && <Alert color="red" className="mb-4">{error}</Alert>}
-            {success && <Alert color="green" className="mb-4">Salle créée avec succès !</Alert>}
+            {success && <Alert color="green" className="mb-4">Type créé avec succès !</Alert>}
 
             <Card className="shadow-lg">
                 <CardBody>
                     <form onSubmit={handleSubmit} className="space-y-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <Input
-                                label="Nom de la Salle *"
+                                label="Nom du Type *"
                                 name="name"
                                 value={formData.name}
                                 onChange={handleChange}
@@ -89,14 +89,38 @@ const RoomCreate = () => {
                             />
 
                             <Input
-                                label="Capacité *"
-                                name="capacity"
+                                label="Durée par défaut (minutes) *"
+                                name="duration_minutes"
                                 type="number"
-                                min="1"
-                                value={formData.capacity}
+                                min="15"
+                                step="15"
+                                value={formData.duration_minutes}
                                 onChange={handleChange}
                                 required
                             />
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <Typography variant="small" className="mb-2 font-medium">
+                                    Couleur *
+                                </Typography>
+                                <div className="flex items-center gap-3">
+                                    <input
+                                        type="color"
+                                        name="color"
+                                        value={formData.color}
+                                        onChange={handleChange}
+                                        className="h-10 w-20 rounded cursor-pointer border border-gray-300"
+                                    />
+                                    <Input
+                                        value={formData.color}
+                                        onChange={handleChange}
+                                        name="color"
+                                        placeholder="#3B82F6"
+                                    />
+                                </div>
+                            </div>
                         </div>
 
                         <Textarea
@@ -111,7 +135,7 @@ const RoomCreate = () => {
                             <Switch
                                 checked={formData.is_active}
                                 onChange={(e) => setFormData(prev => ({ ...prev, is_active: e.target.checked }))}
-                                label="Salle Active"
+                                label="Type Actif"
                             />
                         </div>
 
@@ -122,12 +146,12 @@ const RoomCreate = () => {
                                 disabled={loading}
                                 className="flex-1"
                             >
-                                {loading ? 'Création...' : 'Créer la Salle'}
+                                {loading ? 'Création...' : 'Créer le Type'}
                             </Button>
                             <Button
                                 type="button"
                                 variant="outlined"
-                                onClick={() => navigate('/admin/bookings/rooms')}
+                                onClick={() => navigate('/admin/course-types')}
                                 disabled={loading}
                             >
                                 Annuler
@@ -140,4 +164,4 @@ const RoomCreate = () => {
     );
 };
 
-export default RoomCreate;
+export default CourseTypeCreate;

@@ -1,7 +1,7 @@
-// Fichier: frontend/src/pages/admin/bookings/courses/CourseCreate.jsx
+// Fichier: frontend/src/pages/admin/bookings/courses/CourseEdit.jsx
 
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import {
     Card,
     CardBody,
@@ -19,14 +19,14 @@ import PageContainer from '@/components/admin/PageContainer';
 import { courseService, courseTypeService, roomService } from '@/services/bookingService';
 import api from '@/api/axiosInstance';
 
-const CourseCreate = () => {
+const CourseEdit = () => {
+    const { id } = useParams();
     const navigate = useNavigate();
-    const [loading, setLoading] = useState(false);
-    const [dataLoading, setDataLoading] = useState(true);
+    const [loading, setLoading] = useState(true);
+    const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState(null);
     const [success, setSuccess] = useState(false);
 
-    // Listes pour les selects
     const [courseTypes, setCourseTypes] = useState([]);
     const [rooms, setRooms] = useState([]);
     const [coaches, setCoaches] = useState([]);
@@ -46,25 +46,40 @@ const CourseCreate = () => {
     });
 
     useEffect(() => {
-        fetchInitialData();
-    }, []);
+        fetchData();
+    }, [id]);
 
-    const fetchInitialData = async () => {
+    const fetchData = async () => {
         try {
-            const [typesData, roomsData, coachesData] = await Promise.all([
+            const [courseData, typesData, roomsData, coachesData] = await Promise.all([
+                courseService.getById(id),
                 courseTypeService.getAll({ is_active: true }),
                 roomService.getAll({ is_active: true }),
-                api.get('/auth/users/?role=COACH'),  // New endpoint for fetching coaches
+                api.get('/auth/users/?role=COACH'),
             ]);
 
             setCourseTypes(Array.isArray(typesData) ? typesData : typesData.results || []);
             setRooms(Array.isArray(roomsData) ? roomsData : roomsData.results || []);
             setCoaches(Array.isArray(coachesData.data) ? coachesData.data : coachesData.data.results || []);
+
+            setFormData({
+                title: courseData.title || '',
+                course_type: courseData.course_type?.toString() || '',
+                coach: courseData.coach?.toString() || '',
+                room: courseData.room?.toString() || '',
+                date: courseData.date || '',
+                start_time: courseData.start_time || '',
+                end_time: courseData.end_time || '',
+                max_participants: courseData.max_participants || '',
+                description: courseData.description || '',
+                notes: courseData.notes || '',
+                status: courseData.status || 'SCHEDULED',
+            });
         } catch (err) {
             console.error('Erreur:', err);
             setError('Impossible de charger les données');
         } finally {
-            setDataLoading(false);
+            setLoading(false);
         }
     };
 
@@ -75,22 +90,11 @@ const CourseCreate = () => {
 
     const handleSelectChange = (name, value) => {
         setFormData(prev => ({ ...prev, [name]: value }));
-        
-        // Auto-remplir la durée si un type de cours est sélectionné
-        if (name === 'course_type' && value) {
-            const selectedType = courseTypes.find(t => t.id === parseInt(value));
-            if (selectedType && formData.start_time) {
-                const startTime = new Date(`2000-01-01T${formData.start_time}`);
-                startTime.setMinutes(startTime.getMinutes() + selectedType.duration_minutes);
-                const endTime = startTime.toTimeString().slice(0, 5);
-                setFormData(prev => ({ ...prev, end_time: endTime }));
-            }
-        }
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setLoading(true);
+        setSubmitting(true);
         setError(null);
 
         try {
@@ -102,11 +106,11 @@ const CourseCreate = () => {
                 max_participants: parseInt(formData.max_participants),
             };
 
-            const response = await courseService.create(dataToSend);
+            await courseService.update(id, dataToSend);
             
             setSuccess(true);
             setTimeout(() => {
-                navigate(`/admin/bookings/courses/${response.id}`);
+                navigate(`/admin/courses/${id}`);
             }, 1500);
         } catch (err) {
             console.error('Erreur:', err);
@@ -120,14 +124,14 @@ const CourseCreate = () => {
                 });
                 setError(errorMessage);
             } else {
-                setError('Erreur lors de la création du cours');
+                setError('Erreur lors de la modification');
             }
         } finally {
-            setLoading(false);
+            setSubmitting(false);
         }
     };
 
-    if (dataLoading) {
+    if (loading) {
         return (
             <PageContainer>
                 <div className="flex justify-center items-center h-96">
@@ -143,22 +147,22 @@ const CourseCreate = () => {
                 <Button
                     variant="text"
                     className="flex items-center gap-2"
-                    onClick={() => navigate('/admin/bookings/courses')}
+                    onClick={() => navigate(`/admin/courses/${id}`)}
                 >
                     <ArrowLeftIcon className="h-4 w-4" /> Retour
                 </Button>
                 <Typography variant="h4" color="blue-gray">
-                    Créer un Nouveau Cours
+                    Modifier le Cours
                 </Typography>
             </div>
 
             {error && <Alert color="red" className="mb-4 whitespace-pre-line">{error}</Alert>}
-            {success && <Alert color="green" className="mb-4">Cours créé avec succès !</Alert>}
+            {success && <Alert color="green" className="mb-4">Cours modifié avec succès !</Alert>}
 
             <Card className="shadow-lg">
                 <CardBody>
                     <form onSubmit={handleSubmit} className="space-y-6">
-                        {/* Informations du Cours */}
+                        {/* Mêmes champs que CourseCreate */}
                         <div>
                             <Typography variant="h6" color="blue-gray" className="mb-4">
                                 Informations du Cours
@@ -178,17 +182,15 @@ const CourseCreate = () => {
                                     onChange={(value) => handleSelectChange('course_type', value)}
                                     required
                                 >
-                                    <Option value="">Sélectionner un type</Option>
                                     {courseTypes.map(type => (
                                         <Option key={type.id} value={type.id.toString()}>
-                                            {type.name} ({type.duration_minutes} min)
+                                            {type.name}
                                         </Option>
                                     ))}
                                 </Select>
                             </div>
                         </div>
 
-                        {/* Coach et Salle */}
                         <div>
                             <Typography variant="h6" color="blue-gray" className="mb-4">
                                 Coach et Salle
@@ -200,7 +202,6 @@ const CourseCreate = () => {
                                     onChange={(value) => handleSelectChange('coach', value)}
                                     required
                                 >
-                                    <Option value="">Sélectionner un coach</Option>
                                     {coaches.map(coach => (
                                         <Option key={coach.id} value={coach.id.toString()}>
                                             {coach.first_name} {coach.last_name}
@@ -214,7 +215,6 @@ const CourseCreate = () => {
                                     onChange={(value) => handleSelectChange('room', value)}
                                     required
                                 >
-                                    <Option value="">Sélectionner une salle</Option>
                                     {rooms.map(room => (
                                         <Option key={room.id} value={room.id.toString()}>
                                             {room.name} (Cap: {room.capacity})
@@ -224,7 +224,6 @@ const CourseCreate = () => {
                             </div>
                         </div>
 
-                        {/* Date et Horaires */}
                         <div>
                             <Typography variant="h6" color="blue-gray" className="mb-4">
                                 Date et Horaires
@@ -259,7 +258,6 @@ const CourseCreate = () => {
                             </div>
                         </div>
 
-                        {/* Capacité */}
                         <div>
                             <Typography variant="h6" color="blue-gray" className="mb-4">
                                 Capacité
@@ -274,10 +272,21 @@ const CourseCreate = () => {
                                     onChange={handleChange}
                                     required
                                 />
+
+                                <Select
+                                    label="Statut *"
+                                    value={formData.status}
+                                    onChange={(value) => handleSelectChange('status', value)}
+                                    required
+                                >
+                                    <Option value="SCHEDULED">Planifié</Option>
+                                    <Option value="ONGOING">En cours</Option>
+                                    <Option value="COMPLETED">Terminé</Option>
+                                    <Option value="CANCELLED">Annulé</Option>
+                                </Select>
                             </div>
                         </div>
 
-                        {/* Description et Notes */}
                         <div className="space-y-4">
                             <Textarea
                                 label="Description"
@@ -296,21 +305,20 @@ const CourseCreate = () => {
                             />
                         </div>
 
-                        {/* Boutons */}
                         <div className="flex gap-4">
                             <Button
                                 type="submit"
                                 color="blue"
-                                disabled={loading}
+                                disabled={submitting}
                                 className="flex-1"
                             >
-                                {loading ? 'Création...' : 'Créer le Cours'}
+                                {submitting ? 'Modification...' : 'Sauvegarder'}
                             </Button>
                             <Button
                                 type="button"
                                 variant="outlined"
-                                onClick={() => navigate('/admin/bookings/courses')}
-                                disabled={loading}
+                                onClick={() => navigate(`/admin/courses/${id}`)}
+                                disabled={submitting}
                             >
                                 Annuler
                             </Button>
@@ -322,4 +330,4 @@ const CourseCreate = () => {
     );
 };
 
-export default CourseCreate;
+export default CourseEdit;

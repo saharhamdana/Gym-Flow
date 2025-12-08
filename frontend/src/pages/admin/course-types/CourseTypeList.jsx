@@ -1,4 +1,4 @@
-// Fichier: frontend/src/pages/admin/bookings/rooms/RoomList.jsx
+// Fichier: frontend/src/pages/admin/bookings/course-types/CourseTypeList.jsx
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -14,31 +14,31 @@ import {
 } from '@material-tailwind/react';
 import { MagnifyingGlassIcon, PlusIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/solid';
 import PageContainer from '@/components/admin/PageContainer';
-import DeleteRoomModal from '@/components/bookings/DeleteRoomModal';
-import { roomService } from '@/services/bookingService';
+import DeleteCourseTypeModal from '@/components/bookings/DeleteCourseTypeModal';
+import { courseTypeService } from '@/services/bookingService';
 
-const RoomList = () => {
+const CourseTypeList = () => {
     const navigate = useNavigate();
-    const [rooms, setRooms] = useState([]);
+    const [courseTypes, setCourseTypes] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
-    const [deleteModal, setDeleteModal] = useState({ open: false, room: null });
+    const [deleteModal, setDeleteModal] = useState({ open: false, type: null });
     const [deleting, setDeleting] = useState(false);
 
     useEffect(() => {
-        fetchRooms();
+        fetchCourseTypes();
     }, []);
 
-    const fetchRooms = async () => {
+    const fetchCourseTypes = async () => {
         try {
-            const data = await roomService.getAll();
-            const roomData = Array.isArray(data) ? data : (data.results || []);
-            setRooms(roomData);
+            const data = await courseTypeService.getAll();
+            const typeData = Array.isArray(data) ? data : (data.results || []);
+            setCourseTypes(typeData);
             setError(null);
         } catch (err) {
             console.error('Erreur:', err);
-            setError('Impossible de charger les salles');
+            setError('Impossible de charger les types de cours');
         } finally {
             setLoading(false);
         }
@@ -47,9 +47,9 @@ const RoomList = () => {
     const handleDelete = async () => {
         setDeleting(true);
         try {
-            await roomService.delete(deleteModal.room.id);
-            setRooms(rooms.filter(r => r.id !== deleteModal.room.id));
-            setDeleteModal({ open: false, room: null });
+            await courseTypeService.delete(deleteModal.type.id);
+            setCourseTypes(courseTypes.filter(t => t.id !== deleteModal.type.id));
+            setDeleteModal({ open: false, type: null });
         } catch (err) {
             console.error('Erreur:', err);
             alert('Erreur lors de la suppression');
@@ -58,9 +58,9 @@ const RoomList = () => {
         }
     };
 
-    const filteredRooms = rooms.filter(room =>
-        room.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        room.description?.toLowerCase().includes(searchTerm.toLowerCase())
+    const filteredTypes = courseTypes.filter(type =>
+        type.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        type.description?.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     if (loading) {
@@ -83,38 +83,36 @@ const RoomList = () => {
 
     return (
         <PageContainer
-            title="Gestion des Salles"
-            subtitle={`${rooms.length} salle(s) enregistrée(s)`}
+            title="Types de Cours"
+            subtitle={`${courseTypes.length} type(s) de cours`}
             actions={
                 <Button
                     className="flex items-center gap-2"
                     color="blue"
-                    onClick={() => navigate('/admin/rooms/create')}
+                    onClick={() => navigate('/admin/course-types/create')}
                 >
                     <PlusIcon className="h-5 w-5" />
-                    Nouvelle Salle
+                    Nouveau Type
                 </Button>
             }
         >
             <Card className="shadow-lg">
                 <CardBody>
-                    {/* Barre de Recherche */}
                     <div className="mb-6">
                         <Input
-                            label="Rechercher une salle..."
+                            label="Rechercher un type..."
                             icon={<MagnifyingGlassIcon className="h-5 w-5" />}
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </div>
 
-                    {/* Tableau */}
-                    {filteredRooms.length > 0 ? (
+                    {filteredTypes.length > 0 ? (
                         <div className="overflow-x-auto">
                             <table className="w-full min-w-max table-auto">
                                 <thead>
                                     <tr className="border-b border-gray-200">
-                                        {['Nom', 'Capacité', 'Description', 'Statut', 'Cours actifs', 'Actions'].map((head) => (
+                                        {['Nom', 'Couleur', 'Durée', 'Description', 'Statut', 'Actions'].map((head) => (
                                             <th key={head} className="p-4 text-left">
                                                 <Typography variant="small" className="font-bold text-gray-700 uppercase">
                                                     {head}
@@ -124,38 +122,44 @@ const RoomList = () => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {filteredRooms.map((room, index) => {
-                                        const isLast = index === filteredRooms.length - 1;
+                                    {filteredTypes.map((type, index) => {
+                                        const isLast = index === filteredTypes.length - 1;
                                         const classes = isLast ? 'p-4' : 'p-4 border-b border-gray-100';
 
                                         return (
-                                            <tr key={room.id} className="hover:bg-gray-50 transition-colors">
+                                            <tr key={type.id} className="hover:bg-gray-50 transition-colors">
                                                 <td className={classes}>
-                                                    <Typography variant="small" className="font-bold text-blue-600">
-                                                        {room.name}
+                                                    <Typography variant="small" className="font-bold">
+                                                        {type.name}
                                                     </Typography>
                                                 </td>
                                                 <td className={classes}>
-                                                    <Typography variant="small" className="font-semibold">
-                                                        {room.capacity} personnes
+                                                    <div className="flex items-center gap-2">
+                                                        <div
+                                                            className="w-6 h-6 rounded-full border"
+                                                            style={{ backgroundColor: type.color }}
+                                                        />
+                                                        <Typography variant="small" className="text-gray-600">
+                                                            {type.color}
+                                                        </Typography>
+                                                    </div>
+                                                </td>
+                                                <td className={classes}>
+                                                    <Typography variant="small">
+                                                        {type.duration_minutes} min
                                                     </Typography>
                                                 </td>
                                                 <td className={classes}>
                                                     <Typography variant="small" className="text-gray-700 truncate max-w-xs">
-                                                        {room.description || '-'}
+                                                        {type.description || '-'}
                                                     </Typography>
                                                 </td>
                                                 <td className={classes}>
                                                     <Chip
-                                                        value={room.is_active ? 'Active' : 'Inactive'}
-                                                        color={room.is_active ? 'green' : 'gray'}
+                                                        value={type.is_active ? 'Actif' : 'Inactif'}
+                                                        color={type.is_active ? 'green' : 'gray'}
                                                         size="sm"
                                                     />
-                                                </td>
-                                                <td className={classes}>
-                                                    <Typography variant="small">
-                                                        {room.courses_count || 0}
-                                                    </Typography>
                                                 </td>
                                                 <td className={classes}>
                                                     <div className="flex gap-2">
@@ -163,7 +167,7 @@ const RoomList = () => {
                                                             variant="text"
                                                             size="sm"
                                                             color="blue"
-                                                            onClick={() => navigate(`/admin/bookings/rooms/${room.id}/edit`)}
+                                                            onClick={() => navigate(`/admin/course-types/${type.id}/edit`)}
                                                         >
                                                             <PencilIcon className="h-4 w-4" />
                                                         </Button>
@@ -171,7 +175,7 @@ const RoomList = () => {
                                                             variant="text"
                                                             size="sm"
                                                             color="red"
-                                                            onClick={() => setDeleteModal({ open: true, room })}
+                                                            onClick={() => setDeleteModal({ open: true, type })}
                                                         >
                                                             <TrashIcon className="h-4 w-4" />
                                                         </Button>
@@ -186,23 +190,22 @@ const RoomList = () => {
                     ) : (
                         <div className="text-center py-12">
                             <Typography color="gray">
-                                {searchTerm ? 'Aucune salle trouvée.' : 'Aucune salle enregistrée.'}
+                                {searchTerm ? 'Aucun type trouvé.' : 'Aucun type de cours enregistré.'}
                             </Typography>
                         </div>
                     )}
                 </CardBody>
             </Card>
 
-            {/* Modal de Suppression */}
-            <DeleteRoomModal
+            <DeleteCourseTypeModal
                 open={deleteModal.open}
-                onClose={() => setDeleteModal({ open: false, room: null })}
+                onClose={() => setDeleteModal({ open: false, type: null })}
                 onConfirm={handleDelete}
-                roomName={deleteModal.room?.name || ''}
+                typeName={deleteModal.type?.name || ''}
                 loading={deleting}
             />
         </PageContainer>
     );
 };
 
-export default RoomList;
+export default CourseTypeList;
