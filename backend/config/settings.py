@@ -52,6 +52,8 @@ ALLOWED_HOSTS = [
     'titangym.gymflow.com',
     'moveup.gymflow.com',
     'api.gymflow.com',
+    'gym-flow-5s5t.onrender.com',
+
 ]
 
 INSTALLED_APPS = [
@@ -216,6 +218,8 @@ else:
         "https://titangym.gymflow.com",
         "https://moveup.gymflow.com",
         "https://api.gymflow.com",
+        "https://gym-flow-5s5t.onrender.com",
+
     ]
 
 # 📝 Configuration REST Framework
