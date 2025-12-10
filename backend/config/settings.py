@@ -343,5 +343,8 @@ if not DEBUG:
     # CORS
     CORS_ALLOW_ALL_ORIGINS = False
     CORS_ALLOWED_ORIGINS = [
-        "https://gymflow.vercel.app",
-    ]
+    "https://gymflow.vercel.app",
+    "https://powerfit-gymflow.vercel.app",
+    "https://titangym-gymflow.vercel.app",
+    "https://moveup-gymflow.vercel.app",
+]

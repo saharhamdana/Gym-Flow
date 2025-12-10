@@ -36,3 +36,4 @@ venv/
 *.env
 backend/.env
 
+.env.production

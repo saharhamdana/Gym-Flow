@@ -1,28 +1,41 @@
-// Fichier: frontend/src/api/axiosInstance.js
+// frontend/src/api/axiosInstance.js
 
 import axios from "axios";
 
 /**
  * Fonction pour extraire le sous-domaine de l'URL actuelle
- * Ex: powerfit.gymflow.com → "powerfit"
- *     moveup.localhost → "moveup"
  */
 const getBaseURL = () => {
   const hostname = window.location.hostname;
-  const port = window.location.port;
+  const isProduction = import.meta.env.PROD;
 
-  console.log('🌐 Configuration:', { hostname, port });
+  console.log('🌐 Configuration:', { hostname, isProduction });
 
-  // 💻 EN DÉVELOPPEMENT SUR PORT 80
-  // Peu importe le sous-domaine, utilisez le proxy
-  return '/api/';  // ✅ Le proxy Vite fera le reste
+  // 🚀 EN PRODUCTION
+  if (isProduction) {
+    return import.meta.env.VITE_API_URL || 'https://gymflow-backend.onrender.com/api/';
+  }
+
+  // 💻 EN DÉVELOPPEMENT
+  return '/api/';  // Proxy Vite
 };
 
 const getSubdomain = () => {
   const hostname = window.location.hostname;
   const parts = hostname.split('.');
   
-  // Sous-domaines .gymflow.com (avec ou sans port)
+  // Production Vercel: xxx.vercel.app
+  if (hostname.includes('.vercel.app')) {
+    const subdomain = parts[0];
+    // Extraire le sous-domaine avant .vercel.app
+    // Ex: powerfit-gymflow.vercel.app → powerfit
+    if (subdomain.includes('-')) {
+      return subdomain.split('-')[0];
+    }
+    return 'moveup'; // Par défaut
+  }
+  
+  // Sous-domaines .gymflow.com
   if (hostname.includes('.gymflow.com')) {
     const subdomain = parts[0];
     return subdomain !== 'www' ? subdomain : null;
@@ -36,28 +49,24 @@ const api = axios.create({
   timeout: 10000,
 });
 
-// ✅ INTERCEPTEUR DE REQUÊTE - Ajouter le token et le tenant-id
+// ✅ INTERCEPTEUR DE REQUÊTE
 api.interceptors.request.use(
   (config) => {
     console.log("🔧 INTERCEPTOR RUNNING");
 
-    // 1️⃣ Récupérer le token depuis localStorage
-    const token = localStorage.getItem("access_token"); // ✅ NOM CORRIGÉ
-    
-    // 2️⃣ Récupérer le subdomain (tenant_id)
+    const token = localStorage.getItem("access_token");
     const subdomain = getSubdomain();
 
     console.log("🔑 TOKEN =", token ? "✅ Présent" : "❌ Absent");
     console.log("🏢 TENANT =", subdomain);
 
-    // 3️⃣ Ajouter les headers SANS écraser ceux existants
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
     
     if (subdomain) {
       config.headers['X-Tenant-Subdomain'] = subdomain;
-      config.headers['Tenant-ID'] = subdomain; // ✅ Ajouter aussi Tenant-ID
+      config.headers['Tenant-ID'] = subdomain;
     }
 
     console.log("📤 Headers envoyés:", config.headers);
@@ -70,8 +79,7 @@ api.interceptors.request.use(
   }
 );
 
-
-// ✅ INTERCEPTEUR DE RÉPONSE - Gérer les erreurs
+// ✅ INTERCEPTEUR DE RÉPONSE
 api.interceptors.response.use(
   (response) => {
     return response;
@@ -79,7 +87,6 @@ api.interceptors.response.use(
   async (error) => {
     console.error("❌ Erreur API:", error.response?.status, error.response?.data);
 
-    // Si erreur 401 (non autorisé), rediriger vers login
     if (error.response?.status === 401) {
       console.warn("⚠️ Token expiré ou invalide - Redirection vers login");
       localStorage.removeItem("access_token");
@@ -92,7 +99,5 @@ api.interceptors.response.use(
   }
 );
 
-
-// Exporter des utilitaires
 export { getSubdomain, getBaseURL };
 export default api;
