@@ -321,6 +321,7 @@ SECURE_HSTS_PRELOAD = True
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 # 🔧 Configuration PRODUCTION
+# 🔧 Configuration PRODUCTION (À METTRE À LA FIN de settings.py)
 if not DEBUG:
     import dj_database_url
     
@@ -340,11 +341,42 @@ if not DEBUG:
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
     
-    # CORS
+    # CORS - ACCEPTER VERCEL
     CORS_ALLOW_ALL_ORIGINS = False
     CORS_ALLOWED_ORIGINS = [
-    "https://gym-flow-virid.vercel.app",
-    "https://powerfit-gym-flow-virid.vercel.app",
-    "https://titangym-gym-flow-virid.vercel.app",
-    "https://moveup-gym-flow-virid.vercel.app",
-]
+        "https://gym-flow-virid.vercel.app",
+    ]
+    
+    # Accepter tous les sous-domaines Vercel
+    CORS_ALLOWED_ORIGIN_REGEXES = [
+        r"^https://.*\.vercel\.app$",
+    ]
+    
+    # Headers
+    CORS_ALLOW_HEADERS = [
+        'accept',
+        'accept-encoding',
+        'authorization',
+        'content-type',
+        'dnt',
+        'origin',
+        'user-agent',
+        'x-csrftoken',
+        'x-requested-with',
+        'x-tenant-subdomain',
+        'tenant-id',
+    ]
+    
+    # ALLOWED_HOSTS
+    ALLOWED_HOSTS = [
+        'gym-flow-5s5t.onrender.com',
+        '.vercel.app',
+        '.gymflow.com',
+    ]
+    
+    # CSRF
+    CSRF_TRUSTED_ORIGINS = [
+        "https://gym-flow-virid.vercel.app",
+        "https://*.vercel.app",
+        "https://gym-flow-5s5t.onrender.com",
+    ]
