@@ -2,6 +2,7 @@ from pathlib import Path
 import os
 from dotenv import load_dotenv
 from datetime import timedelta
+import dj_database_url
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -311,3 +312,36 @@ SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 SECURE_HSTS_SECONDS = 3600  # Optionnel
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
+
+
+if not DEBUG:
+    # Base de données PostgreSQL (Render/Neon)
+    DATABASES['default'] = dj_database_url.config(
+        default=os.getenv('DATABASE_URL'),
+        conn_max_age=600,
+        ssl_require=True
+    )
+    
+    # Sécurité HTTPS
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_BROWSER_XSS_FILTER = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    X_FRAME_OPTIONS = 'DENY'
+    
+    # Fichiers statiques (WhiteNoise)
+    MIDDLEWARE.insert(1, 'whitenoise.middleware.WhiteNoiseMiddleware')
+    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+    STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+    
+    # CORS Production
+    CORS_ALLOWED_ORIGINS = [
+        "https://gymflow.vercel.app",  # ✅ Remplacez par votre domaine Vercel
+        "https://www.gymflow.vercel.app",
+        "https://powerfit.gymflow.vercel.app",
+        "https://titangym.gymflow.vercel.app",
+        "https://moveup.gymflow.vercel.app",
+    ]
+    
+    CORS_ALLOW_ALL_ORIGINS = False  # ❌ Désactivé en production
